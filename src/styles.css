@@ -376,15 +376,16 @@ a {
   left: 50%;
   width: min(1108px, calc(100vw - 64px));
   height: 420px;
-  transform: translateX(-50%);
+  transform: translate3d(-50%, 0, 0);
+  transform-origin: 50% 0;
   font-family: "SB Sans Display", Arial, sans-serif;
-  font-size: 180px;
+  font-size: 220px;
   font-weight: 600;
-  line-height: 140px;
-  letter-spacing: -3.6px;
+  line-height: 180px;
+  letter-spacing: -4.4px;
   text-align: center;
   white-space: nowrap;
-  will-change: top, opacity;
+  will-change: top, opacity, transform;
 }
 
 .roulette-button {
@@ -587,10 +588,6 @@ a {
     line-height: 64px;
     letter-spacing: -1.28px;
     white-space: normal;
-  }
-
-  .finale-desktop-break {
-    display: none;
   }
 
   .roulette-bottom-fade {

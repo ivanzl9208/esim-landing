@@ -530,13 +530,14 @@ function App() {
         finaleFrames,
         currentTimeline,
       );
+      const finaleBaseFontSize = isMobile ? 64 : 220;
+      const finaleScale =
+        finaleFrame.fontSize / finaleBaseFontSize;
 
       rouletteFinale.style.top = `${finaleFrame.top}px`;
-      rouletteFinale.style.fontSize = `${finaleFrame.fontSize}px`;
-      rouletteFinale.style.lineHeight = `${finaleFrame.lineHeight}px`;
-      rouletteFinale.style.letterSpacing =
-        `${(-finaleFrame.fontSize * 0.02).toFixed(2)}px`;
       rouletteFinale.style.opacity = finaleFrame.opacity.toFixed(4);
+      rouletteFinale.style.transform =
+        `translate3d(-50%, 0, 0) scale(${finaleScale.toFixed(5)})`;
     };
 
     const render = () => {
