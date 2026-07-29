@@ -611,14 +611,9 @@ function App() {
           <div className="white-curtain" aria-hidden="true" />
           <RouletteStage stageRef={rouletteRef} />
           <div className="roulette-bottom-fade" aria-hidden="true">
-            <span className="roulette-bottom-blur-layer" />
-            <span className="roulette-bottom-blur-layer" />
-            <span className="roulette-bottom-blur-layer" />
-            <span className="roulette-bottom-blur-layer" />
-            <span className="roulette-bottom-blur-layer" />
-            <span className="roulette-bottom-blur-layer" />
-            <span className="roulette-bottom-blur-layer" />
-            <span className="roulette-bottom-blur-layer" />
+            <div className="roulette-bottom-svg-layer">
+              <img src={`${ASSET_ROOT}/blur.svg`} alt="" />
+            </div>
           </div>
           <button className="roulette-button" type="button">
             <span className="roulette-button-label">
