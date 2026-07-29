@@ -89,6 +89,10 @@ function HeroVideo() {
       preload="auto"
       aria-label="Анимация eSIM"
     >
+      <source
+        src={`${ASSET_ROOT}/hero-alpha.mov`}
+        type='video/quicktime; codecs="hvc1"'
+      />
       <source src={`${ASSET_ROOT}/hero.webm`} type="video/webm" />
     </video>
   );
