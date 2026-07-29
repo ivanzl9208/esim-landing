@@ -390,7 +390,7 @@ a {
 .roulette-button {
   --button-curtain-split: 100%;
   position: absolute;
-  z-index: 22;
+  z-index: 23;
   top: 32px;
   right: 32px;
   display: flex;
@@ -594,7 +594,7 @@ a {
 
   .roulette-bottom-fade {
     position: absolute;
-    z-index: 21;
+    z-index: 22;
     bottom: 0;
     left: 0;
     display: block;
@@ -611,47 +611,51 @@ a {
   }
 
   .roulette-bottom-blur-layer:nth-child(1) {
-    -webkit-backdrop-filter: blur(4px);
-    backdrop-filter: blur(4px);
-    -webkit-mask-image: linear-gradient(
-      to bottom,
-      transparent 0%,
-      #000 25%
-    );
-    mask-image: linear-gradient(to bottom, transparent 0%, #000 25%);
+    -webkit-backdrop-filter: blur(0.5px);
+    backdrop-filter: blur(0.5px);
+    clip-path: inset(0 0 87.5% 0);
   }
 
   .roulette-bottom-blur-layer:nth-child(2) {
-    -webkit-backdrop-filter: blur(6px);
-    backdrop-filter: blur(6px);
-    -webkit-mask-image: linear-gradient(
-      to bottom,
-      transparent 20%,
-      #000 50%
-    );
-    mask-image: linear-gradient(to bottom, transparent 20%, #000 50%);
+    -webkit-backdrop-filter: blur(2.5px);
+    backdrop-filter: blur(2.5px);
+    clip-path: inset(12.5% 0 75% 0);
   }
 
   .roulette-bottom-blur-layer:nth-child(3) {
-    -webkit-backdrop-filter: blur(10px);
-    backdrop-filter: blur(10px);
-    -webkit-mask-image: linear-gradient(
-      to bottom,
-      transparent 45%,
-      #000 75%
-    );
-    mask-image: linear-gradient(to bottom, transparent 45%, #000 75%);
+    -webkit-backdrop-filter: blur(4.5px);
+    backdrop-filter: blur(4.5px);
+    clip-path: inset(25% 0 62.5% 0);
   }
 
   .roulette-bottom-blur-layer:nth-child(4) {
-    -webkit-backdrop-filter: blur(11.3px);
-    backdrop-filter: blur(11.3px);
-    -webkit-mask-image: linear-gradient(
-      to bottom,
-      transparent 70%,
-      #000 100%
-    );
-    mask-image: linear-gradient(to bottom, transparent 70%, #000 100%);
+    -webkit-backdrop-filter: blur(6.5px);
+    backdrop-filter: blur(6.5px);
+    clip-path: inset(37.5% 0 50% 0);
+  }
+
+  .roulette-bottom-blur-layer:nth-child(5) {
+    -webkit-backdrop-filter: blur(8.5px);
+    backdrop-filter: blur(8.5px);
+    clip-path: inset(50% 0 37.5% 0);
+  }
+
+  .roulette-bottom-blur-layer:nth-child(6) {
+    -webkit-backdrop-filter: blur(10.5px);
+    backdrop-filter: blur(10.5px);
+    clip-path: inset(62.5% 0 25% 0);
+  }
+
+  .roulette-bottom-blur-layer:nth-child(7) {
+    -webkit-backdrop-filter: blur(13px);
+    backdrop-filter: blur(13px);
+    clip-path: inset(75% 0 12.5% 0);
+  }
+
+  .roulette-bottom-blur-layer:nth-child(8) {
+    -webkit-backdrop-filter: blur(16px);
+    backdrop-filter: blur(16px);
+    clip-path: inset(87.5% 0 0 0);
   }
 
   .roulette-bottom-fade::after {

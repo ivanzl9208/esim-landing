@@ -4,12 +4,12 @@ import "./styles.css";
 
 const ASSET_ROOT = `${import.meta.env.BASE_URL}assets`;
 const ROULETTE_LINES = [
-  "eSIM —",
+  "eSIM\u00A0—",
   "виртуальная",
   "сим-карта:",
   "звонки,",
   "интернет",
-  "и смс —",
+  "и\u00A0смс\u00A0—",
 ];
 
 function BrandLogo() {
@@ -17,7 +17,7 @@ function BrandLogo() {
     <img
       className="brand-logo"
       src={`${ASSET_ROOT}/sbermobile-logo.svg`}
-      alt="СберМобайл — выгоднее с Прайм"
+      alt={"СберМобайл\u00A0— выгоднее с\u00A0Прайм"}
     />
   );
 }
@@ -43,7 +43,7 @@ function SiteHeader() {
 
       <nav className="desktop-nav" aria-label="Основная навигация">
         <span>Связь</span>
-        <span>Услуги и сервисы</span>
+        <span>Услуги и&nbsp;сервисы</span>
         <span>Оплата</span>
         <span>Поддержка</span>
         <span>Компания</span>
@@ -114,8 +114,8 @@ function RouletteStage({ stageRef }) {
       </div>
 
       <div className="roulette-finale" aria-hidden="true">
-        всё как <br className="finale-desktop-break" />
-        у обычной
+        всё&nbsp;как <br className="finale-desktop-break" />
+        у&nbsp;обычной
         <br />
         сим-карты
       </div>
@@ -599,6 +599,10 @@ function App() {
           <div className="white-curtain" aria-hidden="true" />
           <RouletteStage stageRef={rouletteRef} />
           <div className="roulette-bottom-fade" aria-hidden="true">
+            <span className="roulette-bottom-blur-layer" />
+            <span className="roulette-bottom-blur-layer" />
+            <span className="roulette-bottom-blur-layer" />
+            <span className="roulette-bottom-blur-layer" />
             <span className="roulette-bottom-blur-layer" />
             <span className="roulette-bottom-blur-layer" />
             <span className="roulette-bottom-blur-layer" />
