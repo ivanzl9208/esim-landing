@@ -408,11 +408,7 @@ function App() {
         );
         rouletteButton.style.backgroundColor = "transparent";
         rouletteButton.style.color = "transparent";
-        rouletteBottomFade.style.opacity = smoothstep(
-          0.85,
-          1,
-          currentCurtain,
-        ).toFixed(4);
+        rouletteBottomFade.style.opacity = currentCurtain.toFixed(4);
       } else {
         rouletteButton.style.backgroundColor = "#fa5f05";
         rouletteButton.style.color = "#fff";
