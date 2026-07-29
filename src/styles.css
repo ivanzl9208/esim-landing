@@ -234,7 +234,8 @@ a {
   position: absolute;
   z-index: 3;
   top: calc(50% + 47px);
-  right: 5.9028vw;
+  right: auto;
+  left: 48.1598vw;
   display: flex;
   width: 47.2222vw;
   max-width: 680px;
@@ -242,6 +243,12 @@ a {
   align-items: flex-start;
   gap: 32px;
   transform: translateY(-50%);
+}
+
+@media (min-width: 1440px) {
+  .hero-content {
+    left: calc(71.7708vw - 340px);
+  }
 }
 
 .hero-copy {
@@ -440,6 +447,7 @@ a {
   }
 
   .hero-content {
+    left: auto;
     right: 5vw;
     width: 50vw;
   }
