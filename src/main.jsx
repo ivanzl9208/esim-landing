@@ -79,6 +79,17 @@ function HeroContent() {
 }
 
 function HeroVideo() {
+  const userAgent = window.navigator.userAgent;
+  const isSafari =
+    window.navigator.vendor.includes("Apple") &&
+    !/(CriOS|FxiOS|EdgiOS|OPiOS)/i.test(userAgent);
+  const videoSrc = isSafari
+    ? `${ASSET_ROOT}/hero-alpha.mov`
+    : `${ASSET_ROOT}/hero.webm`;
+  const videoType = isSafari
+    ? 'video/quicktime; codecs="hvc1"'
+    : "video/webm";
+
   return (
     <video
       className="hero-video"
@@ -89,11 +100,7 @@ function HeroVideo() {
       preload="auto"
       aria-label="Анимация eSIM"
     >
-      <source
-        src={`${ASSET_ROOT}/hero-alpha.mov`}
-        type='video/quicktime; codecs="hvc1"'
-      />
-      <source src={`${ASSET_ROOT}/hero.webm`} type="video/webm" />
+      <source src={videoSrc} type={videoType} />
     </video>
   );
 }
