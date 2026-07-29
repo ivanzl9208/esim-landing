@@ -600,7 +600,12 @@ function App() {
           </div>
           <div className="white-curtain" aria-hidden="true" />
           <RouletteStage stageRef={rouletteRef} />
-          <div className="roulette-bottom-fade" aria-hidden="true" />
+          <div className="roulette-bottom-fade" aria-hidden="true">
+            <span className="roulette-bottom-blur-layer" />
+            <span className="roulette-bottom-blur-layer" />
+            <span className="roulette-bottom-blur-layer" />
+            <span className="roulette-bottom-blur-layer" />
+          </div>
           <button className="roulette-button" type="button">
             <span className="roulette-button-label">
               Подключить eSIM
