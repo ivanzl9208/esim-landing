@@ -592,7 +592,7 @@ a {
 
   .roulette-bottom-fade {
     --safe-bottom: env(safe-area-inset-bottom, 0px);
-    position: absolute;
+    position: fixed;
     z-index: 22;
     bottom: 0;
     left: 0;
@@ -632,6 +632,7 @@ a {
   }
 
   .roulette-button {
+    position: fixed;
     top: auto;
     right: auto;
     bottom: calc(24px + env(safe-area-inset-bottom, 0px));
