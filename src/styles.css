@@ -233,44 +233,49 @@ a {
 .hero-content {
   position: absolute;
   z-index: 3;
-  top: 50%;
-  right: 7.9861vw;
-  width: 47.2917vw;
-  max-width: 681px;
+  top: calc(50% + 47px);
+  right: 5.9028vw;
+  display: flex;
+  width: 47.2222vw;
+  max-width: 680px;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 32px;
   transform: translateY(-50%);
+}
+
+.hero-copy {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 24px;
 }
 
 .hero-content h1 {
   margin: 0;
   font-family: "SB Sans Display", Arial, sans-serif;
-  font-size: clamp(52px, 4.7222vw, 68px);
+  font-size: 68px;
   font-weight: 600;
-  line-height: 1;
-  letter-spacing: -0.02em;
+  line-height: 68px;
+  letter-spacing: -1.36px;
 }
 
-.hero-actions {
-  display: flex;
-  align-items: center;
-  gap: 32px;
-  margin-top: 32px;
-}
-
-.hero-actions p {
-  width: 300px;
+.hero-copy p {
+  width: 100%;
   margin: 0;
-  font-family: "SB Sans Display", Arial, sans-serif;
+  font-family: "SB Sans Text", Arial, sans-serif;
   font-size: 24px;
   font-weight: 400;
   line-height: 24px;
-  letter-spacing: -0.05em;
+  letter-spacing: -0.65px;
 }
 
 .connect-button {
   display: flex;
   width: 219px;
   height: 56px;
-  flex: 0 0 219px;
+  flex: none;
   align-items: center;
   justify-content: center;
   border-radius: 100px;
@@ -506,26 +511,26 @@ a {
   }
 
   .hero-content {
-    top: 75px;
+    top: 87px;
     right: auto;
     left: 16px;
-    width: calc(100% - 32px);
+    width: min(328px, calc(100% - 32px));
     max-width: none;
+    gap: 0;
     transform: none;
   }
 
+  .hero-copy {
+    gap: 8px;
+  }
+
   .hero-content h1 {
-    font-size: clamp(32px, 10vw, 36px);
-    line-height: 1;
+    font-size: 32px;
+    line-height: 32px;
     letter-spacing: -1.6px;
   }
 
-  .hero-actions {
-    display: block;
-    margin-top: 8px;
-  }
-
-  .hero-actions p {
+  .hero-copy p {
     width: 100%;
     font-family: "SB Sans Text", Arial, sans-serif;
     font-size: 16px;

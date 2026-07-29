@@ -64,18 +64,16 @@ function SiteHeader() {
 function HeroContent() {
   return (
     <div className="hero-content">
-      <h1>
-        eSIM — безопасная виртуальная
-        <br />
-        сим-карта
-      </h1>
-
-      <div className="hero-actions">
-        <p>Оформите за 5 минут не&nbsp;выходя из дома</p>
-        <a className="connect-button" id="connect" href="#connect">
-          Подключить eSIM
-        </a>
+      <div className="hero-copy">
+        <h1>eSIM&nbsp;—&nbsp;виртуальная сим-карта</h1>
+        <p>
+          Безопасное подключение онлайн за&nbsp;5&nbsp;минут
+        </p>
       </div>
+
+      <a className="connect-button" id="connect" href="#connect">
+        Подключить eSIM
+      </a>
     </div>
   );
 }
