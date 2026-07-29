@@ -460,8 +460,8 @@ a {
   }
 
   .hero-stage {
-    height: 100svh;
-    min-height: 100svh;
+    height: 100dvh;
+    min-height: 100dvh;
   }
 
   .site-header {
