@@ -524,7 +524,11 @@ function App() {
         rouletteButton.style.color = "#fff";
         rouletteBottomFade.style.opacity = "0";
       } else {
-        rouletteBottomFade.style.opacity = isMobile ? "1" : "0";
+        rouletteBottomFade.style.opacity =
+          isMobile &&
+          scene.dataset.chipButtonInverted !== "true"
+            ? "1"
+            : "0";
       }
 
       rouletteLines.forEach((line, index) => {
@@ -739,11 +743,13 @@ function App() {
     const gradient = scene.querySelector(".chip-gradient");
     const button = scene.querySelector(".roulette-button");
     const buttonLabel = scene.querySelector(".roulette-button-label");
+    const bottomFade = scene.querySelector(".roulette-bottom-fade");
     if (
       !layer ||
       !gradient ||
       !button ||
-      !buttonLabel
+      !buttonLabel ||
+      !bottomFade
     ) {
       return undefined;
     }
@@ -758,19 +764,10 @@ function App() {
       return progress * progress * (3 - 2 * progress);
     };
     const mix = (from, to, progress) => from + (to - from) * progress;
-    const mixRgb = (from, to, progress) => {
-      const channels = from.map((channel, index) =>
-        Math.round(mix(channel, to[index], progress)),
-      );
-      return `rgb(${channels.join(", ")})`;
-    };
-
     let targetReveal = 0;
     let currentReveal = 0;
     let targetChip = 0;
     let currentChip = 0;
-    let targetButton = 0;
-    let currentButton = 0;
     let rafId = 0;
 
     const renderScene = () => {
@@ -784,19 +781,15 @@ function App() {
         : 0;
       const chipY = mix(chipStartY, chipEndY, currentChip);
       const chipScale = mix(isMobile ? 0.84 : 0.88, 1, currentChip);
-      const buttonBackground = mixRgb(
-        [250, 95, 5],
-        [255, 255, 255],
-        currentButton,
-      );
-      const buttonColor = mixRgb(
-        [255, 255, 255],
-        [250, 95, 5],
-        currentButton,
-      );
+      const buttonIsInverted = currentReveal >= 0.95;
+      const buttonBackground = buttonIsInverted ? "#fff" : "#fa5f05";
+      const buttonColor = buttonIsInverted ? "#fa5f05" : "#fff";
 
       const transitionIsActive = currentReveal > 0.0001;
       scene.dataset.chipTransitionActive = transitionIsActive
+        ? "true"
+        : "false";
+      scene.dataset.chipButtonInverted = buttonIsInverted
         ? "true"
         : "false";
       layer.style.visibility = transitionIsActive ? "visible" : "hidden";
@@ -816,6 +809,8 @@ function App() {
         buttonLabel.style.background = "none";
         buttonLabel.style.color = buttonColor;
         buttonLabel.style.webkitTextFillColor = buttonColor;
+        bottomFade.style.opacity =
+          isMobile && !buttonIsInverted ? "1" : "0";
       } else {
         button.style.removeProperty("background");
         button.style.removeProperty("background-color");
@@ -829,7 +824,6 @@ function App() {
     const render = () => {
       currentReveal += (targetReveal - currentReveal) * 0.12;
       currentChip += (targetChip - currentChip) * 0.1;
-      currentButton += (targetButton - currentButton) * 0.12;
 
       if (Math.abs(targetReveal - currentReveal) < 0.0005) {
         currentReveal = targetReveal;
@@ -837,16 +831,12 @@ function App() {
       if (Math.abs(targetChip - currentChip) < 0.0005) {
         currentChip = targetChip;
       }
-      if (Math.abs(targetButton - currentButton) < 0.0005) {
-        currentButton = targetButton;
-      }
 
       renderScene();
 
       if (
         currentReveal !== targetReveal ||
-        currentChip !== targetChip ||
-        currentButton !== targetButton
+        currentChip !== targetChip
       ) {
         rafId = window.requestAnimationFrame(render);
       } else {
@@ -873,12 +863,10 @@ function App() {
 
       targetReveal = smoothstep(0, 0.7, progress);
       targetChip = smoothstep(0.04, 0.68, progress);
-      targetButton = smoothstep(0.8, 0.98, progress);
 
       if (reducedMotion) {
         currentReveal = targetReveal;
         currentChip = targetChip;
-        currentButton = targetButton;
         renderScene();
         return;
       }
@@ -899,6 +887,7 @@ function App() {
       buttonLabel.style.removeProperty("background");
       buttonLabel.style.removeProperty("color");
       buttonLabel.style.removeProperty("-webkit-text-fill-color");
+      scene.removeAttribute("data-chip-button-inverted");
       if (rafId) window.cancelAnimationFrame(rafId);
     };
   }, []);

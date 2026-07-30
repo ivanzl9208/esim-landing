@@ -404,11 +404,17 @@ a {
   letter-spacing: -0.35px;
   pointer-events: none;
   transform: translate3d(0, -96px, 0);
+  transition:
+    background-color 260ms ease,
+    color 260ms ease;
   will-change: transform;
 }
 
 .roulette-button-label {
   display: block;
+  transition:
+    color 260ms ease,
+    -webkit-text-fill-color 260ms ease;
 }
 
 .roulette-bottom-fade {
@@ -614,6 +620,7 @@ a {
     height: calc(120px + var(--safe-bottom));
     opacity: 0;
     pointer-events: none;
+    transition: opacity 260ms ease;
     will-change: opacity;
   }
 
