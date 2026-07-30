@@ -894,7 +894,7 @@ function App() {
       );
       const marqueeStart = revealEnd;
       const marqueeEnd = Math.max(
-        Math.min(viewportHeight * 8.95, scrollRange),
+        Math.min(viewportHeight * 10.45, scrollRange),
         marqueeStart + 1,
       );
 
