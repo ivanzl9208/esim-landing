@@ -70,7 +70,7 @@ a {
 .scroll-scene {
   --curtain-y: 100%;
   position: relative;
-  height: 810svh;
+  height: 1010svh;
   background: #fff;
 }
 
@@ -454,6 +454,30 @@ a {
   will-change: transform;
 }
 
+.advantages-marquee {
+  --advantages-text-x: 0px;
+  position: absolute;
+  z-index: 1;
+  top: 50%;
+  left: 50%;
+  width: 1939px;
+  height: 200px;
+  color: #fff;
+  font-family: "SB Sans Display", Arial, sans-serif;
+  font-size: 200px;
+  font-weight: 600;
+  line-height: 200px;
+  letter-spacing: -4px;
+  text-align: center;
+  white-space: nowrap;
+  transform: translate3d(
+    calc(-50% + var(--advantages-text-x)),
+    -50%,
+    0
+  );
+  will-change: transform;
+}
+
 @media (max-width: 1199px) and (min-width: 701px) {
   .site-header {
     gap: 18px;
@@ -482,7 +506,7 @@ a {
 
 @media (max-width: 700px) {
   .scroll-scene {
-    height: 810svh;
+    height: 1010svh;
   }
 
   .hero-stage {
@@ -691,6 +715,16 @@ a {
     transform: translate3d(-50%, calc(-50% + 66vh), 0) scale(0.84);
   }
 
+  .advantages-marquee {
+    z-index: 3;
+    top: 20%;
+    width: 1164px;
+    height: 120px;
+    font-size: 120px;
+    line-height: 120px;
+    letter-spacing: -2.4px;
+  }
+
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -707,5 +741,9 @@ a {
 
   .chip-static {
     transform: translate3d(-50%, -50%, 0) !important;
+  }
+
+  .advantages-marquee {
+    --advantages-text-x: 0px !important;
   }
 }

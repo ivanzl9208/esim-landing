@@ -211,13 +211,16 @@ function RouletteStage({ stageRef }) {
   );
 }
 
-function ChipRevealStage({ chipRef }) {
+function ChipRevealStage({ chipRef, marqueeRef }) {
   return (
     <div
       className="chip-reveal-layer"
       aria-label="eSIM-чип СберМобайла"
     >
       <div className="chip-gradient" aria-hidden="true">
+        <div className="advantages-marquee" ref={marqueeRef}>
+          Преимущества&nbsp;eSIM
+        </div>
         <img
           className="chip-static"
           ref={chipRef}
@@ -233,6 +236,7 @@ function App() {
   const sceneRef = useRef(null);
   const rouletteRef = useRef(null);
   const chipRef = useRef(null);
+  const marqueeRef = useRef(null);
 
   useEffect(() => {
     const reducedMotion = window.matchMedia(
@@ -737,7 +741,8 @@ function App() {
   useEffect(() => {
     const scene = sceneRef.current;
     const chip = chipRef.current;
-    if (!scene || !chip) return undefined;
+    const marquee = marqueeRef.current;
+    if (!scene || !chip || !marquee) return undefined;
 
     const layer = scene.querySelector(".chip-reveal-layer");
     const gradient = scene.querySelector(".chip-gradient");
@@ -768,6 +773,9 @@ function App() {
     let currentReveal = 0;
     let targetChip = 0;
     let currentChip = 0;
+    let targetMarquee = 0;
+    let currentMarquee = 0;
+    let marqueeVelocity = 0;
     let rafId = 0;
 
     const renderScene = () => {
@@ -784,6 +792,13 @@ function App() {
       const buttonIsInverted = currentReveal >= 0.95;
       const buttonBackground = buttonIsInverted ? "#fff" : "#fa5f05";
       const buttonColor = buttonIsInverted ? "#fa5f05" : "#fff";
+      const marqueeTravel =
+        (window.innerWidth + marquee.offsetWidth) / 2;
+      const marqueeOffset = mix(
+        marqueeTravel,
+        -marqueeTravel,
+        currentMarquee,
+      );
 
       const transitionIsActive = currentReveal > 0.0001;
       scene.dataset.chipTransitionActive = transitionIsActive
@@ -801,6 +816,10 @@ function App() {
       chip.style.transform =
         `translate3d(-50%, calc(-50% + ${chipY.toFixed(2)}px), 0) ` +
         `scale(${chipScale.toFixed(5)})`;
+      marquee.style.setProperty(
+        "--advantages-text-x",
+        `${marqueeOffset.toFixed(2)}px`,
+      );
 
       if (transitionIsActive) {
         button.style.background = buttonBackground;
@@ -824,6 +843,10 @@ function App() {
     const render = () => {
       currentReveal += (targetReveal - currentReveal) * 0.12;
       currentChip += (targetChip - currentChip) * 0.1;
+      marqueeVelocity +=
+        (targetMarquee - currentMarquee) * 0.035;
+      marqueeVelocity *= 0.82;
+      currentMarquee += marqueeVelocity;
 
       if (Math.abs(targetReveal - currentReveal) < 0.0005) {
         currentReveal = targetReveal;
@@ -831,12 +854,21 @@ function App() {
       if (Math.abs(targetChip - currentChip) < 0.0005) {
         currentChip = targetChip;
       }
+      if (
+        Math.abs(targetMarquee - currentMarquee) < 0.0001 &&
+        Math.abs(marqueeVelocity) < 0.0002
+      ) {
+        currentMarquee = targetMarquee;
+        marqueeVelocity = 0;
+      }
 
       renderScene();
 
       if (
         currentReveal !== targetReveal ||
-        currentChip !== targetChip
+        currentChip !== targetChip ||
+        currentMarquee !== targetMarquee ||
+        marqueeVelocity !== 0
       ) {
         rafId = window.requestAnimationFrame(render);
       } else {
@@ -854,19 +886,30 @@ function App() {
       const scrollOffset = clamp(-rect.top, 0, scrollRange);
       const revealStart = viewportHeight * 4.28;
       const revealEnd = Math.max(
-        scrollRange - viewportHeight * 0.15,
+        viewportHeight * 6.95,
         revealStart + 1,
       );
       const progress = clamp(
         (scrollOffset - revealStart) / (revealEnd - revealStart),
       );
+      const marqueeStart = revealEnd;
+      const marqueeEnd = Math.max(
+        Math.min(viewportHeight * 8.95, scrollRange),
+        marqueeStart + 1,
+      );
 
       targetReveal = smoothstep(0, 0.7, progress);
       targetChip = smoothstep(0.04, 0.68, progress);
+      targetMarquee = clamp(
+        (scrollOffset - marqueeStart) /
+          (marqueeEnd - marqueeStart),
+      );
 
       if (reducedMotion) {
         currentReveal = targetReveal;
         currentChip = targetChip;
+        currentMarquee = targetMarquee;
+        marqueeVelocity = 0;
         renderScene();
         return;
       }
@@ -902,7 +945,10 @@ function App() {
             <HeroContent />
           </div>
           <div className="white-curtain" aria-hidden="true" />
-          <ChipRevealStage chipRef={chipRef} />
+          <ChipRevealStage
+            chipRef={chipRef}
+            marqueeRef={marqueeRef}
+          />
           <RouletteStage stageRef={rouletteRef} />
           <div className="roulette-bottom-fade" aria-hidden="true">
             <div className="roulette-bottom-svg-layer">
