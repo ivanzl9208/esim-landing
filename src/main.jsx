@@ -12,6 +12,66 @@ const ROULETTE_LINES = [
   "и\u00A0смс\u00A0—",
 ];
 
+const CHIP_FEATURES = [
+  {
+    icon: "↻",
+    title: <>Моментальный выпуск<br />онлайн</>,
+    description: (
+      <>
+        Подключение за&nbsp;5&nbsp;минут через Госуслуги, без&nbsp;офиса
+        и&nbsp;курьера. Перевыпуск&nbsp;— прямо в&nbsp;приложении
+      </>
+    ),
+  },
+  {
+    icon: "▣",
+    title: <>Несколько номеров<br />в&nbsp;одном устройстве</>,
+    description: (
+      <>
+        Используйте eSIM и&nbsp;обычную сим-карту для&nbsp;разных задач&nbsp;—
+        и&nbsp;легко переключайтесь между&nbsp;ними
+      </>
+    ),
+  },
+  {
+    icon: "▦",
+    title: <>Всегда надёжна<br />и&nbsp;под рукой</>,
+    description: (
+      <>
+        eSIM встроена в&nbsp;смартфон&nbsp;— не&nbsp;потеряется,
+        не&nbsp;сломается и&nbsp;не&nbsp;имеет срока годности
+      </>
+    ),
+  },
+  {
+    icon: "⌖",
+    title: <>Без ограничений<br />и&nbsp;бесплатно</>,
+    description: (
+      <>
+        eSIM доступна на&nbsp;любом тарифе и&nbsp;в&nbsp;любом регионе&nbsp;—
+        без&nbsp;доплат
+      </>
+    ),
+  },
+  {
+    icon: "▯",
+    title: <>Не&nbsp;только<br />для&nbsp;смартфонов</>,
+    description: (
+      <>Совместима с&nbsp;планшетами, смарт-часами и&nbsp;трекерами</>
+    ),
+  },
+  {
+    icon: "▣",
+    title: <>Усиленная безопасность</>,
+    description: (
+      <>
+        Управлять eSIM можно только с&nbsp;вашего устройства&nbsp;— при&nbsp;этом
+        её&nbsp;легко перенести, если смените смартфон
+      </>
+    ),
+  },
+];
+
 function BrandLogo() {
   return (
     <img
@@ -211,7 +271,18 @@ function RouletteStage({ stageRef }) {
   );
 }
 
-function ChipRevealStage({ chipRef, marqueeRef }) {
+function ChipRevealStage({ chipRef, marqueeRef, videoRef }) {
+  const userAgent = window.navigator.userAgent;
+  const isSafari =
+    window.navigator.vendor.includes("Apple") &&
+    !/(CriOS|FxiOS|EdgiOS|OPiOS)/i.test(userAgent);
+  const videoSrc = isSafari
+    ? `${ASSET_ROOT}/chip-scroll.mov`
+    : `${ASSET_ROOT}/chip-scroll.webm`;
+  const videoType = isSafari
+    ? 'video/quicktime; codecs="hvc1"'
+    : 'video/webm; codecs="vp9"';
+
   return (
     <div
       className="chip-reveal-layer"
@@ -227,6 +298,35 @@ function ChipRevealStage({ chipRef, marqueeRef }) {
           src={`${ASSET_ROOT}/esim-chip-static.png`}
           alt=""
         />
+        <video
+          className="chip-scroll-video"
+          ref={videoRef}
+          muted
+          playsInline
+          preload="auto"
+          loop
+          aria-hidden="true"
+        >
+          <source src={videoSrc} type={videoType} />
+        </video>
+        <div className="chip-features">
+          {CHIP_FEATURES.map((feature, index) => (
+            <article
+              className={`chip-feature chip-feature-${index}`}
+              data-feature-index={index}
+              key={index}
+            >
+              <div className="chip-feature-rule">
+                <span className="chip-feature-icon" aria-hidden="true">
+                  {feature.icon}
+                </span>
+                <span className="chip-feature-line" />
+              </div>
+              <h2>{feature.title}</h2>
+              <p>{feature.description}</p>
+            </article>
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -237,6 +337,7 @@ function App() {
   const rouletteRef = useRef(null);
   const chipRef = useRef(null);
   const marqueeRef = useRef(null);
+  const chipVideoRef = useRef(null);
 
   useEffect(() => {
     const reducedMotion = window.matchMedia(
@@ -742,19 +843,24 @@ function App() {
     const scene = sceneRef.current;
     const chip = chipRef.current;
     const marquee = marqueeRef.current;
-    if (!scene || !chip || !marquee) return undefined;
+    const video = chipVideoRef.current;
+    if (!scene || !chip || !marquee || !video) return undefined;
 
     const layer = scene.querySelector(".chip-reveal-layer");
     const gradient = scene.querySelector(".chip-gradient");
     const button = scene.querySelector(".roulette-button");
     const buttonLabel = scene.querySelector(".roulette-button-label");
     const bottomFade = scene.querySelector(".roulette-bottom-fade");
+    const featureElements = Array.from(
+      scene.querySelectorAll(".chip-feature"),
+    );
     if (
       !layer ||
       !gradient ||
       !button ||
       !buttonLabel ||
-      !bottomFade
+      !bottomFade ||
+      featureElements.length !== CHIP_FEATURES.length
     ) {
       return undefined;
     }
@@ -776,7 +882,37 @@ function App() {
     let targetMarquee = 0;
     let currentMarquee = 0;
     let marqueeVelocity = 0;
+    let targetVideo = 0;
+    let currentVideo = 0;
+    let videoVelocity = 0;
+    let videoDuration = 6;
     let rafId = 0;
+
+    video.defaultMuted = true;
+    video.muted = true;
+    video.playsInline = true;
+    video.pause();
+
+    const syncVideoMetadata = () => {
+      if (Number.isFinite(video.duration) && video.duration > 0) {
+        videoDuration = video.duration;
+      }
+      video.pause();
+    };
+
+    const setFeatureProgress = (element, enter, exit) => {
+      const opacity = enter * (1 - exit);
+      const translateY = mix(6, 0, enter) - exit * 4;
+      const blur = mix(2, 0, enter);
+      element.style.opacity = opacity.toFixed(4);
+      element.style.transform =
+        `translate3d(0, ${translateY.toFixed(2)}px, 0)`;
+      element.style.filter = `blur(${blur.toFixed(2)}px)`;
+      element.style.setProperty(
+        "--feature-line-progress",
+        Math.min(enter * 1.18, 1).toFixed(4),
+      );
+    };
 
     const renderScene = () => {
       const isMobile = window.matchMedia("(max-width: 700px)").matches;
@@ -816,10 +952,40 @@ function App() {
       chip.style.transform =
         `translate3d(-50%, calc(-50% + ${chipY.toFixed(2)}px), 0) ` +
         `scale(${chipScale.toFixed(5)})`;
+      const videoOpacity = smoothstep(0, 0.045, currentVideo);
+      chip.style.opacity = (1 - videoOpacity).toFixed(4);
+      video.style.opacity = videoOpacity.toFixed(4);
+      video.style.transform =
+        `translate3d(-50%, calc(-50% + ${chipY.toFixed(2)}px), 0) ` +
+        `scale(${chipScale.toFixed(5)})`;
       marquee.style.setProperty(
         "--advantages-text-x",
         `${marqueeOffset.toFixed(2)}px`,
       );
+
+      if (video.readyState >= 1 && currentVideo > 0.0001) {
+        const safeDuration = Math.max(videoDuration - 0.045, 0.001);
+        const targetTime = clamp(currentVideo) * safeDuration;
+        if (Math.abs(video.currentTime - targetTime) > 0.018) {
+          video.currentTime = targetTime;
+        }
+      }
+
+      featureElements.forEach((element, index) => {
+        let start;
+        let end;
+        if (isMobile) {
+          start = 0.035 + index * 0.153;
+          end = start + 0.142;
+        } else {
+          const pairIndex = Math.floor(index / 2);
+          start = 0.045 + pairIndex * 0.305;
+          end = start + 0.255;
+        }
+        const enter = smoothstep(start, start + 0.052, currentVideo);
+        const exit = smoothstep(end - 0.052, end, currentVideo);
+        setFeatureProgress(element, enter, exit);
+      });
 
       if (transitionIsActive) {
         button.style.background = buttonBackground;
@@ -847,6 +1013,9 @@ function App() {
         (targetMarquee - currentMarquee) * 0.035;
       marqueeVelocity *= 0.82;
       currentMarquee += marqueeVelocity;
+      videoVelocity += (targetVideo - currentVideo) * 0.04;
+      videoVelocity *= 0.8;
+      currentVideo += videoVelocity;
 
       if (Math.abs(targetReveal - currentReveal) < 0.0005) {
         currentReveal = targetReveal;
@@ -861,6 +1030,13 @@ function App() {
         currentMarquee = targetMarquee;
         marqueeVelocity = 0;
       }
+      if (
+        Math.abs(targetVideo - currentVideo) < 0.0001 &&
+        Math.abs(videoVelocity) < 0.0002
+      ) {
+        currentVideo = targetVideo;
+        videoVelocity = 0;
+      }
 
       renderScene();
 
@@ -868,7 +1044,9 @@ function App() {
         currentReveal !== targetReveal ||
         currentChip !== targetChip ||
         currentMarquee !== targetMarquee ||
-        marqueeVelocity !== 0
+        marqueeVelocity !== 0 ||
+        currentVideo !== targetVideo ||
+        videoVelocity !== 0
       ) {
         rafId = window.requestAnimationFrame(render);
       } else {
@@ -897,6 +1075,14 @@ function App() {
         Math.min(viewportHeight * 12.45, scrollRange),
         marqueeStart + 1,
       );
+      const videoStart = Math.min(
+        viewportHeight * 12.0,
+        scrollRange - 1,
+      );
+      const videoEnd = Math.max(
+        Math.min(viewportHeight * 20.0, scrollRange),
+        videoStart + 1,
+      );
 
       targetReveal = smoothstep(0, 0.7, progress);
       targetChip = smoothstep(0.04, 0.68, progress);
@@ -904,12 +1090,22 @@ function App() {
         (scrollOffset - marqueeStart) /
           (marqueeEnd - marqueeStart),
       );
+      targetVideo = smoothstep(
+        0,
+        1,
+        clamp(
+          (scrollOffset - videoStart) /
+            (videoEnd - videoStart),
+        ),
+      );
 
       if (reducedMotion) {
         currentReveal = targetReveal;
         currentChip = targetChip;
         currentMarquee = targetMarquee;
         marqueeVelocity = 0;
+        currentVideo = targetVideo;
+        videoVelocity = 0;
         renderScene();
         return;
       }
@@ -918,12 +1114,17 @@ function App() {
     };
 
     measure();
+    video.addEventListener("loadedmetadata", syncVideoMetadata);
+    video.addEventListener("loadeddata", syncVideoMetadata);
     window.addEventListener("scroll", measure, { passive: true });
     window.addEventListener("resize", measure);
 
     return () => {
       window.removeEventListener("scroll", measure);
       window.removeEventListener("resize", measure);
+      video.removeEventListener("loadedmetadata", syncVideoMetadata);
+      video.removeEventListener("loadeddata", syncVideoMetadata);
+      video.pause();
       button.style.removeProperty("background");
       button.style.removeProperty("background-color");
       button.style.removeProperty("color");
@@ -948,6 +1149,7 @@ function App() {
           <ChipRevealStage
             chipRef={chipRef}
             marqueeRef={marqueeRef}
+            videoRef={chipVideoRef}
           />
           <RouletteStage stageRef={rouletteRef} />
           <div className="roulette-bottom-fade" aria-hidden="true">

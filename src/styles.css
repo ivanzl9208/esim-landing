@@ -70,7 +70,7 @@ a {
 .scroll-scene {
   --curtain-y: 100%;
   position: relative;
-  height: 1360svh;
+  height: 2120svh;
   background: #fff;
 }
 
@@ -454,6 +454,22 @@ a {
   will-change: transform;
 }
 
+.chip-scroll-video {
+  position: absolute;
+  z-index: 2;
+  top: 50%;
+  left: 50%;
+  display: block;
+  width: 470px;
+  max-width: 58vw;
+  height: auto;
+  opacity: 0;
+  transform: translate3d(-50%, calc(-50% + 72vh), 0) scale(0.88);
+  transform-origin: center;
+  pointer-events: none;
+  will-change: transform, opacity;
+}
+
 .advantages-marquee {
   --advantages-text-x: 0px;
   position: absolute;
@@ -476,6 +492,95 @@ a {
     0
   );
   will-change: transform;
+}
+
+.chip-features {
+  position: absolute;
+  z-index: 4;
+  inset: 0;
+  pointer-events: none;
+}
+
+.chip-feature {
+  --feature-line-progress: 0;
+  position: absolute;
+  width: min(310px, 26vw);
+  color: #fff;
+  font-family: "SB Sans Text", Arial, sans-serif;
+  opacity: 0;
+  will-change: opacity, transform, filter;
+}
+
+.chip-feature:nth-child(odd) {
+  top: 26%;
+  left: 8%;
+}
+
+.chip-feature:nth-child(even) {
+  right: 8%;
+  bottom: 20%;
+}
+
+.chip-feature-rule {
+  display: flex;
+  width: min(450px, 38vw);
+  height: 34px;
+  align-items: center;
+  gap: 12px;
+}
+
+.chip-feature:nth-child(even) .chip-feature-rule {
+  width: min(390px, 34vw);
+}
+
+.chip-feature-icon {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  flex: 0 0 28px;
+  place-items: center;
+  color: #fff;
+  font-size: 22px;
+  line-height: 1;
+}
+
+.chip-feature-line {
+  position: relative;
+  display: block;
+  width: 100%;
+  height: 1px;
+  overflow: visible;
+  background: rgba(255, 255, 255, 0.68);
+  transform: scaleX(var(--feature-line-progress));
+  transform-origin: left center;
+  will-change: transform;
+}
+
+.chip-feature-line::after {
+  position: absolute;
+  top: 50%;
+  right: -3px;
+  width: 7px;
+  height: 7px;
+  background: #fff;
+  border-radius: 50%;
+  content: "";
+  transform: translateY(-50%);
+}
+
+.chip-feature h2 {
+  margin: 14px 0 10px;
+  font-family: "SB Sans Display", Arial, sans-serif;
+  font-size: 28px;
+  font-weight: 600;
+  line-height: 29px;
+  letter-spacing: -0.7px;
+}
+
+.chip-feature p {
+  margin: 0;
+  font-size: 15px;
+  line-height: 18px;
 }
 
 @media (max-width: 1199px) and (min-width: 701px) {
@@ -506,7 +611,7 @@ a {
 
 @media (max-width: 700px) {
   .scroll-scene {
-    height: 1360svh;
+    height: 2120svh;
   }
 
   .hero-stage {
@@ -715,6 +820,12 @@ a {
     transform: translate3d(-50%, calc(-50% + 66vh), 0) scale(0.84);
   }
 
+  .chip-scroll-video {
+    width: min(88vw, 340px);
+    max-width: none;
+    transform: translate3d(-50%, calc(-50% + 66vh), 0) scale(0.84);
+  }
+
   .advantages-marquee {
     z-index: 3;
     top: 20%;
@@ -723,6 +834,41 @@ a {
     font-size: 120px;
     line-height: 120px;
     letter-spacing: -2.4px;
+  }
+
+  .chip-feature {
+    top: calc(96px + env(safe-area-inset-top, 0px)) !important;
+    right: auto !important;
+    bottom: auto !important;
+    left: 20px !important;
+    width: calc(100vw - 40px);
+  }
+
+  .chip-feature-rule,
+  .chip-feature:nth-child(even) .chip-feature-rule {
+    width: 100%;
+    height: 28px;
+    gap: 8px;
+  }
+
+  .chip-feature-icon {
+    width: 24px;
+    height: 24px;
+    flex-basis: 24px;
+    font-size: 19px;
+  }
+
+  .chip-feature h2 {
+    margin: 10px 0 7px;
+    font-size: 24px;
+    line-height: 25px;
+    letter-spacing: -0.55px;
+  }
+
+  .chip-feature p {
+    max-width: 330px;
+    font-size: 14px;
+    line-height: 17px;
   }
 
 }
@@ -740,6 +886,10 @@ a {
   }
 
   .chip-static {
+    transform: translate3d(-50%, -50%, 0) !important;
+  }
+
+  .chip-scroll-video {
     transform: translate3d(-50%, -50%, 0) !important;
   }
 
