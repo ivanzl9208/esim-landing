@@ -796,7 +796,7 @@ function App() {
       scene.dataset.chipTransitionActive = transitionIsActive
         ? "true"
         : "false";
-      layer.style.opacity = transitionIsActive ? "1" : "0";
+      layer.style.visibility = transitionIsActive ? "visible" : "hidden";
       leftShutter.style.transform =
         `translate3d(-${shutterOffset.toFixed(4)}%, 0, 0)`;
       rightShutter.style.transform =

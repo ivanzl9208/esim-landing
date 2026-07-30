@@ -417,15 +417,15 @@ a {
 
 .chip-reveal-layer {
   position: absolute;
-  z-index: 21;
   inset: 0;
   overflow: hidden;
-  opacity: 0;
+  visibility: hidden;
   pointer-events: none;
 }
 
 .chip-gradient {
   position: absolute;
+  z-index: 21;
   inset: 0;
   overflow: hidden;
   background: linear-gradient(180deg, #ffbc35 0%, #e44f03 100%);
@@ -447,7 +447,7 @@ a {
 
 .chip-shutter {
   position: absolute;
-  z-index: 2;
+  z-index: 24;
   top: 0;
   bottom: 0;
   width: calc(50% + 1px);
