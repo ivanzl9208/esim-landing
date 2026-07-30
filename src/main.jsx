@@ -79,6 +79,7 @@ function HeroContent() {
 }
 
 function HeroVideo() {
+  const videoRef = useRef(null);
   const userAgent = window.navigator.userAgent;
   const isSafari =
     window.navigator.vendor.includes("Apple") &&
@@ -90,8 +91,84 @@ function HeroVideo() {
     ? 'video/quicktime; codecs="hvc1"'
     : "video/webm";
 
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return undefined;
+
+    video.defaultMuted = true;
+    video.muted = true;
+    video.playsInline = true;
+
+    const isVideoVisible = () => {
+      const rect = video.getBoundingClientRect();
+      return rect.bottom > 0 && rect.top < window.innerHeight;
+    };
+
+    const playVideo = () => {
+      if (document.hidden || !isVideoVisible()) return;
+
+      if (video.ended) {
+        video.currentTime = 0;
+      }
+
+      const playback = video.play();
+      if (playback) {
+        playback.catch(() => {
+          // Safari may temporarily reject playback while its browser UI
+          // changes size. The next visibility/intersection event retries it.
+        });
+      }
+    };
+
+    const restartVideo = () => {
+      video.currentTime = 0;
+      playVideo();
+    };
+
+    const handleVisibilityChange = () => {
+      if (!document.hidden) playVideo();
+    };
+
+    const handlePause = () => {
+      if (isVideoVisible()) {
+        window.requestAnimationFrame(playVideo);
+      }
+    };
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) playVideo();
+      },
+      { threshold: 0.01 },
+    );
+
+    observer.observe(video);
+    video.addEventListener("canplay", playVideo);
+    video.addEventListener("ended", restartVideo);
+    video.addEventListener("pause", handlePause);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("focus", playVideo);
+    window.addEventListener("pageshow", playVideo);
+
+    playVideo();
+
+    return () => {
+      observer.disconnect();
+      video.removeEventListener("canplay", playVideo);
+      video.removeEventListener("ended", restartVideo);
+      video.removeEventListener("pause", handlePause);
+      document.removeEventListener(
+        "visibilitychange",
+        handleVisibilityChange,
+      );
+      window.removeEventListener("focus", playVideo);
+      window.removeEventListener("pageshow", playVideo);
+    };
+  }, [videoSrc]);
+
   return (
     <video
+      ref={videoRef}
       className="hero-video"
       autoPlay
       loop
