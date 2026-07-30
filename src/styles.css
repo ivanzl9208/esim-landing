@@ -293,18 +293,11 @@ a {
   font-weight: 600;
   line-height: 20px;
   letter-spacing: -0.35px;
-  transition:
-    transform 180ms ease,
-    box-shadow 180ms ease;
+  transition: background-color 180ms ease;
 }
 
 .connect-button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 10px 24px rgba(87, 34, 0, 0.14);
-}
-
-.connect-button:active {
-  transform: translateY(0);
+  background-color: #f4f4f4;
 }
 
 .white-curtain {
@@ -558,14 +551,6 @@ a {
     height: 50px;
     transform: translateX(-50%);
     border-radius: 24px;
-  }
-
-  .connect-button:hover {
-    transform: translateX(-50%) translateY(-2px);
-  }
-
-  .connect-button:active {
-    transform: translateX(-50%);
   }
 
   .roulette-copy {
