@@ -211,48 +211,36 @@ function RouletteStage({ stageRef }) {
   );
 }
 
-function ChipRevealStage({ sceneRef, chipRef }) {
+function ChipRevealStage({ chipRef }) {
   return (
-    <section
-      className="chip-reveal-scene"
-      ref={sceneRef}
+    <div
+      className="chip-reveal-layer"
       aria-label="eSIM-чип СберМобайла"
     >
-      <div className="chip-reveal-stage">
-        <div className="chip-gradient" aria-hidden="true">
-          <img
-            className="chip-static"
-            ref={chipRef}
-            src={`${ASSET_ROOT}/esim-chip-static.png`}
-            alt=""
-          />
-        </div>
-
-        <div
-          className="chip-shutter chip-shutter-left"
-          aria-hidden="true"
+      <div className="chip-gradient" aria-hidden="true">
+        <img
+          className="chip-static"
+          ref={chipRef}
+          src={`${ASSET_ROOT}/esim-chip-static.png`}
+          alt=""
         />
-        <div
-          className="chip-shutter chip-shutter-right"
-          aria-hidden="true"
-        />
-
-        <div className="chip-reveal-bottom-fade" aria-hidden="true">
-          <img src={`${ASSET_ROOT}/blur.svg`} alt="" />
-        </div>
-
-        <button className="chip-reveal-button" type="button">
-          Подключить eSIM
-        </button>
       </div>
-    </section>
+
+      <div
+        className="chip-shutter chip-shutter-left"
+        aria-hidden="true"
+      />
+      <div
+        className="chip-shutter chip-shutter-right"
+        aria-hidden="true"
+      />
+    </div>
   );
 }
 
 function App() {
   const sceneRef = useRef(null);
   const rouletteRef = useRef(null);
-  const chipSceneRef = useRef(null);
   const chipRef = useRef(null);
 
   useEffect(() => {
@@ -432,7 +420,10 @@ function App() {
       );
       const rouletteStart = viewportHeight * 1.28;
       const rouletteEnd = Math.max(
-        sceneScrollEnd - viewportHeight * 0.35,
+        Math.min(
+          sceneScrollEnd - viewportHeight * 0.35,
+          viewportHeight * 4.35,
+        ),
         rouletteStart + 1,
       );
       const rouletteRange = Math.max(
@@ -484,7 +475,7 @@ function App() {
       }
 
       targetTimeline =
-        clamp((scrollOffset - rouletteStart) / rouletteRange) * 9;
+        clamp((scrollOffset - rouletteStart) / rouletteRange) * 10;
 
       if (reducedMotion) {
         currentCurtain = targetCurtain;
@@ -516,12 +507,14 @@ function App() {
       const buttonOffset = isMobile
         ? 0
         : -96 * (1 - buttonProgress);
+      const chipTransitionIsActive =
+        scene.dataset.chipTransitionActive === "true";
       rouletteButton.style.transform =
         `translate3d(${isMobile ? "-50%" : "0"}, ${buttonOffset.toFixed(2)}px, 0)`;
       rouletteButton.style.pointerEvents =
         buttonProgress > 0.98 ? "auto" : "none";
 
-      if (isMobile) {
+      if (isMobile && !chipTransitionIsActive) {
         const curtainTop = (1 - currentCurtain) * viewportHeight;
         const buttonTop = viewportHeight - 74;
         const buttonSplit = clamp(
@@ -535,10 +528,12 @@ function App() {
         rouletteButton.style.backgroundColor = "transparent";
         rouletteButton.style.color = "transparent";
         rouletteBottomFade.style.opacity = currentCurtain.toFixed(4);
-      } else {
+      } else if (!chipTransitionIsActive) {
         rouletteButton.style.backgroundColor = "#fa5f05";
         rouletteButton.style.color = "#fff";
         rouletteBottomFade.style.opacity = "0";
+      } else {
+        rouletteBottomFade.style.opacity = isMobile ? "1" : "0";
       }
 
       rouletteLines.forEach((line, index) => {
@@ -616,6 +611,13 @@ function App() {
               lineHeight: 64,
               opacity: 1,
             },
+            {
+              at: 10,
+              top: viewportHeight / 2 - 569,
+              fontSize: 64,
+              lineHeight: 64,
+              opacity: 0,
+            },
           ]
         : [
             {
@@ -652,6 +654,13 @@ function App() {
               fontSize: 220,
               lineHeight: 180,
               opacity: 1,
+            },
+            {
+              at: 10,
+              top: viewportHeight / 2 - 550,
+              fontSize: 220,
+              lineHeight: 180,
+              opacity: 0,
             },
           ];
       const finaleFrame = sampleKeyframes(
@@ -717,19 +726,21 @@ function App() {
   }, []);
 
   useEffect(() => {
-    const scene = chipSceneRef.current;
+    const scene = sceneRef.current;
     const chip = chipRef.current;
     if (!scene || !chip) return undefined;
 
-    const stage = scene.querySelector(".chip-reveal-stage");
+    const layer = scene.querySelector(".chip-reveal-layer");
     const leftShutter = scene.querySelector(".chip-shutter-left");
     const rightShutter = scene.querySelector(".chip-shutter-right");
-    const desktopButton = scene.querySelector(".chip-reveal-button");
+    const button = scene.querySelector(".roulette-button");
+    const buttonLabel = scene.querySelector(".roulette-button-label");
     if (
-      !stage ||
+      !layer ||
       !leftShutter ||
       !rightShutter ||
-      !desktopButton
+      !button ||
+      !buttonLabel
     ) {
       return undefined;
     }
@@ -781,6 +792,11 @@ function App() {
         currentButton,
       );
 
+      const transitionIsActive = currentReveal > 0.0001;
+      scene.dataset.chipTransitionActive = transitionIsActive
+        ? "true"
+        : "false";
+      layer.style.opacity = transitionIsActive ? "1" : "0";
       leftShutter.style.transform =
         `translate3d(-${shutterOffset.toFixed(4)}%, 0, 0)`;
       rightShutter.style.transform =
@@ -789,8 +805,21 @@ function App() {
         `translate3d(-50%, calc(-50% + ${chipY.toFixed(2)}px), 0) ` +
         `scale(${chipScale.toFixed(5)})`;
 
-      desktopButton.style.backgroundColor = buttonBackground;
-      desktopButton.style.color = buttonColor;
+      if (transitionIsActive) {
+        button.style.background = buttonBackground;
+        button.style.backgroundColor = buttonBackground;
+        button.style.color = buttonColor;
+        buttonLabel.style.background = "none";
+        buttonLabel.style.color = buttonColor;
+        buttonLabel.style.webkitTextFillColor = buttonColor;
+      } else {
+        button.style.removeProperty("background");
+        button.style.removeProperty("background-color");
+        button.style.removeProperty("color");
+        buttonLabel.style.removeProperty("background");
+        buttonLabel.style.removeProperty("color");
+        buttonLabel.style.removeProperty("-webkit-text-fill-color");
+      }
     };
 
     const render = () => {
@@ -828,10 +857,18 @@ function App() {
         scene.offsetHeight - viewportHeight,
         1,
       );
-      const progress = clamp(-rect.top / scrollRange);
+      const scrollOffset = clamp(-rect.top, 0, scrollRange);
+      const revealStart = viewportHeight * 4.05;
+      const revealEnd = Math.max(
+        scrollRange - viewportHeight * 0.15,
+        revealStart + 1,
+      );
+      const progress = clamp(
+        (scrollOffset - revealStart) / (revealEnd - revealStart),
+      );
 
-      targetReveal = smoothstep(0.04, 0.78, progress);
-      targetChip = smoothstep(0.12, 0.76, progress);
+      targetReveal = smoothstep(0, 0.7, progress);
+      targetChip = smoothstep(0.04, 0.68, progress);
       targetButton = smoothstep(0.8, 0.98, progress);
 
       if (reducedMotion) {
@@ -852,6 +889,12 @@ function App() {
     return () => {
       window.removeEventListener("scroll", measure);
       window.removeEventListener("resize", measure);
+      button.style.removeProperty("background");
+      button.style.removeProperty("background-color");
+      button.style.removeProperty("color");
+      buttonLabel.style.removeProperty("background");
+      buttonLabel.style.removeProperty("color");
+      buttonLabel.style.removeProperty("-webkit-text-fill-color");
       if (rafId) window.cancelAnimationFrame(rafId);
     };
   }, []);
@@ -866,6 +909,7 @@ function App() {
             <HeroContent />
           </div>
           <div className="white-curtain" aria-hidden="true" />
+          <ChipRevealStage chipRef={chipRef} />
           <RouletteStage stageRef={rouletteRef} />
           <div className="roulette-bottom-fade" aria-hidden="true">
             <div className="roulette-bottom-svg-layer">
@@ -879,8 +923,6 @@ function App() {
           </button>
         </section>
       </div>
-
-      <ChipRevealStage sceneRef={chipSceneRef} chipRef={chipRef} />
     </main>
   );
 }

@@ -70,7 +70,7 @@ a {
 .scroll-scene {
   --curtain-y: 100%;
   position: relative;
-  height: 570svh;
+  height: 810svh;
   background: #fff;
 }
 
@@ -313,7 +313,7 @@ a {
   --curtain-clip: 100%;
   --roulette-reveal: 0;
   position: absolute;
-  z-index: 21;
+  z-index: 23;
   inset: 0;
   overflow: hidden;
   clip-path: inset(var(--curtain-clip) 0 0);
@@ -384,7 +384,7 @@ a {
 .roulette-button {
   --button-curtain-split: 100%;
   position: absolute;
-  z-index: 23;
+  z-index: 25;
   top: 32px;
   right: 32px;
   display: flex;
@@ -415,20 +415,13 @@ a {
   display: none;
 }
 
-.chip-reveal-scene {
-  position: relative;
-  height: 320svh;
-  background: #fff;
-}
-
-.chip-reveal-stage {
-  position: sticky;
-  top: 0;
-  width: 100%;
-  height: 100svh;
-  min-height: 600px;
+.chip-reveal-layer {
+  position: absolute;
+  z-index: 21;
+  inset: 0;
   overflow: hidden;
-  background: #fff;
+  opacity: 0;
+  pointer-events: none;
 }
 
 .chip-gradient {
@@ -470,31 +463,6 @@ a {
   right: 0;
 }
 
-.chip-reveal-button {
-  position: absolute;
-  z-index: 4;
-  top: 32px;
-  right: 32px;
-  display: flex;
-  min-width: 203px;
-  height: 44px;
-  align-items: center;
-  justify-content: center;
-  padding: 0 28px;
-  border-radius: 24px;
-  background: #fa5f05;
-  color: #fff;
-  font-family: "SB Sans Display", Arial, sans-serif;
-  font-size: 17px;
-  font-weight: 600;
-  line-height: 20px;
-  letter-spacing: -0.35px;
-}
-
-.chip-reveal-bottom-fade {
-  display: none;
-}
-
 @media (max-width: 1199px) and (min-width: 701px) {
   .site-header {
     gap: 18px;
@@ -523,7 +491,7 @@ a {
 
 @media (max-width: 700px) {
   .scroll-scene {
-    height: 570svh;
+    height: 810svh;
   }
 
   .hero-stage {
@@ -653,7 +621,7 @@ a {
   .roulette-bottom-fade {
     --safe-bottom: env(safe-area-inset-bottom, 0px);
     position: fixed;
-    z-index: 22;
+    z-index: 24;
     bottom: 0;
     left: 0;
     display: block;
@@ -725,70 +693,12 @@ a {
     display: none;
   }
 
-  .chip-reveal-scene {
-    height: 340svh;
-  }
-
-  .chip-reveal-stage {
-    height: 100dvh;
-    min-height: 100dvh;
-  }
-
   .chip-static {
     width: min(88vw, 340px);
     max-width: none;
     transform: translate3d(-50%, calc(-50% + 66vh), 0) scale(0.84);
   }
 
-  .chip-reveal-button {
-    position: fixed;
-    z-index: 4;
-    top: auto;
-    right: auto;
-    bottom: calc(24px + env(safe-area-inset-bottom, 0px));
-    left: 50%;
-    display: flex;
-    width: min(260px, calc(100vw - 40px));
-    min-width: 0;
-    height: 50px;
-    padding: 0 32px;
-    transform: translateX(-50%);
-  }
-
-  .chip-reveal-bottom-fade {
-    --safe-bottom: env(safe-area-inset-bottom, 0px);
-    position: fixed;
-    z-index: 3;
-    right: 0;
-    bottom: 0;
-    left: 0;
-    display: block;
-    height: calc(120px + var(--safe-bottom));
-    pointer-events: none;
-  }
-
-  .chip-reveal-bottom-fade img {
-    position: absolute;
-    right: 0;
-    bottom: var(--safe-bottom);
-    left: 0;
-    display: block;
-    width: 100%;
-    height: 120px;
-    object-fit: fill;
-    -webkit-backdrop-filter: blur(8px);
-    backdrop-filter: blur(8px);
-  }
-
-  .chip-reveal-bottom-fade::after {
-    position: absolute;
-    right: 0;
-    bottom: 0;
-    left: 0;
-    height: var(--safe-bottom);
-    background: #fff;
-    content: "";
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {
