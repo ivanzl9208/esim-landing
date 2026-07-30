@@ -225,15 +225,6 @@ function ChipRevealStage({ chipRef }) {
           alt=""
         />
       </div>
-
-      <div
-        className="chip-shutter chip-shutter-left"
-        aria-hidden="true"
-      />
-      <div
-        className="chip-shutter chip-shutter-right"
-        aria-hidden="true"
-      />
     </div>
   );
 }
@@ -612,8 +603,15 @@ function App() {
               opacity: 1,
             },
             {
+              at: 9.8,
+              top: -105,
+              fontSize: 64,
+              lineHeight: 64,
+              opacity: 0.08,
+            },
+            {
               at: 10,
-              top: viewportHeight / 2 - 569,
+              top: -120,
               fontSize: 64,
               lineHeight: 64,
               opacity: 0,
@@ -656,8 +654,15 @@ function App() {
               opacity: 1,
             },
             {
+              at: 9.8,
+              top: -410,
+              fontSize: 220,
+              lineHeight: 180,
+              opacity: 0.08,
+            },
+            {
               at: 10,
-              top: viewportHeight / 2 - 550,
+              top: -470,
               fontSize: 220,
               lineHeight: 180,
               opacity: 0,
@@ -731,14 +736,12 @@ function App() {
     if (!scene || !chip) return undefined;
 
     const layer = scene.querySelector(".chip-reveal-layer");
-    const leftShutter = scene.querySelector(".chip-shutter-left");
-    const rightShutter = scene.querySelector(".chip-shutter-right");
+    const gradient = scene.querySelector(".chip-gradient");
     const button = scene.querySelector(".roulette-button");
     const buttonLabel = scene.querySelector(".roulette-button-label");
     if (
       !layer ||
-      !leftShutter ||
-      !rightShutter ||
+      !gradient ||
       !button ||
       !buttonLabel
     ) {
@@ -772,7 +775,7 @@ function App() {
 
     const renderScene = () => {
       const isMobile = window.matchMedia("(max-width: 700px)").matches;
-      const shutterOffset = currentReveal * 100;
+      const shutterInset = (1 - currentReveal) * 50;
       const chipStartY = isMobile
         ? window.innerHeight * 0.66
         : window.innerHeight * 0.72;
@@ -797,10 +800,11 @@ function App() {
         ? "true"
         : "false";
       layer.style.visibility = transitionIsActive ? "visible" : "hidden";
-      leftShutter.style.transform =
-        `translate3d(-${shutterOffset.toFixed(4)}%, 0, 0)`;
-      rightShutter.style.transform =
-        `translate3d(${shutterOffset.toFixed(4)}%, 0, 0)`;
+      const gradientClip =
+        `inset(0 ${shutterInset.toFixed(4)}% 0 ` +
+        `${shutterInset.toFixed(4)}%)`;
+      gradient.style.clipPath = gradientClip;
+      gradient.style.webkitClipPath = gradientClip;
       chip.style.transform =
         `translate3d(-50%, calc(-50% + ${chipY.toFixed(2)}px), 0) ` +
         `scale(${chipScale.toFixed(5)})`;
@@ -858,7 +862,7 @@ function App() {
         1,
       );
       const scrollOffset = clamp(-rect.top, 0, scrollRange);
-      const revealStart = viewportHeight * 4.05;
+      const revealStart = viewportHeight * 4.28;
       const revealEnd = Math.max(
         scrollRange - viewportHeight * 0.15,
         revealStart + 1,

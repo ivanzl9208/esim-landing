@@ -425,10 +425,13 @@ a {
 
 .chip-gradient {
   position: absolute;
-  z-index: 21;
+  z-index: 24;
   inset: 0;
   overflow: hidden;
   background: linear-gradient(180deg, #ffbc35 0%, #e44f03 100%);
+  clip-path: inset(0 50% 0 50%);
+  filter: drop-shadow(0 0 4px rgba(250, 95, 5, 0.55));
+  will-change: clip-path;
 }
 
 .chip-static {
@@ -443,24 +446,6 @@ a {
   transform: translate3d(-50%, calc(-50% + 72vh), 0) scale(0.88);
   transform-origin: center;
   will-change: transform;
-}
-
-.chip-shutter {
-  position: absolute;
-  z-index: 24;
-  top: 0;
-  bottom: 0;
-  width: calc(50% + 1px);
-  background: #fff;
-  will-change: transform;
-}
-
-.chip-shutter-left {
-  left: 0;
-}
-
-.chip-shutter-right {
-  right: 0;
 }
 
 @media (max-width: 1199px) and (min-width: 701px) {
@@ -709,12 +694,8 @@ a {
     transition-duration: 0.01ms !important;
   }
 
-  .chip-shutter-left {
-    transform: translate3d(-100%, 0, 0) !important;
-  }
-
-  .chip-shutter-right {
-    transform: translate3d(100%, 0, 0) !important;
+  .chip-gradient {
+    clip-path: inset(0) !important;
   }
 
   .chip-static {
