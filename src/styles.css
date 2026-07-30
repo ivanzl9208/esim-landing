@@ -415,10 +415,84 @@ a {
   display: none;
 }
 
-.next-section {
+.chip-reveal-scene {
+  position: relative;
+  height: 320svh;
+  background: #fff;
+}
+
+.chip-reveal-stage {
+  position: sticky;
+  top: 0;
+  width: 100%;
   height: 100svh;
   min-height: 600px;
+  overflow: hidden;
   background: #fff;
+}
+
+.chip-gradient {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: linear-gradient(180deg, #ffbc35 0%, #e44f03 100%);
+}
+
+.chip-static {
+  position: absolute;
+  z-index: 1;
+  top: 50%;
+  left: 50%;
+  display: block;
+  width: 470px;
+  max-width: 58vw;
+  height: auto;
+  transform: translate3d(-50%, calc(-50% + 72vh), 0) scale(0.88);
+  transform-origin: center;
+  will-change: transform;
+}
+
+.chip-shutter {
+  position: absolute;
+  z-index: 2;
+  top: 0;
+  bottom: 0;
+  width: calc(50% + 1px);
+  background: #fff;
+  will-change: transform;
+}
+
+.chip-shutter-left {
+  left: 0;
+}
+
+.chip-shutter-right {
+  right: 0;
+}
+
+.chip-reveal-button {
+  position: absolute;
+  z-index: 4;
+  top: 32px;
+  right: 32px;
+  display: flex;
+  min-width: 203px;
+  height: 44px;
+  align-items: center;
+  justify-content: center;
+  padding: 0 28px;
+  border-radius: 24px;
+  background: #fa5f05;
+  color: #fff;
+  font-family: "SB Sans Display", Arial, sans-serif;
+  font-size: 17px;
+  font-weight: 600;
+  line-height: 20px;
+  letter-spacing: -0.35px;
+}
+
+.chip-reveal-bottom-fade {
+  display: none;
 }
 
 @media (max-width: 1199px) and (min-width: 701px) {
@@ -650,6 +724,71 @@ a {
   .connect-button {
     display: none;
   }
+
+  .chip-reveal-scene {
+    height: 340svh;
+  }
+
+  .chip-reveal-stage {
+    height: 100dvh;
+    min-height: 100dvh;
+  }
+
+  .chip-static {
+    width: min(88vw, 340px);
+    max-width: none;
+    transform: translate3d(-50%, calc(-50% + 66vh), 0) scale(0.84);
+  }
+
+  .chip-reveal-button {
+    position: fixed;
+    z-index: 4;
+    top: auto;
+    right: auto;
+    bottom: calc(24px + env(safe-area-inset-bottom, 0px));
+    left: 50%;
+    display: flex;
+    width: min(260px, calc(100vw - 40px));
+    min-width: 0;
+    height: 50px;
+    padding: 0 32px;
+    transform: translateX(-50%);
+  }
+
+  .chip-reveal-bottom-fade {
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+    position: fixed;
+    z-index: 3;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    display: block;
+    height: calc(120px + var(--safe-bottom));
+    pointer-events: none;
+  }
+
+  .chip-reveal-bottom-fade img {
+    position: absolute;
+    right: 0;
+    bottom: var(--safe-bottom);
+    left: 0;
+    display: block;
+    width: 100%;
+    height: 120px;
+    object-fit: fill;
+    -webkit-backdrop-filter: blur(8px);
+    backdrop-filter: blur(8px);
+  }
+
+  .chip-reveal-bottom-fade::after {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    height: var(--safe-bottom);
+    background: #fff;
+    content: "";
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -658,5 +797,17 @@ a {
   *::after {
     scroll-behavior: auto !important;
     transition-duration: 0.01ms !important;
+  }
+
+  .chip-shutter-left {
+    transform: translate3d(-100%, 0, 0) !important;
+  }
+
+  .chip-shutter-right {
+    transform: translate3d(100%, 0, 0) !important;
+  }
+
+  .chip-static {
+    transform: translate3d(-50%, -50%, 0) !important;
   }
 }

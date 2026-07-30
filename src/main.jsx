@@ -211,9 +211,49 @@ function RouletteStage({ stageRef }) {
   );
 }
 
+function ChipRevealStage({ sceneRef, chipRef }) {
+  return (
+    <section
+      className="chip-reveal-scene"
+      ref={sceneRef}
+      aria-label="eSIM-чип СберМобайла"
+    >
+      <div className="chip-reveal-stage">
+        <div className="chip-gradient" aria-hidden="true">
+          <img
+            className="chip-static"
+            ref={chipRef}
+            src={`${ASSET_ROOT}/esim-chip-static.png`}
+            alt=""
+          />
+        </div>
+
+        <div
+          className="chip-shutter chip-shutter-left"
+          aria-hidden="true"
+        />
+        <div
+          className="chip-shutter chip-shutter-right"
+          aria-hidden="true"
+        />
+
+        <div className="chip-reveal-bottom-fade" aria-hidden="true">
+          <img src={`${ASSET_ROOT}/blur.svg`} alt="" />
+        </div>
+
+        <button className="chip-reveal-button" type="button">
+          Подключить eSIM
+        </button>
+      </div>
+    </section>
+  );
+}
+
 function App() {
   const sceneRef = useRef(null);
   const rouletteRef = useRef(null);
+  const chipSceneRef = useRef(null);
+  const chipRef = useRef(null);
 
   useEffect(() => {
     const reducedMotion = window.matchMedia(
@@ -676,6 +716,146 @@ function App() {
     };
   }, []);
 
+  useEffect(() => {
+    const scene = chipSceneRef.current;
+    const chip = chipRef.current;
+    if (!scene || !chip) return undefined;
+
+    const stage = scene.querySelector(".chip-reveal-stage");
+    const leftShutter = scene.querySelector(".chip-shutter-left");
+    const rightShutter = scene.querySelector(".chip-shutter-right");
+    const desktopButton = scene.querySelector(".chip-reveal-button");
+    if (
+      !stage ||
+      !leftShutter ||
+      !rightShutter ||
+      !desktopButton
+    ) {
+      return undefined;
+    }
+
+    const reducedMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
+    const clamp = (value, min = 0, max = 1) =>
+      Math.min(Math.max(value, min), max);
+    const smoothstep = (edge0, edge1, value) => {
+      const progress = clamp((value - edge0) / (edge1 - edge0));
+      return progress * progress * (3 - 2 * progress);
+    };
+    const mix = (from, to, progress) => from + (to - from) * progress;
+    const mixRgb = (from, to, progress) => {
+      const channels = from.map((channel, index) =>
+        Math.round(mix(channel, to[index], progress)),
+      );
+      return `rgb(${channels.join(", ")})`;
+    };
+
+    let targetReveal = 0;
+    let currentReveal = 0;
+    let targetChip = 0;
+    let currentChip = 0;
+    let targetButton = 0;
+    let currentButton = 0;
+    let rafId = 0;
+
+    const renderScene = () => {
+      const isMobile = window.matchMedia("(max-width: 700px)").matches;
+      const shutterOffset = currentReveal * 100;
+      const chipStartY = isMobile
+        ? window.innerHeight * 0.66
+        : window.innerHeight * 0.72;
+      const chipEndY = isMobile
+        ? window.innerHeight * 0.08
+        : 0;
+      const chipY = mix(chipStartY, chipEndY, currentChip);
+      const chipScale = mix(isMobile ? 0.84 : 0.88, 1, currentChip);
+      const buttonBackground = mixRgb(
+        [250, 95, 5],
+        [255, 255, 255],
+        currentButton,
+      );
+      const buttonColor = mixRgb(
+        [255, 255, 255],
+        [250, 95, 5],
+        currentButton,
+      );
+
+      leftShutter.style.transform =
+        `translate3d(-${shutterOffset.toFixed(4)}%, 0, 0)`;
+      rightShutter.style.transform =
+        `translate3d(${shutterOffset.toFixed(4)}%, 0, 0)`;
+      chip.style.transform =
+        `translate3d(-50%, calc(-50% + ${chipY.toFixed(2)}px), 0) ` +
+        `scale(${chipScale.toFixed(5)})`;
+
+      desktopButton.style.backgroundColor = buttonBackground;
+      desktopButton.style.color = buttonColor;
+    };
+
+    const render = () => {
+      currentReveal += (targetReveal - currentReveal) * 0.12;
+      currentChip += (targetChip - currentChip) * 0.1;
+      currentButton += (targetButton - currentButton) * 0.12;
+
+      if (Math.abs(targetReveal - currentReveal) < 0.0005) {
+        currentReveal = targetReveal;
+      }
+      if (Math.abs(targetChip - currentChip) < 0.0005) {
+        currentChip = targetChip;
+      }
+      if (Math.abs(targetButton - currentButton) < 0.0005) {
+        currentButton = targetButton;
+      }
+
+      renderScene();
+
+      if (
+        currentReveal !== targetReveal ||
+        currentChip !== targetChip ||
+        currentButton !== targetButton
+      ) {
+        rafId = window.requestAnimationFrame(render);
+      } else {
+        rafId = 0;
+      }
+    };
+
+    const measure = () => {
+      const rect = scene.getBoundingClientRect();
+      const viewportHeight = window.innerHeight;
+      const scrollRange = Math.max(
+        scene.offsetHeight - viewportHeight,
+        1,
+      );
+      const progress = clamp(-rect.top / scrollRange);
+
+      targetReveal = smoothstep(0.04, 0.78, progress);
+      targetChip = smoothstep(0.12, 0.76, progress);
+      targetButton = smoothstep(0.8, 0.98, progress);
+
+      if (reducedMotion) {
+        currentReveal = targetReveal;
+        currentChip = targetChip;
+        currentButton = targetButton;
+        renderScene();
+        return;
+      }
+
+      if (!rafId) rafId = window.requestAnimationFrame(render);
+    };
+
+    measure();
+    window.addEventListener("scroll", measure, { passive: true });
+    window.addEventListener("resize", measure);
+
+    return () => {
+      window.removeEventListener("scroll", measure);
+      window.removeEventListener("resize", measure);
+      if (rafId) window.cancelAnimationFrame(rafId);
+    };
+  }, []);
+
   return (
     <main>
       <div className="scroll-scene" ref={sceneRef}>
@@ -700,7 +880,7 @@ function App() {
         </section>
       </div>
 
-      <section className="next-section" aria-label="Следующий раздел" />
+      <ChipRevealStage sceneRef={chipSceneRef} chipRef={chipRef} />
     </main>
   );
 }
