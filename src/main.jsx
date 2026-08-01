@@ -346,6 +346,7 @@ function ChipRevealStage({ marqueeRef, videoRef, frameRef }) {
               <div className="chip-feature-rule">
                 <span className="chip-feature-icon" aria-hidden="true">
                   <img
+                    className="chip-feature-motion"
                     src={`${ASSET_ROOT}/icons/${feature.icon}`}
                     alt=""
                   />
@@ -353,8 +354,16 @@ function ChipRevealStage({ marqueeRef, videoRef, frameRef }) {
                 <span className="chip-feature-line" />
               </div>
               <div className="chip-feature-copy">
-                <h2>{feature.title}</h2>
-                <p>{feature.description}</p>
+                <div className="chip-feature-title-clip">
+                  <h2 className="chip-feature-motion">
+                    {feature.title}
+                  </h2>
+                </div>
+                <div className="chip-feature-paragraph-clip">
+                  <p className="chip-feature-motion">
+                    {feature.description}
+                  </p>
+                </div>
               </div>
             </article>
           ))}
@@ -989,21 +998,61 @@ function App() {
       flushVideoSeek();
     };
 
-    const setFeatureProgress = (element, enter, exit, isMobile) => {
-      const layoutScale = getLayoutScale();
-      const opacity = enter * (1 - exit);
-      const translateY =
-        (mix(6, 0, enter) - exit * 4) * layoutScale;
-      const blur = mix(2, 0, enter) * layoutScale;
-      element.style.opacity = opacity.toFixed(4);
-      element.style.transform =
-        `translate3d(${isMobile ? "-50%" : "0"}, ` +
-        `${translateY.toFixed(2)}px, 0)`;
-      element.style.filter = `blur(${blur.toFixed(2)}px)`;
-      element.style.setProperty(
-        "--feature-line-progress",
-        Math.min(enter * 1.18, 1).toFixed(4),
+    const easeOutQuad = (progress) =>
+      1 - (1 - progress) * (1 - progress);
+
+    const setFeatureProgress = (
+      element,
+      start,
+      end,
+      progress,
+      index,
+      isMobile,
+    ) => {
+      const motionElements = Array.from(
+        element.querySelectorAll(".chip-feature-motion"),
       );
+      const line = element.querySelector(".chip-feature-line");
+      const duration = isMobile ? 0.042 : 0.055;
+      const stagger = isMobile ? 0.012 : 0.015;
+      const totalMotion = duration + stagger * (motionElements.length - 1);
+      const exitStart = end - totalMotion;
+
+      motionElements.forEach((motionElement, motionIndex) => {
+        const enter = clamp(
+          (progress - start - motionIndex * stagger) / duration,
+        );
+        const exit = clamp(
+          (progress - exitStart - motionIndex * stagger) / duration,
+        );
+        const yPercent = exit > 0
+          ? mix(0, -100, easeOutQuad(exit))
+          : mix(100, 0, easeOutQuad(enter));
+
+        motionElement.style.visibility =
+          enter > 0 && exit < 0.999 ? "visible" : "hidden";
+        motionElement.style.transform =
+          `translate3d(0, ${yPercent.toFixed(3)}%, 0)`;
+      });
+
+      if (line) {
+        const keepsPersistentRule = index < 2;
+        const lineProgress = keepsPersistentRule
+          ? smoothstep(0.005, 0.055, progress)
+          : 0;
+        const dotOpacity = keepsPersistentRule
+          ? smoothstep(0.005, 0.015, progress)
+          : 0;
+        line.style.opacity = keepsPersistentRule ? "1" : "0";
+        element.style.setProperty(
+          "--feature-line-progress",
+          lineProgress.toFixed(4),
+        );
+        element.style.setProperty(
+          "--feature-dot-opacity",
+          dotOpacity.toFixed(4),
+        );
+      }
     };
 
     const renderScene = () => {
@@ -1085,9 +1134,14 @@ function App() {
           start = 0.045 + pairIndex * 0.305;
           end = start + 0.255;
         }
-        const enter = smoothstep(start, start + 0.052, currentVideo);
-        const exit = smoothstep(end - 0.052, end, currentVideo);
-        setFeatureProgress(element, enter, exit, isMobile);
+        setFeatureProgress(
+          element,
+          start,
+          end,
+          currentVideo,
+          index,
+          isMobile,
+        );
       });
 
       if (transitionIsActive) {
