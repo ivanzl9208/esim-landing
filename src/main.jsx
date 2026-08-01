@@ -4,6 +4,31 @@ import "./styles.css";
 
 const ASSET_ROOT = `${import.meta.env.BASE_URL}assets`;
 const CHIP_FRAME_COUNT = 150;
+const MOBILE_BREAKPOINT = 700;
+
+const getLayoutScale = () => {
+  const isMobile = window.innerWidth <= MOBILE_BREAKPOINT;
+  const baseWidth = isMobile ? 360 : 1440;
+  const baseHeight = isMobile ? 600 : 720;
+  const rawScale = Math.min(
+    window.innerWidth / baseWidth,
+    window.innerHeight / baseHeight,
+  );
+
+  return Math.min(
+    Math.max(rawScale, isMobile ? 0.88 : 0.72),
+    isMobile ? 1.25 : 1.6,
+  );
+};
+
+const syncLayoutScale = () => {
+  document.documentElement.style.setProperty(
+    "--layout-scale",
+    getLayoutScale().toFixed(5),
+  );
+};
+
+syncLayoutScale();
 const ROULETTE_LINES = [
   "eSIM\u00A0—",
   "виртуальная",
@@ -347,6 +372,15 @@ function App() {
   const chipFrameRef = useRef(null);
 
   useEffect(() => {
+    const handleResize = () => syncLayoutScale();
+
+    syncLayoutScale();
+    window.addEventListener("resize", handleResize, { passive: true });
+
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
+
+  useEffect(() => {
     const reducedMotion = window.matchMedia(
       "(prefers-reduced-motion: reduce)",
     ).matches;
@@ -595,11 +629,12 @@ function App() {
     const renderScene = () => {
       const curtainOffset = (1 - currentCurtain) * 100;
       const isMobile = window.matchMedia("(max-width: 700px)").matches;
+      const layoutScale = getLayoutScale();
       const viewportHeight = window.innerHeight;
-      const lineStep = isMobile ? 160 : 280;
+      const lineStep = (isMobile ? 160 : 280) * layoutScale;
       const centerTop = isMobile
-        ? viewportHeight / 2 - 89
-        : viewportHeight / 2 - 48;
+        ? viewportHeight / 2 - 89 * layoutScale
+        : viewportHeight / 2 - 48 * layoutScale;
       const linePosition = currentTimeline - 1;
 
       scene.style.setProperty("--curtain-y", `${curtainOffset}%`);
@@ -609,7 +644,7 @@ function App() {
       const buttonProgress = isMobile ? 1 : currentButtonReveal;
       const buttonOffset = isMobile
         ? 0
-        : -96 * (1 - buttonProgress);
+        : -96 * layoutScale * (1 - buttonProgress);
       const chipTransitionIsActive =
         scene.dataset.chipTransitionActive === "true";
       rouletteButton.style.transform =
@@ -619,9 +654,11 @@ function App() {
 
       if (isMobile && !chipTransitionIsActive) {
         const curtainTop = (1 - currentCurtain) * viewportHeight;
-        const buttonTop = viewportHeight - 74;
+        const buttonHeight = 50 * layoutScale;
+        const buttonTop =
+          viewportHeight - 24 * layoutScale - buttonHeight;
         const buttonSplit = clamp(
-          (curtainTop - buttonTop) / 50,
+          (curtainTop - buttonTop) / buttonHeight,
         );
 
         rouletteButton.style.setProperty(
@@ -685,102 +722,102 @@ function App() {
         ? [
             {
               at: 5,
-              top: viewportHeight / 2 + 231,
-              fontSize: 48,
-              lineHeight: 48,
+              top: viewportHeight / 2 + 231 * layoutScale,
+              fontSize: 48 * layoutScale,
+              lineHeight: 48 * layoutScale,
               opacity: 0,
             },
             {
               at: 6,
-              top: viewportHeight / 2 + 71,
-              fontSize: 52,
-              lineHeight: 52,
+              top: viewportHeight / 2 + 71 * layoutScale,
+              fontSize: 52 * layoutScale,
+              lineHeight: 52 * layoutScale,
               opacity: 0.2,
             },
             {
               at: 7,
-              top: viewportHeight / 2 - 89,
-              fontSize: 56,
-              lineHeight: 56,
+              top: viewportHeight / 2 - 89 * layoutScale,
+              fontSize: 56 * layoutScale,
+              lineHeight: 56 * layoutScale,
               opacity: 0.35,
             },
             {
               at: 8,
-              top: viewportHeight / 2 - 249,
-              fontSize: 64,
-              lineHeight: 64,
+              top: viewportHeight / 2 - 249 * layoutScale,
+              fontSize: 64 * layoutScale,
+              lineHeight: 64 * layoutScale,
               opacity: 0.5,
             },
             {
               at: 9,
-              top: viewportHeight / 2 - 409,
-              fontSize: 64,
-              lineHeight: 64,
+              top: viewportHeight / 2 - 409 * layoutScale,
+              fontSize: 64 * layoutScale,
+              lineHeight: 64 * layoutScale,
               opacity: 1,
             },
             {
               at: 9.8,
-              top: -105,
-              fontSize: 64,
-              lineHeight: 64,
+              top: -105 * layoutScale,
+              fontSize: 64 * layoutScale,
+              lineHeight: 64 * layoutScale,
               opacity: 0.08,
             },
             {
               at: 10,
-              top: -120,
-              fontSize: 64,
-              lineHeight: 64,
+              top: -120 * layoutScale,
+              fontSize: 64 * layoutScale,
+              lineHeight: 64 * layoutScale,
               opacity: 0,
             },
           ]
         : [
             {
               at: 5,
-              top: viewportHeight / 2 + 512,
-              fontSize: 90,
-              lineHeight: 72,
+              top: viewportHeight / 2 + 512 * layoutScale,
+              fontSize: 90 * layoutScale,
+              lineHeight: 72 * layoutScale,
               opacity: 0,
             },
             {
               at: 6,
-              top: viewportHeight / 2 + 232,
-              fontSize: 120,
-              lineHeight: 96,
+              top: viewportHeight / 2 + 232 * layoutScale,
+              fontSize: 120 * layoutScale,
+              lineHeight: 96 * layoutScale,
               opacity: 0.2,
             },
             {
               at: 7,
-              top: viewportHeight / 2 - 48,
-              fontSize: 150,
-              lineHeight: 120,
+              top: viewportHeight / 2 - 48 * layoutScale,
+              fontSize: 150 * layoutScale,
+              lineHeight: 120 * layoutScale,
               opacity: 0.35,
             },
             {
               at: 8,
-              top: viewportHeight / 2 - 164,
-              fontSize: 180,
-              lineHeight: 140,
+              top: viewportHeight / 2 - 164 * layoutScale,
+              fontSize: 180 * layoutScale,
+              lineHeight: 140 * layoutScale,
               opacity: 0.5,
             },
             {
               at: 9,
-              top: viewportHeight / 2 - 270,
-              fontSize: 220,
-              lineHeight: 180,
+              top: viewportHeight / 2 - 270 * layoutScale,
+              fontSize: 220 * layoutScale,
+              lineHeight: 180 * layoutScale,
               opacity: 1,
             },
             {
               at: 9.8,
-              top: -410,
-              fontSize: 220,
-              lineHeight: 180,
+              top: -410 * layoutScale,
+              fontSize: 220 * layoutScale,
+              lineHeight: 180 * layoutScale,
               opacity: 0.08,
             },
             {
               at: 10,
-              top: -470,
-              fontSize: 220,
-              lineHeight: 180,
+              top: -470 * layoutScale,
+              fontSize: 220 * layoutScale,
+              lineHeight: 180 * layoutScale,
               opacity: 0,
             },
           ];
@@ -788,7 +825,8 @@ function App() {
         finaleFrames,
         currentTimeline,
       );
-      const finaleBaseFontSize = isMobile ? 64 : 220;
+      const finaleBaseFontSize =
+        (isMobile ? 64 : 220) * layoutScale;
       const finaleScale =
         finaleFrame.fontSize / finaleBaseFontSize;
 
@@ -952,9 +990,11 @@ function App() {
     };
 
     const setFeatureProgress = (element, enter, exit, isMobile) => {
+      const layoutScale = getLayoutScale();
       const opacity = enter * (1 - exit);
-      const translateY = mix(6, 0, enter) - exit * 4;
-      const blur = mix(2, 0, enter);
+      const translateY =
+        (mix(6, 0, enter) - exit * 4) * layoutScale;
+      const blur = mix(2, 0, enter) * layoutScale;
       element.style.opacity = opacity.toFixed(4);
       element.style.transform =
         `translate3d(${isMobile ? "-50%" : "0"}, ` +
@@ -968,12 +1008,13 @@ function App() {
 
     const renderScene = () => {
       const isMobile = window.matchMedia("(max-width: 700px)").matches;
+      const layoutScale = getLayoutScale();
       const shutterInset = (1 - currentReveal) * 50;
       const chipStartY = isMobile
         ? window.innerHeight * 0.66
         : window.innerHeight * 0.72;
       const chipEndY = isMobile
-        ? 47
+        ? 47 * layoutScale
         : 0;
       const chipY = mix(chipStartY, chipEndY, currentChip);
       const chipScale = mix(isMobile ? 0.84 : 0.88, 1, currentChip);
