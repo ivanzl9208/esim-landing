@@ -470,6 +470,22 @@ a {
   will-change: transform, opacity;
 }
 
+.chip-scroll-frame {
+  position: absolute;
+  z-index: 3;
+  top: 50%;
+  left: 50%;
+  display: block;
+  width: 470px;
+  max-width: 58vw;
+  height: auto;
+  opacity: 0;
+  transform: translate3d(-50%, calc(-50% + 72vh), 0) scale(0.88);
+  transform-origin: center;
+  pointer-events: none;
+  will-change: transform, opacity;
+}
+
 .advantages-marquee {
   --advantages-text-x: 0px;
   position: absolute;
@@ -821,6 +837,12 @@ a {
   }
 
   .chip-scroll-video {
+    width: min(88vw, 340px);
+    max-width: none;
+    transform: translate3d(-50%, calc(-50% + 66vh), 0) scale(0.84);
+  }
+
+  .chip-scroll-frame {
     width: min(88vw, 340px);
     max-width: none;
     transform: translate3d(-50%, calc(-50% + 66vh), 0) scale(0.84);

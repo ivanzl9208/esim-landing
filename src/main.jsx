@@ -271,17 +271,16 @@ function RouletteStage({ stageRef }) {
   );
 }
 
-function ChipRevealStage({ chipRef, marqueeRef, videoRef }) {
+function ChipRevealStage({ chipRef, marqueeRef, videoRef, frameRef }) {
   const userAgent = window.navigator.userAgent;
   const isSafari =
-    window.navigator.vendor.includes("Apple") &&
-    !/(CriOS|FxiOS|EdgiOS|OPiOS)/i.test(userAgent);
+    /Safari/i.test(userAgent) &&
+    !/(Chrome|Chromium|CriOS|FxiOS|Edg|EdgiOS|OPiOS|Android)/i.test(
+      userAgent,
+    );
   const videoSrc = isSafari
     ? `${ASSET_ROOT}/chip-scroll.mov`
     : `${ASSET_ROOT}/chip-scroll.webm`;
-  const videoType = isSafari
-    ? 'video/quicktime; codecs="hvc1"'
-    : 'video/webm; codecs="vp9"';
 
   return (
     <div
@@ -301,14 +300,21 @@ function ChipRevealStage({ chipRef, marqueeRef, videoRef }) {
         <video
           className="chip-scroll-video"
           ref={videoRef}
+          src={videoSrc}
+          data-video-format={isSafari ? "mov" : "webm"}
           muted
           playsInline
           preload="auto"
           loop
           aria-hidden="true"
-        >
-          <source src={videoSrc} type={videoType} />
-        </video>
+        />
+        <img
+          className="chip-scroll-frame"
+          ref={frameRef}
+          src={`${ASSET_ROOT}/chip-frames/frame-001.webp`}
+          alt=""
+          aria-hidden="true"
+        />
         <div className="chip-features">
           {CHIP_FEATURES.map((feature, index) => (
             <article
@@ -338,6 +344,7 @@ function App() {
   const chipRef = useRef(null);
   const marqueeRef = useRef(null);
   const chipVideoRef = useRef(null);
+  const chipFrameRef = useRef(null);
 
   useEffect(() => {
     const reducedMotion = window.matchMedia(
@@ -844,7 +851,10 @@ function App() {
     const chip = chipRef.current;
     const marquee = marqueeRef.current;
     const video = chipVideoRef.current;
-    if (!scene || !chip || !marquee || !video) return undefined;
+    const frame = chipFrameRef.current;
+    if (!scene || !chip || !marquee || !video || !frame) {
+      return undefined;
+    }
 
     const layer = scene.querySelector(".chip-reveal-layer");
     const gradient = scene.querySelector(".chip-gradient");
@@ -886,18 +896,60 @@ function App() {
     let currentVideo = 0;
     let videoVelocity = 0;
     let videoDuration = 6;
+    let pendingVideoTime = null;
+    let currentFrameIndex = 0;
     let rafId = 0;
+    const useFrameSequence = video.dataset.videoFormat === "mov";
+    const frameUrls = Array.from(
+      { length: 150 },
+      (_, index) =>
+        `${ASSET_ROOT}/chip-frames/frame-${String(index + 1).padStart(3, "0")}.webp`,
+    );
+    const preloadedFrames = [];
 
     video.defaultMuted = true;
     video.muted = true;
     video.playsInline = true;
     video.pause();
 
+    if (useFrameSequence) {
+      frameUrls.forEach((src) => {
+        const image = new Image();
+        image.decoding = "async";
+        image.src = src;
+        preloadedFrames.push(image);
+      });
+    }
+
+    const flushVideoSeek = () => {
+      if (
+        pendingVideoTime === null ||
+        video.readyState < 1 ||
+        video.seeking
+      ) {
+        return;
+      }
+
+      const nextTime = pendingVideoTime;
+      pendingVideoTime = null;
+      if (Math.abs(video.currentTime - nextTime) <= 0.012) return;
+
+      if (
+        video.dataset.videoFormat === "mov" &&
+        typeof video.fastSeek === "function"
+      ) {
+        video.fastSeek(nextTime);
+      } else {
+        video.currentTime = nextTime;
+      }
+    };
+
     const syncVideoMetadata = () => {
       if (Number.isFinite(video.duration) && video.duration > 0) {
         videoDuration = video.duration;
       }
       video.pause();
+      flushVideoSeek();
     };
 
     const setFeatureProgress = (element, enter, exit) => {
@@ -954,21 +1006,34 @@ function App() {
         `scale(${chipScale.toFixed(5)})`;
       const videoOpacity = smoothstep(0, 0.045, currentVideo);
       chip.style.opacity = (1 - videoOpacity).toFixed(4);
-      video.style.opacity = videoOpacity.toFixed(4);
+      video.style.opacity = useFrameSequence
+        ? "0"
+        : videoOpacity.toFixed(4);
+      frame.style.opacity = useFrameSequence
+        ? videoOpacity.toFixed(4)
+        : "0";
       video.style.transform =
         `translate3d(-50%, calc(-50% + ${chipY.toFixed(2)}px), 0) ` +
         `scale(${chipScale.toFixed(5)})`;
+      frame.style.transform = video.style.transform;
       marquee.style.setProperty(
         "--advantages-text-x",
         `${marqueeOffset.toFixed(2)}px`,
       );
 
-      if (video.readyState >= 1 && currentVideo > 0.0001) {
-        const safeDuration = Math.max(videoDuration - 0.045, 0.001);
-        const targetTime = clamp(currentVideo) * safeDuration;
-        if (Math.abs(video.currentTime - targetTime) > 0.018) {
-          video.currentTime = targetTime;
+      if (useFrameSequence && currentVideo > 0.0001) {
+        const nextFrameIndex = Math.min(
+          Math.round(clamp(currentVideo) * (frameUrls.length - 1)),
+          frameUrls.length - 1,
+        );
+        if (nextFrameIndex !== currentFrameIndex) {
+          currentFrameIndex = nextFrameIndex;
+          frame.src = frameUrls[currentFrameIndex];
         }
+      } else if (video.readyState >= 1 && currentVideo > 0.0001) {
+        const safeDuration = Math.max(videoDuration - 0.045, 0.001);
+        pendingVideoTime = clamp(currentVideo) * safeDuration;
+        flushVideoSeek();
       }
 
       featureElements.forEach((element, index) => {
@@ -1116,6 +1181,7 @@ function App() {
     measure();
     video.addEventListener("loadedmetadata", syncVideoMetadata);
     video.addEventListener("loadeddata", syncVideoMetadata);
+    video.addEventListener("seeked", flushVideoSeek);
     window.addEventListener("scroll", measure, { passive: true });
     window.addEventListener("resize", measure);
 
@@ -1124,6 +1190,7 @@ function App() {
       window.removeEventListener("resize", measure);
       video.removeEventListener("loadedmetadata", syncVideoMetadata);
       video.removeEventListener("loadeddata", syncVideoMetadata);
+      video.removeEventListener("seeked", flushVideoSeek);
       video.pause();
       button.style.removeProperty("background");
       button.style.removeProperty("background-color");
@@ -1150,6 +1217,7 @@ function App() {
             chipRef={chipRef}
             marqueeRef={marqueeRef}
             videoRef={chipVideoRef}
+            frameRef={chipFrameRef}
           />
           <RouletteStage stageRef={rouletteRef} />
           <div className="roulette-bottom-fade" aria-hidden="true">
