@@ -3,6 +3,8 @@ import { createRoot } from "react-dom/client";
 import "./styles.css";
 
 const ASSET_ROOT = `${import.meta.env.BASE_URL}assets`;
+const CHIP_FRAME_COUNT = 150;
+const CHIP_START_FRAME_INDEX = 75;
 const ROULETTE_LINES = [
   "eSIM\u00A0—",
   "виртуальная",
@@ -311,7 +313,7 @@ function ChipRevealStage({ chipRef, marqueeRef, videoRef, frameRef }) {
         <img
           className="chip-scroll-frame"
           ref={frameRef}
-          src={`${ASSET_ROOT}/chip-frames/frame-001.webp`}
+          src={`${ASSET_ROOT}/chip-frames/frame-076.webp`}
           alt=""
           aria-hidden="true"
         />
@@ -897,11 +899,11 @@ function App() {
     let videoVelocity = 0;
     let videoDuration = 6;
     let pendingVideoTime = null;
-    let currentFrameIndex = 0;
+    let currentFrameIndex = CHIP_START_FRAME_INDEX;
     let rafId = 0;
     const useFrameSequence = video.dataset.videoFormat === "mov";
     const frameUrls = Array.from(
-      { length: 150 },
+      { length: CHIP_FRAME_COUNT },
       (_, index) =>
         `${ASSET_ROOT}/chip-frames/frame-${String(index + 1).padStart(3, "0")}.webp`,
     );
@@ -1022,17 +1024,22 @@ function App() {
       );
 
       if (useFrameSequence && currentVideo > 0.0001) {
-        const nextFrameIndex = Math.min(
-          Math.round(clamp(currentVideo) * (frameUrls.length - 1)),
-          frameUrls.length - 1,
+        const frameAdvance = Math.round(
+          clamp(currentVideo) * CHIP_FRAME_COUNT,
         );
+        const nextFrameIndex =
+          (CHIP_START_FRAME_INDEX + frameAdvance) %
+          CHIP_FRAME_COUNT;
         if (nextFrameIndex !== currentFrameIndex) {
           currentFrameIndex = nextFrameIndex;
           frame.src = frameUrls[currentFrameIndex];
         }
       } else if (video.readyState >= 1 && currentVideo > 0.0001) {
-        const safeDuration = Math.max(videoDuration - 0.045, 0.001);
-        pendingVideoTime = clamp(currentVideo) * safeDuration;
+        const loopProgress =
+          (CHIP_START_FRAME_INDEX / CHIP_FRAME_COUNT +
+            clamp(currentVideo)) %
+          1;
+        pendingVideoTime = loopProgress * videoDuration;
         flushVideoSeek();
       }
 
