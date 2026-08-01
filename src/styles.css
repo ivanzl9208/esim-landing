@@ -32,6 +32,7 @@
 
 :root {
   --layout-scale: 1;
+  --ease-apple-out: cubic-bezier(0.16, 1, 0.3, 1);
   color: #fff;
   background: #fff;
   font-family: "SB Sans Text", Arial, sans-serif;
@@ -406,16 +407,16 @@ a {
   pointer-events: none;
   transform: translate3d(0, calc(-96px * var(--layout-scale)), 0);
   transition:
-    background-color 260ms ease,
-    color 260ms ease;
+    background-color 420ms var(--ease-apple-out),
+    color 420ms var(--ease-apple-out);
   will-change: transform;
 }
 
 .roulette-button-label {
   display: block;
   transition:
-    color 260ms ease,
-    -webkit-text-fill-color 260ms ease;
+    color 420ms var(--ease-apple-out),
+    -webkit-text-fill-color 420ms var(--ease-apple-out);
 }
 
 .roulette-bottom-fade {
@@ -780,7 +781,7 @@ a {
     height: calc(120px * var(--layout-scale) + var(--safe-bottom));
     opacity: 0;
     pointer-events: none;
-    transition: opacity 260ms ease;
+    transition: opacity 480ms var(--ease-apple-out);
     will-change: opacity;
   }
 
@@ -927,6 +928,19 @@ a {
     letter-spacing: calc(-0.42px * var(--layout-scale));
   }
 
+}
+
+.white-curtain,
+.roulette-stage,
+.roulette-line,
+.roulette-finale,
+.chip-gradient,
+.chip-scroll-video,
+.chip-scroll-frame,
+.advantages-marquee,
+.chip-feature-motion {
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
 }
 
 @media (prefers-reduced-motion: reduce) {

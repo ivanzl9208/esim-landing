@@ -28,6 +28,32 @@ const syncLayoutScale = () => {
   );
 };
 
+const damp = (current, target, response, deltaTime) =>
+  current +
+  (target - current) * (1 - Math.exp(-response * deltaTime));
+
+const smootherstep = (progress) =>
+  progress * progress * progress *
+  (progress * (progress * 6 - 15) + 10);
+
+const stepSpring = (
+  current,
+  target,
+  velocity,
+  stiffness,
+  damping,
+  deltaTime,
+) => {
+  const acceleration =
+    stiffness * (target - current) - damping * velocity;
+  const nextVelocity = velocity + acceleration * deltaTime;
+
+  return {
+    current: current + nextVelocity * deltaTime,
+    velocity: nextVelocity,
+  };
+};
+
 syncLayoutScale();
 const ROULETTE_LINES = [
   "eSIM\u00A0—",
@@ -402,7 +428,8 @@ function App() {
     let scrollVelocity = 0;
     let previousFrameTime = 0;
     let rafId = 0;
-    const springFrequency = 9.2;
+    const springFrequency = 6.8;
+    const springDampingRatio = 0.9;
 
     const getMaxScroll = () =>
       Math.max(document.documentElement.scrollHeight - window.innerHeight, 0);
@@ -419,7 +446,7 @@ function App() {
       const distance = targetScroll - currentScroll;
       const acceleration =
         springFrequency * springFrequency * distance -
-        2 * springFrequency * scrollVelocity;
+        2 * springFrequency * springDampingRatio * scrollVelocity;
 
       scrollVelocity += acceleration * deltaTime;
       currentScroll += scrollVelocity * deltaTime;
@@ -530,7 +557,9 @@ function App() {
       const nextIndex = frames.findIndex((frame) => frame.at >= value);
       const from = frames[nextIndex - 1];
       const to = frames[nextIndex];
-      const progress = (value - from.at) / (to.at - from.at);
+      const progress = smootherstep(
+        (value - from.at) / (to.at - from.at),
+      );
 
       return {
         top: mix(from.top, to.top, progress),
@@ -550,6 +579,7 @@ function App() {
     let currentButtonReveal = 0;
     let buttonDelayId = 0;
     let buttonIsTriggered = false;
+    let previousRenderTime = 0;
     let rafId = 0;
 
     const measure = () => {
@@ -607,6 +637,7 @@ function App() {
               currentButtonReveal = 1;
               renderScene();
             } else if (!rafId) {
+              previousRenderTime = 0;
               rafId = window.requestAnimationFrame(render);
             }
           }, 1000);
@@ -632,7 +663,10 @@ function App() {
         return;
       }
 
-      if (!rafId) rafId = window.requestAnimationFrame(render);
+      if (!rafId) {
+        previousRenderTime = 0;
+        rafId = window.requestAnimationFrame(render);
+      }
     };
 
     const renderScene = () => {
@@ -845,12 +879,36 @@ function App() {
         `translate3d(-50%, 0, 0) scale(${finaleScale.toFixed(5)})`;
     };
 
-    const render = () => {
-      currentCurtain += (targetCurtain - currentCurtain) * 0.16;
-      currentTimeline += (targetTimeline - currentTimeline) * 0.11;
-      currentReveal += (targetReveal - currentReveal) * 0.16;
-      currentButtonReveal +=
-        (targetButtonReveal - currentButtonReveal) * 0.16;
+    const render = (frameTime) => {
+      const deltaTime = previousRenderTime
+        ? Math.min((frameTime - previousRenderTime) / 1000, 0.05)
+        : 1 / 60;
+      previousRenderTime = frameTime;
+
+      currentCurtain = damp(
+        currentCurtain,
+        targetCurtain,
+        9.5,
+        deltaTime,
+      );
+      currentTimeline = damp(
+        currentTimeline,
+        targetTimeline,
+        6.2,
+        deltaTime,
+      );
+      currentReveal = damp(
+        currentReveal,
+        targetReveal,
+        9.5,
+        deltaTime,
+      );
+      currentButtonReveal = damp(
+        currentButtonReveal,
+        targetButtonReveal,
+        10.5,
+        deltaTime,
+      );
 
       if (Math.abs(targetCurtain - currentCurtain) < 0.0005) {
         currentCurtain = targetCurtain;
@@ -878,6 +936,7 @@ function App() {
         rafId = window.requestAnimationFrame(render);
       } else {
         rafId = 0;
+        previousRenderTime = 0;
       }
     };
 
@@ -944,6 +1003,7 @@ function App() {
     let videoDuration = 6;
     let pendingVideoTime = null;
     let currentFrameIndex = 0;
+    let previousRenderTime = 0;
     let rafId = 0;
     const useFrameSequence = video.dataset.videoFormat === "mov";
     const frameUrls = Array.from(
@@ -1163,16 +1223,46 @@ function App() {
       }
     };
 
-    const render = () => {
-      currentReveal += (targetReveal - currentReveal) * 0.12;
-      currentChip += (targetChip - currentChip) * 0.1;
-      marqueeVelocity +=
-        (targetMarquee - currentMarquee) * 0.035;
-      marqueeVelocity *= 0.82;
-      currentMarquee += marqueeVelocity;
-      videoVelocity += (targetVideo - currentVideo) * 0.04;
-      videoVelocity *= 0.8;
-      currentVideo += videoVelocity;
+    const render = (frameTime) => {
+      const deltaTime = previousRenderTime
+        ? Math.min((frameTime - previousRenderTime) / 1000, 0.05)
+        : 1 / 60;
+      previousRenderTime = frameTime;
+
+      currentReveal = damp(
+        currentReveal,
+        targetReveal,
+        8.5,
+        deltaTime,
+      );
+      currentChip = damp(
+        currentChip,
+        targetChip,
+        7,
+        deltaTime,
+      );
+
+      const marqueeSpring = stepSpring(
+        currentMarquee,
+        targetMarquee,
+        marqueeVelocity,
+        80,
+        13,
+        deltaTime,
+      );
+      currentMarquee = marqueeSpring.current;
+      marqueeVelocity = marqueeSpring.velocity;
+
+      const videoSpring = stepSpring(
+        currentVideo,
+        targetVideo,
+        videoVelocity,
+        65,
+        13,
+        deltaTime,
+      );
+      currentVideo = videoSpring.current;
+      videoVelocity = videoSpring.velocity;
 
       if (Math.abs(targetReveal - currentReveal) < 0.0005) {
         currentReveal = targetReveal;
@@ -1182,14 +1272,14 @@ function App() {
       }
       if (
         Math.abs(targetMarquee - currentMarquee) < 0.0001 &&
-        Math.abs(marqueeVelocity) < 0.0002
+        Math.abs(marqueeVelocity) < 0.0025
       ) {
         currentMarquee = targetMarquee;
         marqueeVelocity = 0;
       }
       if (
         Math.abs(targetVideo - currentVideo) < 0.0001 &&
-        Math.abs(videoVelocity) < 0.0002
+        Math.abs(videoVelocity) < 0.0025
       ) {
         currentVideo = targetVideo;
         videoVelocity = 0;
@@ -1208,6 +1298,7 @@ function App() {
         rafId = window.requestAnimationFrame(render);
       } else {
         rafId = 0;
+        previousRenderTime = 0;
       }
     };
 
@@ -1264,7 +1355,10 @@ function App() {
         return;
       }
 
-      if (!rafId) rafId = window.requestAnimationFrame(render);
+      if (!rafId) {
+        previousRenderTime = 0;
+        rafId = window.requestAnimationFrame(render);
+      }
     };
 
     measure();
