@@ -16,7 +16,7 @@ const ROULETTE_LINES = [
 
 const CHIP_FEATURES = [
   {
-    icon: "↻",
+    icon: "feature-timer.svg",
     title: <>Моментальный выпуск<br />онлайн</>,
     description: (
       <>
@@ -26,7 +26,7 @@ const CHIP_FEATURES = [
     ),
   },
   {
-    icon: "▣",
+    icon: "feature-dual-sim.svg",
     title: <>Несколько номеров<br />в&nbsp;одном устройстве</>,
     description: (
       <>
@@ -36,7 +36,7 @@ const CHIP_FEATURES = [
     ),
   },
   {
-    icon: "▦",
+    icon: "feature-chip.svg",
     title: <>Всегда надёжна<br />и&nbsp;под рукой</>,
     description: (
       <>
@@ -46,7 +46,7 @@ const CHIP_FEATURES = [
     ),
   },
   {
-    icon: "⌖",
+    icon: "feature-location.svg",
     title: <>Без ограничений<br />и&nbsp;бесплатно</>,
     description: (
       <>
@@ -56,14 +56,14 @@ const CHIP_FEATURES = [
     ),
   },
   {
-    icon: "▯",
-    title: <>Не&nbsp;только<br />для&nbsp;смартфонов</>,
+    icon: "feature-watch.svg",
+    title: <>Не&nbsp;только для&nbsp;смартфонов</>,
     description: (
       <>Совместима с&nbsp;планшетами, смарт-часами и&nbsp;трекерами</>
     ),
   },
   {
-    icon: "▣",
+    icon: "feature-lock.svg",
     title: <>Усиленная безопасность</>,
     description: (
       <>
@@ -326,12 +326,17 @@ function ChipRevealStage({ chipRef, marqueeRef, videoRef, frameRef }) {
             >
               <div className="chip-feature-rule">
                 <span className="chip-feature-icon" aria-hidden="true">
-                  {feature.icon}
+                  <img
+                    src={`${ASSET_ROOT}/icons/${feature.icon}`}
+                    alt=""
+                  />
                 </span>
                 <span className="chip-feature-line" />
               </div>
-              <h2>{feature.title}</h2>
-              <p>{feature.description}</p>
+              <div className="chip-feature-copy">
+                <h2>{feature.title}</h2>
+                <p>{feature.description}</p>
+              </div>
             </article>
           ))}
         </div>
@@ -954,13 +959,14 @@ function App() {
       flushVideoSeek();
     };
 
-    const setFeatureProgress = (element, enter, exit) => {
+    const setFeatureProgress = (element, enter, exit, isMobile) => {
       const opacity = enter * (1 - exit);
       const translateY = mix(6, 0, enter) - exit * 4;
       const blur = mix(2, 0, enter);
       element.style.opacity = opacity.toFixed(4);
       element.style.transform =
-        `translate3d(0, ${translateY.toFixed(2)}px, 0)`;
+        `translate3d(${isMobile ? "-50%" : "0"}, ` +
+        `${translateY.toFixed(2)}px, 0)`;
       element.style.filter = `blur(${blur.toFixed(2)}px)`;
       element.style.setProperty(
         "--feature-line-progress",
@@ -975,7 +981,7 @@ function App() {
         ? window.innerHeight * 0.66
         : window.innerHeight * 0.72;
       const chipEndY = isMobile
-        ? window.innerHeight * 0.08
+        ? 47
         : 0;
       const chipY = mix(chipStartY, chipEndY, currentChip);
       const chipScale = mix(isMobile ? 0.84 : 0.88, 1, currentChip);
@@ -1056,7 +1062,7 @@ function App() {
         }
         const enter = smoothstep(start, start + 0.052, currentVideo);
         const exit = smoothstep(end - 0.052, end, currentVideo);
-        setFeatureProgress(element, enter, exit);
+        setFeatureProgress(element, enter, exit, isMobile);
       });
 
       if (transitionIsActive) {

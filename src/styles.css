@@ -551,13 +551,17 @@ a {
 
 .chip-feature-icon {
   display: grid;
-  width: 28px;
-  height: 28px;
-  flex: 0 0 28px;
+  width: 32px;
+  height: 32px;
+  flex: 0 0 32px;
   place-items: center;
   color: #fff;
-  font-size: 22px;
-  line-height: 1;
+}
+
+.chip-feature-icon img {
+  display: block;
+  width: 100%;
+  height: 100%;
 }
 
 .chip-feature-line {
@@ -831,19 +835,19 @@ a {
   }
 
   .chip-static {
-    width: min(88vw, 340px);
+    width: min(260px, calc(100vw - 64px));
     max-width: none;
     transform: translate3d(-50%, calc(-50% + 66vh), 0) scale(0.84);
   }
 
   .chip-scroll-video {
-    width: min(88vw, 340px);
+    width: min(260px, calc(100vw - 64px));
     max-width: none;
     transform: translate3d(-50%, calc(-50% + 66vh), 0) scale(0.84);
   }
 
   .chip-scroll-frame {
-    width: min(88vw, 340px);
+    width: min(260px, calc(100vw - 64px));
     max-width: none;
     transform: translate3d(-50%, calc(-50% + 66vh), 0) scale(0.84);
   }
@@ -859,38 +863,58 @@ a {
   }
 
   .chip-feature {
-    top: calc(96px + env(safe-area-inset-top, 0px)) !important;
+    top: calc(32px + env(safe-area-inset-top, 0px)) !important;
     right: auto !important;
     bottom: auto !important;
-    left: 20px !important;
-    width: calc(100vw - 40px);
+    left: 50% !important;
+    display: flex;
+    width: min(296px, calc(100vw - 64px));
+    height: 152px;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    text-align: center;
   }
 
   .chip-feature-rule,
   .chip-feature:nth-child(even) .chip-feature-rule {
-    width: 100%;
-    height: 28px;
-    gap: 8px;
+    width: 32px;
+    height: 32px;
+    margin: 0 auto;
   }
 
   .chip-feature-icon {
-    width: 24px;
-    height: 24px;
-    flex-basis: 24px;
-    font-size: 19px;
+    width: 32px;
+    height: 32px;
+    flex-basis: 32px;
+  }
+
+  .chip-feature-line {
+    display: none;
+  }
+
+  .chip-feature-copy {
+    display: flex;
+    width: 100%;
+    flex-direction: column;
+    gap: 8px;
   }
 
   .chip-feature h2 {
-    margin: 10px 0 7px;
+    margin: 0;
     font-size: 24px;
-    line-height: 25px;
-    letter-spacing: -0.55px;
+    line-height: 24px;
+    letter-spacing: -0.95px;
   }
 
   .chip-feature p {
-    max-width: 330px;
+    width: 100%;
+    max-width: none;
+    margin: 0;
     font-size: 14px;
-    line-height: 17px;
+    line-height: 16px;
+    letter-spacing: -0.42px;
   }
 
 }

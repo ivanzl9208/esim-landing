@@ -1,0 +1,20 @@
+<svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="Group">
+<rect id="Rectangle" x="12" y="12" width="8" height="8" rx="2" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+<rect id="Rectangle_2" x="7.33333" y="7.33333" width="17.3333" height="17.3333" rx="4.66667" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+<path id="Path" d="M28 12H24.6667" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+<path id="Path_2" d="M28 16H24.6667" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+<path id="Path_3" d="M28 20H24.6667" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+<path id="Path_4" d="M7.33335 12H4.00001" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+<path id="Path_5" d="M7.33335 16H4.00001" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+<path id="Path_6" d="M7.33335 20H4.00001" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+<path id="Path_7" d="M12 4.00001V7.33335" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+<path id="Path_8" d="M16 4.00001V7.33335" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+<path id="Path_9" d="M20 4.00001V7.33335" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+<path id="Path_10" d="M12 24.6667V28" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+<path id="Path_11" d="M16 24.6667V28" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+<path id="Path_12" d="M20 24.6667V28" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+<g id="Path_13">
+</g>
+</g>
+</svg>
