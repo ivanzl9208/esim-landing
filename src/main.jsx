@@ -4,7 +4,6 @@ import "./styles.css";
 
 const ASSET_ROOT = `${import.meta.env.BASE_URL}assets`;
 const CHIP_FRAME_COUNT = 150;
-const CHIP_START_FRAME_INDEX = 75;
 const ROULETTE_LINES = [
   "eSIM\u00A0—",
   "виртуальная",
@@ -273,7 +272,7 @@ function RouletteStage({ stageRef }) {
   );
 }
 
-function ChipRevealStage({ chipRef, marqueeRef, videoRef, frameRef }) {
+function ChipRevealStage({ marqueeRef, videoRef, frameRef }) {
   const userAgent = window.navigator.userAgent;
   const isSafari =
     /Safari/i.test(userAgent) &&
@@ -293,16 +292,11 @@ function ChipRevealStage({ chipRef, marqueeRef, videoRef, frameRef }) {
         <div className="advantages-marquee" ref={marqueeRef}>
           Преимущества&nbsp;eSIM
         </div>
-        <img
-          className="chip-static"
-          ref={chipRef}
-          src={`${ASSET_ROOT}/esim-chip-static.png`}
-          alt=""
-        />
         <video
           className="chip-scroll-video"
           ref={videoRef}
           src={videoSrc}
+          poster={`${ASSET_ROOT}/chip-frames/frame-001.webp`}
           data-video-format={isSafari ? "mov" : "webm"}
           muted
           playsInline
@@ -313,7 +307,7 @@ function ChipRevealStage({ chipRef, marqueeRef, videoRef, frameRef }) {
         <img
           className="chip-scroll-frame"
           ref={frameRef}
-          src={`${ASSET_ROOT}/chip-frames/frame-076.webp`}
+          src={`${ASSET_ROOT}/chip-frames/frame-001.webp`}
           alt=""
           aria-hidden="true"
         />
@@ -348,7 +342,6 @@ function ChipRevealStage({ chipRef, marqueeRef, videoRef, frameRef }) {
 function App() {
   const sceneRef = useRef(null);
   const rouletteRef = useRef(null);
-  const chipRef = useRef(null);
   const marqueeRef = useRef(null);
   const chipVideoRef = useRef(null);
   const chipFrameRef = useRef(null);
@@ -855,11 +848,10 @@ function App() {
 
   useEffect(() => {
     const scene = sceneRef.current;
-    const chip = chipRef.current;
     const marquee = marqueeRef.current;
     const video = chipVideoRef.current;
     const frame = chipFrameRef.current;
-    if (!scene || !chip || !marquee || !video || !frame) {
+    if (!scene || !marquee || !video || !frame) {
       return undefined;
     }
 
@@ -904,7 +896,7 @@ function App() {
     let videoVelocity = 0;
     let videoDuration = 6;
     let pendingVideoTime = null;
-    let currentFrameIndex = CHIP_START_FRAME_INDEX;
+    let currentFrameIndex = 0;
     let rafId = 0;
     const useFrameSequence = video.dataset.videoFormat === "mov";
     const frameUrls = Array.from(
@@ -1009,16 +1001,11 @@ function App() {
         `${shutterInset.toFixed(4)}%)`;
       gradient.style.clipPath = gradientClip;
       gradient.style.webkitClipPath = gradientClip;
-      chip.style.transform =
-        `translate3d(-50%, calc(-50% + ${chipY.toFixed(2)}px), 0) ` +
-        `scale(${chipScale.toFixed(5)})`;
-      const videoOpacity = smoothstep(0, 0.045, currentVideo);
-      chip.style.opacity = (1 - videoOpacity).toFixed(4);
       video.style.opacity = useFrameSequence
         ? "0"
-        : videoOpacity.toFixed(4);
+        : "1";
       frame.style.opacity = useFrameSequence
-        ? videoOpacity.toFixed(4)
+        ? "1"
         : "0";
       video.style.transform =
         `translate3d(-50%, calc(-50% + ${chipY.toFixed(2)}px), 0) ` +
@@ -1029,23 +1016,20 @@ function App() {
         `${marqueeOffset.toFixed(2)}px`,
       );
 
-      if (useFrameSequence && currentVideo > 0.0001) {
-        const frameAdvance = Math.round(
-          clamp(currentVideo) * CHIP_FRAME_COUNT,
+      if (useFrameSequence) {
+        const nextFrameIndex = Math.min(
+          Math.round(
+            clamp(currentVideo) * (CHIP_FRAME_COUNT - 1),
+          ),
+          CHIP_FRAME_COUNT - 1,
         );
-        const nextFrameIndex =
-          (CHIP_START_FRAME_INDEX + frameAdvance) %
-          CHIP_FRAME_COUNT;
         if (nextFrameIndex !== currentFrameIndex) {
           currentFrameIndex = nextFrameIndex;
           frame.src = frameUrls[currentFrameIndex];
         }
-      } else if (video.readyState >= 1 && currentVideo > 0.0001) {
-        const loopProgress =
-          (CHIP_START_FRAME_INDEX / CHIP_FRAME_COUNT +
-            clamp(currentVideo)) %
-          1;
-        pendingVideoTime = loopProgress * videoDuration;
+      } else if (video.readyState >= 1) {
+        const safeDuration = Math.max(videoDuration - 0.045, 0.001);
+        pendingVideoTime = clamp(currentVideo) * safeDuration;
         flushVideoSeek();
       }
 
@@ -1153,12 +1137,9 @@ function App() {
         Math.min(viewportHeight * 12.45, scrollRange),
         marqueeStart + 1,
       );
-      const videoStart = Math.min(
-        viewportHeight * 12.0,
-        scrollRange - 1,
-      );
+      const videoStart = Math.min(marqueeEnd, scrollRange - 1);
       const videoEnd = Math.max(
-        Math.min(viewportHeight * 20.0, scrollRange),
+        Math.min(videoStart + viewportHeight * 8, scrollRange),
         videoStart + 1,
       );
 
@@ -1227,7 +1208,6 @@ function App() {
           </div>
           <div className="white-curtain" aria-hidden="true" />
           <ChipRevealStage
-            chipRef={chipRef}
             marqueeRef={marqueeRef}
             videoRef={chipVideoRef}
             frameRef={chipFrameRef}
