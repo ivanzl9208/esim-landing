@@ -71,7 +71,7 @@ a {
 .scroll-scene {
   --curtain-y: 100%;
   position: relative;
-  height: 2120svh;
+  height: 2820svh;
   background: #fff;
 }
 
@@ -441,6 +441,15 @@ a {
   will-change: clip-path;
 }
 
+.chip-background-transition {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  background: #e9ebeb;
+  opacity: 0;
+  will-change: opacity;
+}
+
 .chip-scroll-video {
   position: absolute;
   z-index: 2;
@@ -492,6 +501,30 @@ a {
   white-space: nowrap;
   transform: translate3d(
     calc(-50% + var(--advantages-text-x)),
+    -50%,
+    0
+  );
+  will-change: transform, opacity;
+}
+
+.esim-definition-marquee {
+  --definition-text-x: 0px;
+  position: absolute;
+  z-index: 1;
+  top: 50%;
+  left: 50%;
+  width: calc(1256px * var(--layout-scale));
+  height: calc(200px * var(--layout-scale));
+  color: rgba(11, 12, 13, 0.86);
+  font-family: "SB Sans Display", Arial, sans-serif;
+  font-size: calc(200px * var(--layout-scale));
+  font-weight: 600;
+  line-height: calc(200px * var(--layout-scale));
+  letter-spacing: calc(-4px * var(--layout-scale));
+  text-align: center;
+  white-space: nowrap;
+  transform: translate3d(
+    calc(-50% + var(--definition-text-x)),
     -50%,
     0
   );
@@ -642,7 +675,7 @@ a {
 
 @media (max-width: 700px) {
   .scroll-scene {
-    height: 2120svh;
+    height: 2820svh;
   }
 
   .hero-stage {
@@ -867,6 +900,21 @@ a {
     letter-spacing: calc(-2.4px * var(--layout-scale));
   }
 
+  .esim-definition-marquee {
+    z-index: 3;
+    top: calc(56px * var(--layout-scale));
+    width: calc(754px * var(--layout-scale));
+    height: calc(120px * var(--layout-scale));
+    font-size: calc(120px * var(--layout-scale));
+    line-height: calc(120px * var(--layout-scale));
+    letter-spacing: calc(-2.4px * var(--layout-scale));
+    transform: translate3d(
+      calc(-50% + var(--definition-text-x)),
+      0,
+      0
+    );
+  }
+
   .chip-feature {
     top: calc(32px * var(--layout-scale) + env(safe-area-inset-top, 0px)) !important;
     right: auto !important;
@@ -947,5 +995,9 @@ a {
 
   .advantages-marquee {
     --advantages-text-x: 0px !important;
+  }
+
+  .esim-definition-marquee {
+    --definition-text-x: 0px !important;
   }
 }

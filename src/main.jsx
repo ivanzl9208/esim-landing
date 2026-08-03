@@ -314,8 +314,12 @@ function ChipRevealStage({ marqueeRef, videoRef, frameRef }) {
       aria-label="eSIM-чип СберМобайла"
     >
       <div className="chip-gradient" aria-hidden="true">
+        <div className="chip-background-transition" />
         <div className="advantages-marquee" ref={marqueeRef}>
           Преимущества&nbsp;eSIM
+        </div>
+        <div className="esim-definition-marquee">
+          eSIM&nbsp;— это...
         </div>
         <video
           className="chip-scroll-video"
@@ -904,6 +908,12 @@ function App() {
 
     const layer = scene.querySelector(".chip-reveal-layer");
     const gradient = scene.querySelector(".chip-gradient");
+    const backgroundTransition = scene.querySelector(
+      ".chip-background-transition",
+    );
+    const definitionMarquee = scene.querySelector(
+      ".esim-definition-marquee",
+    );
     const button = scene.querySelector(".roulette-button");
     const buttonLabel = scene.querySelector(".roulette-button-label");
     const bottomFade = scene.querySelector(".roulette-bottom-fade");
@@ -913,6 +923,8 @@ function App() {
     if (
       !layer ||
       !gradient ||
+      !backgroundTransition ||
+      !definitionMarquee ||
       !button ||
       !buttonLabel ||
       !bottomFade ||
@@ -941,6 +953,11 @@ function App() {
     let targetVideo = 0;
     let currentVideo = 0;
     let videoVelocity = 0;
+    let targetDefinition = 0;
+    let currentDefinition = 0;
+    let definitionVelocity = 0;
+    let targetBackground = 0;
+    let currentBackground = 0;
     let videoDuration = 6;
     let pendingVideoTime = null;
     let currentFrameIndex = 0;
@@ -1037,11 +1054,13 @@ function App() {
 
       if (line) {
         const keepsPersistentRule = index < 2;
+        const backgroundRuleFade =
+          1 - smoothstep(0.02, 0.28, currentBackground);
         const lineProgress = keepsPersistentRule
-          ? smoothstep(0.005, 0.055, progress)
+          ? smoothstep(0.005, 0.055, progress) * backgroundRuleFade
           : 0;
         const dotOpacity = keepsPersistentRule
-          ? smoothstep(0.005, 0.015, progress)
+          ? smoothstep(0.005, 0.015, progress) * backgroundRuleFade
           : 0;
         line.style.opacity = keepsPersistentRule ? "1" : "0";
         element.style.setProperty(
@@ -1068,14 +1087,30 @@ function App() {
       const chipY = mix(chipStartY, chipEndY, currentChip);
       const chipScale = mix(isMobile ? 0.84 : 0.88, 1, currentChip);
       const buttonIsInverted = currentReveal >= 0.95;
-      const buttonBackground = buttonIsInverted ? "#fff" : "#fa5f05";
-      const buttonColor = buttonIsInverted ? "#fa5f05" : "#fff";
+      const buttonUsesGrayStageStyle = currentBackground >= 0.95;
+      const buttonBackground = buttonUsesGrayStageStyle
+        ? "#fa5f05"
+        : buttonIsInverted
+          ? "#fff"
+          : "#fa5f05";
+      const buttonColor = buttonUsesGrayStageStyle
+        ? "#fff"
+        : buttonIsInverted
+          ? "#fa5f05"
+          : "#fff";
       const marqueeTravel =
         (window.innerWidth + marquee.offsetWidth) / 2;
       const marqueeOffset = mix(
         marqueeTravel,
         -marqueeTravel,
         currentMarquee,
+      );
+      const definitionStartX = (isMobile ? 495 : 885) * layoutScale;
+      const definitionEndX = (isMobile ? -237 : -773) * layoutScale;
+      const definitionOffset = mix(
+        definitionStartX,
+        definitionEndX,
+        currentDefinition,
       );
 
       const transitionIsActive = currentReveal > 0.0001;
@@ -1091,6 +1126,8 @@ function App() {
         `${shutterInset.toFixed(4)}%)`;
       gradient.style.clipPath = gradientClip;
       gradient.style.webkitClipPath = gradientClip;
+      backgroundTransition.style.opacity =
+        currentBackground.toFixed(4);
       video.style.opacity = useFrameSequence
         ? "0"
         : "1";
@@ -1105,11 +1142,22 @@ function App() {
         "--advantages-text-x",
         `${marqueeOffset.toFixed(2)}px`,
       );
+      marquee.style.opacity = (
+        1 - smoothstep(0.94, 1, currentMarquee)
+      ).toFixed(4);
+      definitionMarquee.style.setProperty(
+        "--definition-text-x",
+        `${definitionOffset.toFixed(2)}px`,
+      );
 
       if (useFrameSequence) {
+        const loopedVideoProgress =
+          currentVideo >= 1
+            ? currentVideo % 1
+            : clamp(currentVideo);
         const nextFrameIndex = Math.min(
           Math.round(
-            clamp(currentVideo) * (CHIP_FRAME_COUNT - 1),
+            loopedVideoProgress * (CHIP_FRAME_COUNT - 1),
           ),
           CHIP_FRAME_COUNT - 1,
         );
@@ -1119,7 +1167,11 @@ function App() {
         }
       } else if (video.readyState >= 1) {
         const safeDuration = Math.max(videoDuration - 0.045, 0.001);
-        pendingVideoTime = clamp(currentVideo) * safeDuration;
+        const loopedVideoProgress =
+          currentVideo >= 1
+            ? currentVideo % 1
+            : clamp(currentVideo);
+        pendingVideoTime = loopedVideoProgress * safeDuration;
         flushVideoSeek();
       }
 
@@ -1173,6 +1225,12 @@ function App() {
       videoVelocity += (targetVideo - currentVideo) * 0.04;
       videoVelocity *= 0.8;
       currentVideo += videoVelocity;
+      definitionVelocity +=
+        (targetDefinition - currentDefinition) * 0.035;
+      definitionVelocity *= 0.82;
+      currentDefinition += definitionVelocity;
+      currentBackground +=
+        (targetBackground - currentBackground) * 0.12;
 
       if (Math.abs(targetReveal - currentReveal) < 0.0005) {
         currentReveal = targetReveal;
@@ -1194,6 +1252,16 @@ function App() {
         currentVideo = targetVideo;
         videoVelocity = 0;
       }
+      if (
+        Math.abs(targetDefinition - currentDefinition) < 0.0001 &&
+        Math.abs(definitionVelocity) < 0.0002
+      ) {
+        currentDefinition = targetDefinition;
+        definitionVelocity = 0;
+      }
+      if (Math.abs(targetBackground - currentBackground) < 0.0005) {
+        currentBackground = targetBackground;
+      }
 
       renderScene();
 
@@ -1203,7 +1271,10 @@ function App() {
         currentMarquee !== targetMarquee ||
         marqueeVelocity !== 0 ||
         currentVideo !== targetVideo ||
-        videoVelocity !== 0
+        videoVelocity !== 0 ||
+        currentDefinition !== targetDefinition ||
+        definitionVelocity !== 0 ||
+        currentBackground !== targetBackground
       ) {
         rafId = window.requestAnimationFrame(render);
       } else {
@@ -1233,9 +1304,25 @@ function App() {
         marqueeStart + 1,
       );
       const videoStart = Math.min(marqueeEnd, scrollRange - 1);
-      const videoEnd = Math.max(
+      const firstVideoEnd = Math.max(
         Math.min(videoStart + viewportHeight * 8, scrollRange),
         videoStart + 1,
+      );
+      const definitionStart = Math.min(
+        firstVideoEnd + viewportHeight * 0.1,
+        scrollRange - 1,
+      );
+      const definitionEnd = Math.max(
+        Math.min(definitionStart + viewportHeight * 5.5, scrollRange),
+        definitionStart + 1,
+      );
+      const backgroundStart = Math.min(
+        firstVideoEnd - viewportHeight * 0.15,
+        scrollRange - 1,
+      );
+      const backgroundEnd = Math.max(
+        Math.min(backgroundStart + viewportHeight * 2.1, scrollRange),
+        backgroundStart + 1,
       );
 
       targetReveal = smoothstep(0, 0.7, progress);
@@ -1244,13 +1331,35 @@ function App() {
         (scrollOffset - marqueeStart) /
           (marqueeEnd - marqueeStart),
       );
-      targetVideo = smoothstep(
+      const firstVideoProgress = smoothstep(
         0,
         1,
         clamp(
           (scrollOffset - videoStart) /
-            (videoEnd - videoStart),
+            (firstVideoEnd - videoStart),
         ),
+      );
+      const continuedVideoProgress = smoothstep(
+        0,
+        1,
+        clamp(
+          (scrollOffset - firstVideoEnd) /
+            Math.max(definitionEnd - firstVideoEnd, 1),
+        ),
+      );
+      const continuationTurns =
+        (definitionEnd - firstVideoEnd) /
+        Math.max(viewportHeight * 8, 1);
+      targetVideo =
+        firstVideoProgress + continuedVideoProgress * continuationTurns;
+      targetDefinition = clamp(
+        (scrollOffset - definitionStart) /
+          (definitionEnd - definitionStart),
+      );
+      targetBackground = smoothstep(
+        backgroundStart,
+        backgroundEnd,
+        scrollOffset,
       );
 
       if (reducedMotion) {
@@ -1260,6 +1369,9 @@ function App() {
         marqueeVelocity = 0;
         currentVideo = targetVideo;
         videoVelocity = 0;
+        currentDefinition = targetDefinition;
+        definitionVelocity = 0;
+        currentBackground = targetBackground;
         renderScene();
         return;
       }
