@@ -956,6 +956,8 @@ function App() {
     let targetDefinition = 0;
     let currentDefinition = 0;
     let definitionVelocity = 0;
+    let targetDefinitionVisibility = 0;
+    let currentDefinitionVisibility = 0;
     let targetBackground = 0;
     let currentBackground = 0;
     let videoDuration = 6;
@@ -1149,6 +1151,18 @@ function App() {
         "--definition-text-x",
         `${definitionOffset.toFixed(2)}px`,
       );
+      const completedFeatureSequence = smoothstep(
+        0.97,
+        1,
+        currentVideo,
+      );
+      const definitionOpacity = Math.min(
+        currentDefinitionVisibility,
+        completedFeatureSequence,
+      );
+      definitionMarquee.style.opacity = definitionOpacity.toFixed(4);
+      definitionMarquee.style.visibility =
+        definitionOpacity > 0.001 ? "visible" : "hidden";
 
       if (useFrameSequence) {
         const loopedVideoProgress =
@@ -1229,6 +1243,8 @@ function App() {
         (targetDefinition - currentDefinition) * 0.035;
       definitionVelocity *= 0.82;
       currentDefinition += definitionVelocity;
+      currentDefinitionVisibility +=
+        (targetDefinitionVisibility - currentDefinitionVisibility) * 0.16;
       currentBackground +=
         (targetBackground - currentBackground) * 0.12;
 
@@ -1259,6 +1275,13 @@ function App() {
         currentDefinition = targetDefinition;
         definitionVelocity = 0;
       }
+      if (
+        Math.abs(
+          targetDefinitionVisibility - currentDefinitionVisibility,
+        ) < 0.0005
+      ) {
+        currentDefinitionVisibility = targetDefinitionVisibility;
+      }
       if (Math.abs(targetBackground - currentBackground) < 0.0005) {
         currentBackground = targetBackground;
       }
@@ -1274,6 +1297,7 @@ function App() {
         videoVelocity !== 0 ||
         currentDefinition !== targetDefinition ||
         definitionVelocity !== 0 ||
+        currentDefinitionVisibility !== targetDefinitionVisibility ||
         currentBackground !== targetBackground
       ) {
         rafId = window.requestAnimationFrame(render);
@@ -1356,6 +1380,11 @@ function App() {
         (scrollOffset - definitionStart) /
           (definitionEnd - definitionStart),
       );
+      targetDefinitionVisibility = smoothstep(
+        definitionStart,
+        definitionStart + viewportHeight * 0.18,
+        scrollOffset,
+      );
       targetBackground = smoothstep(
         backgroundStart,
         backgroundEnd,
@@ -1371,6 +1400,7 @@ function App() {
         videoVelocity = 0;
         currentDefinition = targetDefinition;
         definitionVelocity = 0;
+        currentDefinitionVisibility = targetDefinitionVisibility;
         currentBackground = targetBackground;
         renderScene();
         return;

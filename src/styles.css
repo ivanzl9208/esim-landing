@@ -523,12 +523,14 @@ a {
   letter-spacing: calc(-4px * var(--layout-scale));
   text-align: center;
   white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
   transform: translate3d(
     calc(-50% + var(--definition-text-x)),
     -50%,
     0
   );
-  will-change: transform;
+  will-change: transform, opacity;
 }
 
 .chip-features {
