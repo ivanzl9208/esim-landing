@@ -98,6 +98,13 @@ const CHIP_FEATURES = [
   },
 ];
 
+const STORY_BENEFITS = [
+  "...быстрое оформление и\u00A0установка\u00A0— онлайн за\u00A05\u00A0минут",
+  "...второй номер в\u00A0одном телефоне\u00A0— для\u00A0разных задач",
+  "...удобство использования\u00A0— легко установить и\u00A0перенести номер",
+  "...безопасная связь\u00A0— доступ к\u00A0сим-карте только у\u00A0вас",
+];
+
 function BrandLogo() {
   return (
     <img
@@ -320,6 +327,16 @@ function ChipRevealStage({ marqueeRef, videoRef, frameRef }) {
         </div>
         <div className="esim-definition-marquee">
           eSIM&nbsp;— это...
+        </div>
+        <div className="story-benefits-copy" aria-live="off">
+          {STORY_BENEFITS.map((text, index) => (
+            <p
+              className={`story-benefit story-benefit-${index + 1}`}
+              key={text}
+            >
+              {text}
+            </p>
+          ))}
         </div>
         <video
           className="chip-scroll-video"
@@ -919,6 +936,9 @@ function App() {
     const featureElements = Array.from(
       scene.querySelectorAll(".chip-feature"),
     );
+    const storyElements = Array.from(
+      scene.querySelectorAll(".story-benefit"),
+    );
     if (
       !layer ||
       !gradient ||
@@ -927,7 +947,8 @@ function App() {
       !button ||
       !buttonLabel ||
       !bottomFade ||
-      featureElements.length !== CHIP_FEATURES.length
+      featureElements.length !== CHIP_FEATURES.length ||
+      storyElements.length !== STORY_BENEFITS.length
     ) {
       return undefined;
     }
@@ -962,9 +983,12 @@ function App() {
     let currentDefinitionVisibility = 0;
     let targetBackground = 0;
     let currentBackground = 0;
+    let targetStory = 0;
+    let currentStory = 0;
     let videoDuration = 6;
     let pendingVideoTime = null;
     let currentFrameIndex = 0;
+    let playbackEndTurns = 1;
     let rafId = 0;
     const useFrameSequence = video.dataset.videoFormat === "mov";
     const frameUrls = Array.from(
@@ -1146,9 +1170,21 @@ function App() {
       definitionMarquee.style.visibility =
         definitionOpacity > 0.001 ? "visible" : "hidden";
 
+      const storyTimeline = clamp(currentStory) * STORY_BENEFITS.length;
+      storyElements.forEach((element, index) => {
+        const localProgress = storyTimeline - index;
+        const enter = smoothstep(0, 0.22, localProgress);
+        const exit = 1 - smoothstep(0.7, 1, localProgress);
+        const opacity = clamp(Math.min(enter, exit));
+        element.style.opacity = opacity.toFixed(4);
+        element.style.filter = `blur(${((1 - opacity) * 10).toFixed(3)}px)`;
+      });
+
       if (useFrameSequence) {
         const loopedVideoProgress =
-          currentPlayback >= 1
+          currentPlayback >= playbackEndTurns - 0.0005
+            ? 1
+            : currentPlayback >= 1
             ? currentPlayback % 1
             : clamp(currentPlayback);
         const nextFrameIndex = Math.min(
@@ -1164,7 +1200,9 @@ function App() {
       } else if (video.readyState >= 1) {
         const safeDuration = Math.max(videoDuration - 0.045, 0.001);
         const loopedVideoProgress =
-          currentPlayback >= 1
+          currentPlayback >= playbackEndTurns - 0.0005
+            ? 1
+            : currentPlayback >= 1
             ? currentPlayback % 1
             : clamp(currentPlayback);
         pendingVideoTime = loopedVideoProgress * safeDuration;
@@ -1198,8 +1236,11 @@ function App() {
         buttonLabel.style.background = "none";
         buttonLabel.style.color = buttonColor;
         buttonLabel.style.webkitTextFillColor = buttonColor;
+        const storyStageIsActive = currentStory > 0.0001;
         bottomFade.style.opacity =
-          isMobile && !buttonIsInverted ? "1" : "0";
+          isMobile && (!buttonIsInverted || storyStageIsActive)
+            ? "1"
+            : "0";
       } else {
         button.style.removeProperty("background");
         button.style.removeProperty("background-color");
@@ -1232,6 +1273,19 @@ function App() {
         (targetDefinitionVisibility - currentDefinitionVisibility) * 0.16;
       currentBackground +=
         (targetBackground - currentBackground) * 0.12;
+      const playbackProgressHasFinished =
+        currentPlayback >= playbackEndTurns - 0.002;
+      const playbackFrameHasFinished = useFrameSequence
+        ? playbackProgressHasFinished
+        : video.readyState >= 1 &&
+          !video.seeking &&
+          video.currentTime >= Math.max(videoDuration - 0.1, 0);
+      const playbackHasFinished =
+        playbackProgressHasFinished && playbackFrameHasFinished;
+      const visibleStoryTarget = playbackHasFinished
+        ? targetStory
+        : 0;
+      currentStory += (visibleStoryTarget - currentStory) * 0.14;
 
       if (Math.abs(targetReveal - currentReveal) < 0.0005) {
         currentReveal = targetReveal;
@@ -1277,6 +1331,9 @@ function App() {
       if (Math.abs(targetBackground - currentBackground) < 0.0005) {
         currentBackground = targetBackground;
       }
+      if (Math.abs(visibleStoryTarget - currentStory) < 0.0005) {
+        currentStory = visibleStoryTarget;
+      }
 
       renderScene();
 
@@ -1292,7 +1349,8 @@ function App() {
         currentDefinition !== targetDefinition ||
         definitionVelocity !== 0 ||
         currentDefinitionVisibility !== targetDefinitionVisibility ||
-        currentBackground !== targetBackground
+        currentBackground !== targetBackground ||
+        currentStory !== targetStory
       ) {
         rafId = window.requestAnimationFrame(render);
       } else {
@@ -1334,6 +1392,18 @@ function App() {
         Math.min(definitionStart + viewportHeight * 5.5, scrollRange),
         definitionStart + 1,
       );
+      playbackEndTurns = Math.max(
+        1,
+        Math.floor(
+          (definitionEnd - marqueeStart) /
+            Math.max(viewportHeight * 8, 1),
+        ),
+      );
+      const playbackEnd = Math.min(
+        marqueeStart +
+          playbackEndTurns * Math.max(viewportHeight * 8, 1),
+        scrollRange,
+      );
       const backgroundStart = Math.min(
         firstVideoEnd - viewportHeight * 0.15,
         scrollRange - 1,
@@ -1341,6 +1411,17 @@ function App() {
       const backgroundEnd = Math.max(
         Math.min(backgroundStart + viewportHeight * 2.1, scrollRange),
         backgroundStart + 1,
+      );
+      const storyStart = Math.min(
+        Math.max(
+          definitionEnd + viewportHeight * 0.18,
+          playbackEnd + viewportHeight * 0.3,
+        ),
+        scrollRange - 1,
+      );
+      const storyEnd = Math.max(
+        Math.min(storyStart + viewportHeight * 7.2, scrollRange),
+        storyStart + 1,
       );
 
       targetReveal = smoothstep(0, 0.7, progress);
@@ -1362,8 +1443,7 @@ function App() {
         (scrollOffset - marqueeStart) /
           Math.max(viewportHeight * 8, 1),
         0,
-        (definitionEnd - marqueeStart) /
-          Math.max(viewportHeight * 8, 1),
+        playbackEndTurns,
       );
       targetDefinition = clamp(
         (scrollOffset - definitionStart) /
@@ -1379,6 +1459,9 @@ function App() {
         backgroundEnd,
         scrollOffset,
       );
+      targetStory = clamp(
+        (scrollOffset - storyStart) / (storyEnd - storyStart),
+      );
 
       if (reducedMotion) {
         currentReveal = targetReveal;
@@ -1393,6 +1476,7 @@ function App() {
         definitionVelocity = 0;
         currentDefinitionVisibility = targetDefinitionVisibility;
         currentBackground = targetBackground;
+        currentStory = targetStory;
         renderScene();
         return;
       }
