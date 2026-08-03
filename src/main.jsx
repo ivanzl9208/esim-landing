@@ -952,6 +952,9 @@ function App() {
     let targetVideo = 0;
     let currentVideo = 0;
     let videoVelocity = 0;
+    let targetPlayback = 0;
+    let currentPlayback = 0;
+    let playbackVelocity = 0;
     let targetDefinition = 0;
     let currentDefinition = 0;
     let definitionVelocity = 0;
@@ -1145,9 +1148,9 @@ function App() {
 
       if (useFrameSequence) {
         const loopedVideoProgress =
-          currentVideo >= 1
-            ? currentVideo % 1
-            : clamp(currentVideo);
+          currentPlayback >= 1
+            ? currentPlayback % 1
+            : clamp(currentPlayback);
         const nextFrameIndex = Math.min(
           Math.round(
             loopedVideoProgress * (CHIP_FRAME_COUNT - 1),
@@ -1161,9 +1164,9 @@ function App() {
       } else if (video.readyState >= 1) {
         const safeDuration = Math.max(videoDuration - 0.045, 0.001);
         const loopedVideoProgress =
-          currentVideo >= 1
-            ? currentVideo % 1
-            : clamp(currentVideo);
+          currentPlayback >= 1
+            ? currentPlayback % 1
+            : clamp(currentPlayback);
         pendingVideoTime = loopedVideoProgress * safeDuration;
         flushVideoSeek();
       }
@@ -1217,6 +1220,10 @@ function App() {
       videoVelocity += (targetVideo - currentVideo) * 0.04;
       videoVelocity *= 0.8;
       currentVideo += videoVelocity;
+      playbackVelocity +=
+        (targetPlayback - currentPlayback) * 0.04;
+      playbackVelocity *= 0.8;
+      currentPlayback += playbackVelocity;
       definitionVelocity +=
         (targetDefinition - currentDefinition) * 0.035;
       definitionVelocity *= 0.82;
@@ -1247,6 +1254,13 @@ function App() {
         videoVelocity = 0;
       }
       if (
+        Math.abs(targetPlayback - currentPlayback) < 0.0001 &&
+        Math.abs(playbackVelocity) < 0.0002
+      ) {
+        currentPlayback = targetPlayback;
+        playbackVelocity = 0;
+      }
+      if (
         Math.abs(targetDefinition - currentDefinition) < 0.0001 &&
         Math.abs(definitionVelocity) < 0.0002
       ) {
@@ -1273,6 +1287,8 @@ function App() {
         marqueeVelocity !== 0 ||
         currentVideo !== targetVideo ||
         videoVelocity !== 0 ||
+        currentPlayback !== targetPlayback ||
+        playbackVelocity !== 0 ||
         currentDefinition !== targetDefinition ||
         definitionVelocity !== 0 ||
         currentDefinitionVisibility !== targetDefinitionVisibility ||
@@ -1342,6 +1358,13 @@ function App() {
         0,
         1 + continuationTurns,
       );
+      targetPlayback = clamp(
+        (scrollOffset - marqueeStart) /
+          Math.max(viewportHeight * 8, 1),
+        0,
+        (definitionEnd - marqueeStart) /
+          Math.max(viewportHeight * 8, 1),
+      );
       targetDefinition = clamp(
         (scrollOffset - definitionStart) /
           (definitionEnd - definitionStart),
@@ -1364,6 +1387,8 @@ function App() {
         marqueeVelocity = 0;
         currentVideo = targetVideo;
         videoVelocity = 0;
+        currentPlayback = targetPlayback;
+        playbackVelocity = 0;
         currentDefinition = targetDefinition;
         definitionVelocity = 0;
         currentDefinitionVisibility = targetDefinitionVisibility;
