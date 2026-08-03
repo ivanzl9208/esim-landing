@@ -1025,7 +1025,6 @@ function App() {
       start,
       end,
       progress,
-      index,
       isMobile,
     ) => {
       const motionElements = Array.from(
@@ -1055,16 +1054,16 @@ function App() {
       });
 
       if (line) {
-        const keepsPersistentRule = index < 2;
         const backgroundRuleFade =
           1 - smoothstep(0.02, 0.28, currentBackground);
-        const lineProgress = keepsPersistentRule
-          ? smoothstep(0.005, 0.055, progress) * backgroundRuleFade
-          : 0;
-        const dotOpacity = keepsPersistentRule
-          ? smoothstep(0.005, 0.015, progress) * backgroundRuleFade
-          : 0;
-        line.style.opacity = keepsPersistentRule ? "1" : "0";
+        const lineEnter = smoothstep(start, start + duration, progress);
+        const lineExit =
+          1 - smoothstep(exitStart, end, progress);
+        const lineVisibility =
+          lineEnter * lineExit * backgroundRuleFade;
+        const lineProgress = lineVisibility;
+        const dotOpacity = lineVisibility;
+        line.style.opacity = lineVisibility.toFixed(4);
         element.style.setProperty(
           "--feature-line-progress",
           lineProgress.toFixed(4),
@@ -1108,7 +1107,9 @@ function App() {
         currentMarquee,
       );
       const definitionStartX = (isMobile ? 495 : 885) * layoutScale;
-      const definitionEndX = (isMobile ? -237 : -773) * layoutScale;
+      const definitionEndX =
+        -(window.innerWidth + definitionMarquee.offsetWidth) / 2 -
+        24 * layoutScale;
       const definitionOffset = mix(
         definitionStartX,
         definitionEndX,
@@ -1205,7 +1206,6 @@ function App() {
           start,
           end,
           currentVideo,
-          index,
           isMobile,
         );
       });
@@ -1355,27 +1355,15 @@ function App() {
         (scrollOffset - marqueeStart) /
           (marqueeEnd - marqueeStart),
       );
-      const firstVideoProgress = smoothstep(
-        0,
-        1,
-        clamp(
-          (scrollOffset - videoStart) /
-            (firstVideoEnd - videoStart),
-        ),
-      );
-      const continuedVideoProgress = smoothstep(
-        0,
-        1,
-        clamp(
-          (scrollOffset - firstVideoEnd) /
-            Math.max(definitionEnd - firstVideoEnd, 1),
-        ),
-      );
       const continuationTurns =
         (definitionEnd - firstVideoEnd) /
         Math.max(viewportHeight * 8, 1);
-      targetVideo =
-        firstVideoProgress + continuedVideoProgress * continuationTurns;
+      targetVideo = clamp(
+        (scrollOffset - videoStart) /
+          Math.max(firstVideoEnd - videoStart, 1),
+        0,
+        1 + continuationTurns,
+      );
       targetDefinition = clamp(
         (scrollOffset - definitionStart) /
           (definitionEnd - definitionStart),
