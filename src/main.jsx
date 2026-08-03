@@ -355,7 +355,6 @@ function ChipRevealStage({ marqueeRef, videoRef, frameRef }) {
                     alt=""
                   />
                 </span>
-                <span className="chip-feature-line" />
               </div>
               <div className="chip-feature-copy">
                 <div className="chip-feature-title-clip">
@@ -1030,7 +1029,6 @@ function App() {
       const motionElements = Array.from(
         element.querySelectorAll(".chip-feature-motion"),
       );
-      const line = element.querySelector(".chip-feature-line");
       const duration = isMobile ? 0.042 : 0.055;
       const stagger = isMobile ? 0.012 : 0.015;
       const totalMotion = duration + stagger * (motionElements.length - 1);
@@ -1053,26 +1051,6 @@ function App() {
           `translate3d(0, ${yPercent.toFixed(3)}%, 0)`;
       });
 
-      if (line) {
-        const backgroundRuleFade =
-          1 - smoothstep(0.02, 0.28, currentBackground);
-        const lineEnter = smoothstep(start, start + duration, progress);
-        const lineExit =
-          1 - smoothstep(exitStart, end, progress);
-        const lineVisibility =
-          lineEnter * lineExit * backgroundRuleFade;
-        const lineProgress = lineVisibility;
-        const dotOpacity = lineVisibility;
-        line.style.opacity = lineVisibility.toFixed(4);
-        element.style.setProperty(
-          "--feature-line-progress",
-          lineProgress.toFixed(4),
-        );
-        element.style.setProperty(
-          "--feature-dot-opacity",
-          dotOpacity.toFixed(4),
-        );
-      }
     };
 
     const renderScene = () => {
