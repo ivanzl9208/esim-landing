@@ -546,6 +546,7 @@ a {
   color: #fff;
   font-family: "SB Sans Text", Arial, sans-serif;
   opacity: 1;
+  visibility: hidden;
 }
 
 .chip-feature:nth-child(odd) {
@@ -577,7 +578,7 @@ a {
   flex: 0 0 calc(32px * var(--layout-scale));
   place-items: center;
   color: #fff;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .chip-feature-icon img {
@@ -588,16 +589,40 @@ a {
 
 .chip-feature-title-clip,
 .chip-feature-paragraph-clip {
-  overflow: hidden;
+  overflow: visible;
 }
 
 .chip-feature-title-clip {
   margin: calc(14px * var(--layout-scale)) 0 calc(10px * var(--layout-scale));
 }
 
-.chip-feature-motion {
-  transform: translate3d(0, 100%, 0);
-  will-change: transform;
+.chip-feature-icon-motion,
+.soft-blur-unit {
+  opacity: 0;
+  filter: blur(12px);
+  transform: translate3d(0, calc(9.28px * var(--layout-scale)), 0);
+  will-change: transform, opacity, filter;
+}
+
+.chip-feature-icon-motion {
+  filter: blur(8px);
+}
+
+.soft-blur-word,
+.soft-blur-unit {
+  display: inline-block;
+}
+
+.soft-blur-word {
+  white-space: nowrap;
+}
+
+.soft-blur-space {
+  white-space: pre;
+}
+
+.chip-feature p .soft-blur-unit {
+  filter: blur(6px);
 }
 
 .chip-feature h2 {

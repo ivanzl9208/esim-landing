@@ -41,60 +41,43 @@ const ROULETTE_LINES = [
 const CHIP_FEATURES = [
   {
     icon: "feature-timer.svg",
-    title: <>Моментальный выпуск<br />онлайн</>,
-    description: (
-      <>
-        Подключение за&nbsp;5&nbsp;минут через Госуслуги, без&nbsp;офиса
-        и&nbsp;курьера. Перевыпуск&nbsp;— прямо в&nbsp;приложении
-      </>
-    ),
+    title: "Моментальный выпуск\nонлайн",
+    description:
+      "Подключение за\u00A05\u00A0минут через Госуслуги, без\u00A0офиса " +
+      "и\u00A0курьера. Перевыпуск\u00A0— прямо в\u00A0приложении",
   },
   {
     icon: "feature-dual-sim.svg",
-    title: <>Несколько номеров<br />в&nbsp;одном устройстве</>,
-    description: (
-      <>
-        Используйте eSIM и&nbsp;обычную сим-карту для&nbsp;разных задач&nbsp;—
-        и&nbsp;легко переключайтесь между&nbsp;ними
-      </>
-    ),
+    title: "Несколько номеров\nв\u00A0одном устройстве",
+    description:
+      "Используйте eSIM и\u00A0обычную сим-карту для\u00A0разных задач\u00A0— " +
+      "и\u00A0легко переключайтесь между\u00A0ними",
   },
   {
     icon: "feature-chip.svg",
-    title: <>Всегда надёжна<br />и&nbsp;под рукой</>,
-    description: (
-      <>
-        eSIM встроена в&nbsp;смартфон&nbsp;— не&nbsp;потеряется,
-        не&nbsp;сломается и&nbsp;не&nbsp;имеет срока годности
-      </>
-    ),
+    title: "Всегда надёжна\nи\u00A0под рукой",
+    description:
+      "eSIM встроена в\u00A0смартфон\u00A0— не\u00A0потеряется, " +
+      "не\u00A0сломается и\u00A0не\u00A0имеет срока годности",
   },
   {
     icon: "feature-location.svg",
-    title: <>Без ограничений<br />и&nbsp;бесплатно</>,
-    description: (
-      <>
-        eSIM доступна на&nbsp;любом тарифе и&nbsp;в&nbsp;любом регионе&nbsp;—
-        без&nbsp;доплат
-      </>
-    ),
+    title: "Без ограничений\nи\u00A0бесплатно",
+    description:
+      "eSIM доступна на\u00A0любом тарифе и\u00A0в\u00A0любом регионе\u00A0— " +
+      "без\u00A0доплат",
   },
   {
     icon: "feature-watch.svg",
-    title: <>Не&nbsp;только для&nbsp;смартфонов</>,
-    description: (
-      <>Совместима с&nbsp;планшетами, смарт-часами и&nbsp;трекерами</>
-    ),
+    title: "Не\u00A0только для\u00A0смартфонов",
+    description: "Совместима с\u00A0планшетами, смарт-часами и\u00A0трекерами",
   },
   {
     icon: "feature-lock.svg",
-    title: <>Усиленная безопасность</>,
-    description: (
-      <>
-        Управлять eSIM можно только с&nbsp;вашего устройства&nbsp;— при&nbsp;этом
-        её&nbsp;легко перенести, если смените смартфон
-      </>
-    ),
+    title: "Усиленная безопасность",
+    description:
+      "Управлять eSIM можно только с\u00A0вашего устройства\u00A0— " +
+      "при\u00A0этом её\u00A0легко перенести, если смените смартфон",
   },
 ];
 
@@ -104,6 +87,57 @@ const STORY_BENEFITS = [
   "...удобство использования\u00A0— легко установить и\u00A0перенести номер",
   "...безопасная связь\u00A0— доступ к\u00A0сим-карте только у\u00A0вас",
 ];
+
+function SoftBlurText({ text }) {
+  let unitIndex = 0;
+
+  return text
+    .split(/(\n|[ \t]+)/u)
+    .filter(Boolean)
+    .map((segment, segmentIndex) => {
+      if (/^(?:\n|[ \t]+)$/u.test(segment)) {
+        return Array.from(segment).map((character, characterIndex) => {
+          if (character === "\n") {
+            return (
+              <br
+                key={`break-${segmentIndex}-${characterIndex}`}
+              />
+            );
+          }
+
+          const index = unitIndex;
+          unitIndex += 1;
+          return (
+            <span
+              className="soft-blur-unit soft-blur-space"
+              data-soft-index={index}
+              key={`space-${segmentIndex}-${characterIndex}`}
+            >
+              {character}
+            </span>
+          );
+        });
+      }
+
+      return (
+        <span className="soft-blur-word" key={`word-${segmentIndex}`}>
+          {Array.from(segment).map((character, characterIndex) => {
+            const index = unitIndex;
+            unitIndex += 1;
+            return (
+              <span
+                className="soft-blur-unit"
+                data-soft-index={index}
+                key={`character-${segmentIndex}-${characterIndex}`}
+              >
+                {character}
+              </span>
+            );
+          })}
+        </span>
+      );
+    });
+}
 
 function BrandLogo() {
   return (
@@ -367,7 +401,7 @@ function ChipRevealStage({ marqueeRef, videoRef, frameRef }) {
               <div className="chip-feature-rule">
                 <span className="chip-feature-icon" aria-hidden="true">
                   <img
-                    className="chip-feature-motion"
+                    className="chip-feature-icon-motion"
                     src={`${ASSET_ROOT}/icons/${feature.icon}`}
                     alt=""
                   />
@@ -375,13 +409,13 @@ function ChipRevealStage({ marqueeRef, videoRef, frameRef }) {
               </div>
               <div className="chip-feature-copy">
                 <div className="chip-feature-title-clip">
-                  <h2 className="chip-feature-motion">
-                    {feature.title}
+                  <h2>
+                    <SoftBlurText text={feature.title} />
                   </h2>
                 </div>
                 <div className="chip-feature-paragraph-clip">
-                  <p className="chip-feature-motion">
-                    {feature.description}
+                  <p>
+                    <SoftBlurText text={feature.description} />
                   </p>
                 </div>
               </div>
@@ -962,6 +996,34 @@ function App() {
       const progress = clamp((value - edge0) / (edge1 - edge0));
       return progress * progress * (3 - 2 * progress);
     };
+    const cubicBezierValue = (progress, x1, y1, x2, y2) => {
+      const targetX = clamp(progress);
+      let parameter = targetX;
+
+      for (let iteration = 0; iteration < 5; iteration += 1) {
+        const inverse = 1 - parameter;
+        const currentX =
+          3 * inverse * inverse * parameter * x1 +
+          3 * inverse * parameter * parameter * x2 +
+          parameter * parameter * parameter;
+        const derivative =
+          3 * inverse * inverse * x1 +
+          6 * inverse * parameter * (x2 - x1) +
+          3 * parameter * parameter * (1 - x2);
+
+        if (Math.abs(derivative) < 0.00001) break;
+        parameter = clamp(
+          parameter - (currentX - targetX) / derivative,
+        );
+      }
+
+      const inverse = 1 - parameter;
+      return (
+        3 * inverse * inverse * parameter * y1 +
+        3 * inverse * parameter * parameter * y2 +
+        parameter * parameter * parameter
+      );
+    };
     const mix = (from, to, progress) => from + (to - from) * progress;
     let targetReveal = 0;
     let currentReveal = 0;
@@ -1043,41 +1105,76 @@ function App() {
       flushVideoSeek();
     };
 
-    const easeOutQuad = (progress) =>
-      1 - (1 - progress) * (1 - progress);
-
     const setFeatureProgress = (
       element,
       start,
       end,
       progress,
-      isMobile,
     ) => {
-      const motionElements = Array.from(
-        element.querySelectorAll(".chip-feature-motion"),
+      const icon = element.querySelector(".chip-feature-icon-motion");
+      const units = Array.from(
+        element.querySelectorAll(".soft-blur-unit"),
       );
-      const duration = isMobile ? 0.042 : 0.055;
-      const stagger = isMobile ? 0.012 : 0.015;
-      const totalMotion = duration + stagger * (motionElements.length - 1);
-      const exitStart = end - totalMotion;
+      const localProgress = clamp(
+        (progress - start) / Math.max(end - start, 0.0001),
+      );
+      const enterProgress = clamp(localProgress / 0.38);
+      const exitProgress = clamp((localProgress - 0.68) / 0.32);
+      const unitCount = Math.max(units.length, 1);
+      const layoutScale = getLayoutScale();
 
-      motionElements.forEach((motionElement, motionIndex) => {
-        const enter = clamp(
-          (progress - start - motionIndex * stagger) / duration,
-        );
-        const exit = clamp(
-          (progress - exitStart - motionIndex * stagger) / duration,
-        );
-        const yPercent = exit > 0
-          ? mix(0, -100, easeOutQuad(exit))
-          : mix(100, 0, easeOutQuad(enter));
+      element.style.visibility =
+        localProgress > 0 && localProgress < 1
+          ? "visible"
+          : "hidden";
 
-        motionElement.style.visibility =
-          enter > 0 && exit < 0.999 ? "visible" : "hidden";
+      const applySoftBlur = (
+        motionElement,
+        motionIndex,
+        blurDistance,
+      ) => {
+        if (!motionElement) return;
+
+        const rank = motionIndex / Math.max(unitCount - 1, 1);
+        const enterDelay = rank * 0.32;
+        const exitDelay = rank * 0.38;
+        const enter = cubicBezierValue(
+          clamp((enterProgress - enterDelay) / 0.68),
+          0.22,
+          1,
+          0.36,
+          1,
+        );
+        const exit = cubicBezierValue(
+          clamp((exitProgress - exitDelay) / 0.62),
+          0.64,
+          0,
+          0.78,
+          0,
+        );
+        const isExiting = exitProgress > 0;
+        const opacity = isExiting ? 1 - exit : enter;
+        const blur = isExiting
+          ? blurDistance * exit
+          : blurDistance * (1 - enter);
+        const y = isExiting
+          ? -9.28 * layoutScale * exit
+          : 9.28 * layoutScale * (1 - enter);
+
+        motionElement.style.opacity = opacity.toFixed(4);
+        motionElement.style.filter = `blur(${blur.toFixed(3)}px)`;
         motionElement.style.transform =
-          `translate3d(0, ${yPercent.toFixed(3)}%, 0)`;
-      });
+          `translate3d(0, ${y.toFixed(3)}px, 0)`;
+      };
 
+      applySoftBlur(icon, 0, 8);
+      units.forEach((unit, unitIndex) => {
+        applySoftBlur(
+          unit,
+          unitIndex,
+          unit.closest("p") ? 6 : 12,
+        );
+      });
     };
 
     const renderScene = () => {
@@ -1225,7 +1322,6 @@ function App() {
           start,
           end,
           currentVideo,
-          isMobile,
         );
       });
 
