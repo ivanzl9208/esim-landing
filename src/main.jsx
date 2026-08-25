@@ -88,6 +88,10 @@ const STORY_BENEFITS = [
   "...безопасная связь\u00A0— доступ к\u00A0сим-карте только у\u00A0вас",
 ];
 
+const SAFETY_COPY =
+  "А\u00A0ещё eSIM безопасна\u00A0— её\u00A0нельзя потерять или \n" +
+  "вытащить, как\u00A0обычную пластиковую сим-карту";
+
 function SoftBlurText({ text }) {
   let unitIndex = 0;
 
@@ -137,6 +141,32 @@ function SoftBlurText({ text }) {
         </span>
       );
     });
+}
+
+function SafetyCopy() {
+  let characterIndex = 0;
+
+  return (
+    <p className="safety-copy" aria-label={SAFETY_COPY.replace("\n", "")}>
+      {Array.from(SAFETY_COPY).map((character, index) => {
+        if (character === "\n") {
+          return <br className="safety-mobile-break" key={`break-${index}`} />;
+        }
+
+        const currentIndex = characterIndex;
+        characterIndex += 1;
+        return (
+          <span
+            className="safety-character"
+            data-safety-index={currentIndex}
+            key={`safety-${index}`}
+          >
+            {character}
+          </span>
+        );
+      })}
+    </p>
+  );
 }
 
 function BrandLogo() {
@@ -372,6 +402,7 @@ function ChipRevealStage({ marqueeRef, videoRef, frameRef }) {
             </p>
           ))}
         </div>
+        <SafetyCopy />
         <video
           className="chip-scroll-video"
           ref={videoRef}
@@ -973,6 +1004,10 @@ function App() {
     const storyElements = Array.from(
       scene.querySelectorAll(".story-benefit"),
     );
+    const safetyCopy = scene.querySelector(".safety-copy");
+    const safetyCharacters = Array.from(
+      scene.querySelectorAll(".safety-character"),
+    );
     if (
       !layer ||
       !gradient ||
@@ -981,6 +1016,8 @@ function App() {
       !button ||
       !buttonLabel ||
       !bottomFade ||
+      !safetyCopy ||
+      safetyCharacters.length === 0 ||
       featureElements.length !== CHIP_FEATURES.length ||
       storyElements.length !== STORY_BENEFITS.length
     ) {
@@ -1025,6 +1062,9 @@ function App() {
       );
     };
     const mix = (from, to, progress) => from + (to - from) * progress;
+    const mixRgb = (from, to, progress) =>
+      `rgb(${from.map((channel, index) =>
+        Math.round(mix(channel, to[index], progress))).join(", ")})`;
     let targetReveal = 0;
     let currentReveal = 0;
     let targetChip = 0;
@@ -1047,6 +1087,10 @@ function App() {
     let currentBackground = 0;
     let targetStory = 0;
     let currentStory = 0;
+    let targetSafety = 0;
+    let currentSafety = 0;
+    let targetReturnGradient = 0;
+    let currentReturnGradient = 0;
     let videoDuration = 6;
     let pendingVideoTime = null;
     let currentFrameIndex = 0;
@@ -1189,18 +1233,27 @@ function App() {
         : 0;
       const chipY = mix(chipStartY, chipEndY, currentChip);
       const chipScale = mix(isMobile ? 0.84 : 0.88, 1, currentChip);
+      const safetyChipExit =
+        -window.innerHeight * 0.95 * smoothstep(0.02, 0.62, currentSafety);
+      const grayStageOpacity = clamp(
+        currentBackground * (1 - currentReturnGradient),
+      );
       const buttonIsInverted = currentReveal >= 0.95;
-      const buttonUsesGrayStageStyle = currentBackground >= 0.95;
-      const buttonBackground = buttonUsesGrayStageStyle
-        ? "#fa5f05"
-        : buttonIsInverted
-          ? "#fff"
-          : "#fa5f05";
-      const buttonColor = buttonUsesGrayStageStyle
-        ? "#fff"
-        : buttonIsInverted
+      const buttonUsesGrayStageStyle = grayStageOpacity >= 0.95;
+      const buttonBackground = currentReturnGradient > 0
+        ? mixRgb([250, 95, 5], [255, 255, 255], currentReturnGradient)
+        : buttonUsesGrayStageStyle
           ? "#fa5f05"
-          : "#fff";
+          : buttonIsInverted
+            ? "#fff"
+            : "#fa5f05";
+      const buttonColor = currentReturnGradient > 0
+        ? mixRgb([255, 255, 255], [250, 95, 5], currentReturnGradient)
+        : buttonUsesGrayStageStyle
+          ? "#fff"
+          : buttonIsInverted
+            ? "#fa5f05"
+            : "#fff";
       const marqueeTravel =
         (window.innerWidth + marquee.offsetWidth) / 2;
       const marqueeOffset = mix(
@@ -1232,7 +1285,7 @@ function App() {
       gradient.style.clipPath = gradientClip;
       gradient.style.webkitClipPath = gradientClip;
       backgroundTransition.style.opacity =
-        currentBackground.toFixed(4);
+        grayStageOpacity.toFixed(4);
       video.style.opacity = useFrameSequence
         ? "0"
         : "1";
@@ -1240,7 +1293,7 @@ function App() {
         ? "1"
         : "0";
       video.style.transform =
-        `translate3d(-50%, calc(-50% + ${chipY.toFixed(2)}px), 0) ` +
+        `translate3d(-50%, calc(-50% + ${(chipY + safetyChipExit).toFixed(2)}px), 0) ` +
         `scale(${chipScale.toFixed(5)})`;
       frame.style.transform = video.style.transform;
       marquee.style.setProperty(
@@ -1275,6 +1328,27 @@ function App() {
         const opacity = clamp(Math.min(enter, exit));
         element.style.opacity = opacity.toFixed(4);
         element.style.filter = `blur(${((1 - opacity) * 10).toFixed(3)}px)`;
+      });
+
+      const safetyTravel = (isMobile ? 950 : 1500) * layoutScale;
+      const safetyReveal = clamp(currentSafety / 0.9);
+      safetyCopy.style.visibility =
+        currentSafety > 0.0001 && currentSafety < 0.9999
+          ? "visible"
+          : "hidden";
+      safetyCopy.style.transform =
+        `translate3d(-50%, ${(-safetyTravel * currentSafety).toFixed(2)}px, 0)`;
+      const safetyCharacterCount = Math.max(safetyCharacters.length - 1, 1);
+      safetyCharacters.forEach((character, index) => {
+        const threshold = index / safetyCharacterCount;
+        const active = smoothstep(
+          threshold - 0.025,
+          threshold + 0.025,
+          safetyReveal,
+        );
+        const opacity = mix(0.1, 0.86, active);
+        character.style.color =
+          `rgba(11, 12, 13, ${opacity.toFixed(4)})`;
       });
 
       if (useFrameSequence) {
@@ -1333,10 +1407,14 @@ function App() {
         buttonLabel.style.color = buttonColor;
         buttonLabel.style.webkitTextFillColor = buttonColor;
         const storyStageIsActive = currentStory > 0.0001;
-        bottomFade.style.opacity =
-          isMobile && (!buttonIsInverted || storyStageIsActive)
-            ? "1"
-            : "0";
+        const mobileFadeOpacity = currentReturnGradient > 0
+          ? 1 - currentReturnGradient
+          : !buttonIsInverted || storyStageIsActive
+            ? 1
+            : 0;
+        bottomFade.style.opacity = isMobile
+          ? mobileFadeOpacity.toFixed(4)
+          : "0";
       } else {
         button.style.removeProperty("background");
         button.style.removeProperty("background-color");
@@ -1382,6 +1460,9 @@ function App() {
         ? targetStory
         : 0;
       currentStory += (visibleStoryTarget - currentStory) * 0.14;
+      currentSafety += (targetSafety - currentSafety) * 0.1;
+      currentReturnGradient +=
+        (targetReturnGradient - currentReturnGradient) * 0.1;
 
       if (Math.abs(targetReveal - currentReveal) < 0.0005) {
         currentReveal = targetReveal;
@@ -1430,6 +1511,14 @@ function App() {
       if (Math.abs(visibleStoryTarget - currentStory) < 0.0005) {
         currentStory = visibleStoryTarget;
       }
+      if (Math.abs(targetSafety - currentSafety) < 0.0005) {
+        currentSafety = targetSafety;
+      }
+      if (
+        Math.abs(targetReturnGradient - currentReturnGradient) < 0.0005
+      ) {
+        currentReturnGradient = targetReturnGradient;
+      }
 
       renderScene();
 
@@ -1446,7 +1535,9 @@ function App() {
         definitionVelocity !== 0 ||
         currentDefinitionVisibility !== targetDefinitionVisibility ||
         currentBackground !== targetBackground ||
-        currentStory !== targetStory
+        currentStory !== targetStory ||
+        currentSafety !== targetSafety ||
+        currentReturnGradient !== targetReturnGradient
       ) {
         rafId = window.requestAnimationFrame(render);
       } else {
@@ -1519,6 +1610,25 @@ function App() {
         Math.min(storyStart + viewportHeight * 7.2, scrollRange),
         storyStart + 1,
       );
+      const safetyStart = Math.min(
+        storyEnd + viewportHeight * 0.25,
+        scrollRange - 1,
+      );
+      const safetyEnd = Math.max(
+        Math.min(safetyStart + viewportHeight * 6, scrollRange),
+        safetyStart + 1,
+      );
+      const returnGradientStart = Math.min(
+        safetyEnd + viewportHeight * 0.2,
+        scrollRange - 1,
+      );
+      const returnGradientEnd = Math.max(
+        Math.min(
+          returnGradientStart + viewportHeight * 2.25,
+          scrollRange,
+        ),
+        returnGradientStart + 1,
+      );
 
       targetReveal = smoothstep(0, 0.7, progress);
       targetChip = smoothstep(0.04, 0.68, progress);
@@ -1558,6 +1668,14 @@ function App() {
       targetStory = clamp(
         (scrollOffset - storyStart) / (storyEnd - storyStart),
       );
+      targetSafety = clamp(
+        (scrollOffset - safetyStart) / (safetyEnd - safetyStart),
+      );
+      targetReturnGradient = smoothstep(
+        returnGradientStart,
+        returnGradientEnd,
+        scrollOffset,
+      );
 
       if (reducedMotion) {
         currentReveal = targetReveal;
@@ -1573,6 +1691,8 @@ function App() {
         currentDefinitionVisibility = targetDefinitionVisibility;
         currentBackground = targetBackground;
         currentStory = targetStory;
+        currentSafety = targetSafety;
+        currentReturnGradient = targetReturnGradient;
         renderScene();
         return;
       }

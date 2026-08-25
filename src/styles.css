@@ -71,7 +71,7 @@ a {
 .scroll-scene {
   --curtain-y: 100%;
   position: relative;
-  height: 3550svh;
+  height: 4400svh;
   background: #fff;
 }
 
@@ -694,6 +694,34 @@ a {
   letter-spacing: calc(-1.8px * var(--layout-scale));
 }
 
+.safety-copy {
+  position: absolute;
+  z-index: 4;
+  top: calc(655px * var(--layout-scale));
+  left: 50%;
+  width: min(calc(1186px * var(--layout-scale)), calc(100vw - 64px));
+  margin: 0;
+  color: rgba(11, 12, 13, 0.1);
+  font-family: "SB Sans Display", Arial, sans-serif;
+  font-size: calc(120px * var(--layout-scale));
+  font-weight: 600;
+  line-height: calc(120px * var(--layout-scale));
+  letter-spacing: calc(-2.4px * var(--layout-scale));
+  text-align: center;
+  visibility: hidden;
+  transform: translate3d(-50%, 0, 0);
+  pointer-events: none;
+  will-change: transform;
+}
+
+.safety-character {
+  color: rgba(11, 12, 13, 0.1);
+}
+
+.safety-mobile-break {
+  display: none;
+}
+
 @media (max-width: 1199px) and (min-width: 701px) {
   .site-header {
     gap: calc(18px * var(--layout-scale));
@@ -722,7 +750,7 @@ a {
 
 @media (max-width: 700px) {
   .scroll-scene {
-    height: 3550svh;
+    height: 4400svh;
   }
 
   .hero-stage {
@@ -1044,6 +1072,18 @@ a {
     transform: translateY(-50%);
   }
 
+  .safety-copy {
+    top: calc(461px * var(--layout-scale));
+    width: min(calc(328px * var(--layout-scale)), calc(100vw - 32px * var(--layout-scale)));
+    font-size: calc(52px * var(--layout-scale));
+    line-height: calc(52px * var(--layout-scale));
+    letter-spacing: calc(-1.04px * var(--layout-scale));
+  }
+
+  .safety-mobile-break {
+    display: block;
+  }
+
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1072,5 +1112,9 @@ a {
 
   .story-benefit {
     filter: none !important;
+  }
+
+  .safety-copy {
+    transform: translate3d(-50%, -45vh, 0) !important;
   }
 }
