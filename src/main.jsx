@@ -1233,8 +1233,10 @@ function App() {
         : 0;
       const chipY = mix(chipStartY, chipEndY, currentChip);
       const chipScale = mix(isMobile ? 0.84 : 0.88, 1, currentChip);
-      const safetyChipExit =
-        -window.innerHeight * 0.95 * smoothstep(0, 0.16, currentSafety);
+      const safetyTextProgress = clamp(currentSafety);
+      const safetyTravel = (isMobile ? 950 : 1500) * layoutScale;
+      const safetyGap = (isMobile ? 64 : 96) * layoutScale;
+      const safetyChipExit = -safetyTravel * safetyTextProgress;
       const grayStageOpacity = clamp(
         currentBackground * (1 - currentReturnGradient),
       );
@@ -1330,17 +1332,13 @@ function App() {
         element.style.filter = `blur(${((1 - opacity) * 10).toFixed(3)}px)`;
       });
 
-      const safetyTextProgress = clamp(
-        (currentSafety - 0.08) / 0.92,
-      );
-      const safetyTravel = (isMobile ? 950 : 1500) * layoutScale;
       const safetyReveal = clamp(safetyTextProgress / 0.9);
       safetyCopy.style.visibility =
         safetyTextProgress > 0.0001 && safetyTextProgress < 0.9999
           ? "visible"
           : "hidden";
       safetyCopy.style.transform =
-        `translate3d(-50%, ${(-safetyTravel * safetyTextProgress).toFixed(2)}px, 0)`;
+        `translate3d(-50%, ${(safetyGap - safetyTravel * safetyTextProgress).toFixed(2)}px, 0)`;
       const safetyCharacterCount = Math.max(safetyCharacters.length - 1, 1);
       safetyCharacters.forEach((character, index) => {
         const threshold = index / safetyCharacterCount;
@@ -1622,7 +1620,7 @@ function App() {
         safetyStart + 1,
       );
       const returnGradientStart = Math.min(
-        safetyEnd + viewportHeight * 0.2,
+        safetyStart + (safetyEnd - safetyStart) * 0.58,
         scrollRange - 1,
       );
       const returnGradientEnd = Math.max(
