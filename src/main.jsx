@@ -1234,7 +1234,7 @@ function App() {
       const chipY = mix(chipStartY, chipEndY, currentChip);
       const chipScale = mix(isMobile ? 0.84 : 0.88, 1, currentChip);
       const safetyChipExit =
-        -window.innerHeight * 0.95 * smoothstep(0.02, 0.62, currentSafety);
+        -window.innerHeight * 0.95 * smoothstep(0, 0.16, currentSafety);
       const grayStageOpacity = clamp(
         currentBackground * (1 - currentReturnGradient),
       );
@@ -1330,14 +1330,17 @@ function App() {
         element.style.filter = `blur(${((1 - opacity) * 10).toFixed(3)}px)`;
       });
 
+      const safetyTextProgress = clamp(
+        (currentSafety - 0.08) / 0.92,
+      );
       const safetyTravel = (isMobile ? 950 : 1500) * layoutScale;
-      const safetyReveal = clamp(currentSafety / 0.9);
+      const safetyReveal = clamp(safetyTextProgress / 0.9);
       safetyCopy.style.visibility =
-        currentSafety > 0.0001 && currentSafety < 0.9999
+        safetyTextProgress > 0.0001 && safetyTextProgress < 0.9999
           ? "visible"
           : "hidden";
       safetyCopy.style.transform =
-        `translate3d(-50%, ${(-safetyTravel * currentSafety).toFixed(2)}px, 0)`;
+        `translate3d(-50%, ${(-safetyTravel * safetyTextProgress).toFixed(2)}px, 0)`;
       const safetyCharacterCount = Math.max(safetyCharacters.length - 1, 1);
       safetyCharacters.forEach((character, index) => {
         const threshold = index / safetyCharacterCount;
