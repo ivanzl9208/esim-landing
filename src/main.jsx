@@ -1234,8 +1234,13 @@ function App() {
       const chipY = mix(chipStartY, chipEndY, currentChip);
       const chipScale = mix(isMobile ? 0.84 : 0.88, 1, currentChip);
       const safetyTextProgress = clamp(currentSafety);
-      const safetyTravel = (isMobile ? 950 : 1500) * layoutScale;
       const safetyGap = (isMobile ? 64 : 96) * layoutScale;
+      const safetyExitMargin = (isMobile ? 24 : 40) * layoutScale;
+      const safetyTravel =
+        safetyCopy.offsetTop +
+        safetyCopy.offsetHeight +
+        safetyGap +
+        safetyExitMargin;
       const safetyChipExit = -safetyTravel * safetyTextProgress;
       const grayStageOpacity = clamp(
         currentBackground * (1 - currentReturnGradient),
