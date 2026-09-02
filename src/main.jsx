@@ -1234,12 +1234,20 @@ function App() {
       const chipY = mix(chipStartY, chipEndY, currentChip);
       const chipScale = mix(isMobile ? 0.84 : 0.88, 1, currentChip);
       const safetyTextProgress = clamp(currentSafety);
-      const safetyGap = (isMobile ? 64 : 96) * layoutScale;
+      const safetyGap = (isMobile ? 60 : 101) * layoutScale;
       const safetyExitMargin = (isMobile ? 24 : 40) * layoutScale;
+      const chipRenderedHeight =
+        Math.max(video.offsetHeight, frame.offsetHeight) * chipScale;
+      const safetyStartOffset =
+        window.innerHeight / 2 +
+        chipY +
+        chipRenderedHeight / 2 +
+        safetyGap -
+        safetyCopy.offsetTop;
       const safetyTravel =
         safetyCopy.offsetTop +
+        safetyStartOffset +
         safetyCopy.offsetHeight +
-        safetyGap +
         safetyExitMargin;
       const safetyChipExit = -safetyTravel * safetyTextProgress;
       const grayStageOpacity = clamp(
@@ -1343,7 +1351,7 @@ function App() {
           ? "visible"
           : "hidden";
       safetyCopy.style.transform =
-        `translate3d(-50%, ${(safetyGap - safetyTravel * safetyTextProgress).toFixed(2)}px, 0)`;
+        `translate3d(-50%, ${(safetyStartOffset - safetyTravel * safetyTextProgress).toFixed(2)}px, 0)`;
       const safetyCharacterCount = Math.max(safetyCharacters.length - 1, 1);
       safetyCharacters.forEach((character, index) => {
         const threshold = index / safetyCharacterCount;
