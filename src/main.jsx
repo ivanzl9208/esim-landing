@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from "react";
 import { createRoot } from "react-dom/client";
+import DeviceChecker from "./DeviceChecker.jsx";
 import "./styles.css";
 
 const ASSET_ROOT = `${import.meta.env.BASE_URL}assets`;
@@ -1767,6 +1768,7 @@ function App() {
           </button>
         </section>
       </div>
+      <DeviceChecker />
     </main>
   );
 }

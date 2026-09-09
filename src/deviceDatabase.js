@@ -1,0 +1,46 @@
+export const DEVICE_CATEGORIES = {
+  SMARTPHONE: "smartphone",
+  TABLET: "tablet",
+  WEARABLE: "wearable",
+};
+
+export const DEVICE_DATABASE = [
+  { brand: "Apple", model: "iPhone 17 Pro Max", category: DEVICE_CATEGORIES.SMARTPHONE, supportsEsim: true },
+  { brand: "Samsung", model: "Galaxy S26 Ultra", category: DEVICE_CATEGORIES.SMARTPHONE, supportsEsim: true },
+  { brand: "Apple", model: "Watch Series 11", category: DEVICE_CATEGORIES.WEARABLE, supportsEsim: true },
+  { brand: "Apple", model: "iPad Pro 13 (M5, 2025)", category: DEVICE_CATEGORIES.TABLET, supportsEsim: true },
+  { brand: "Xiaomi", model: "17 Ultra", category: DEVICE_CATEGORIES.SMARTPHONE, supportsEsim: true },
+  { brand: "Google", model: "Pixel 10 Pro XL", category: DEVICE_CATEGORIES.SMARTPHONE, supportsEsim: true },
+  { brand: "Samsung", model: "Galaxy Z Fold 7", category: DEVICE_CATEGORIES.SMARTPHONE, supportsEsim: true },
+  { brand: "Apple", model: "Watch Ultra 3", category: DEVICE_CATEGORIES.WEARABLE, supportsEsim: true },
+  { brand: "Apple", model: "iPad Air 13 (M3, 2025)", category: DEVICE_CATEGORIES.TABLET, supportsEsim: true },
+  { brand: "Samsung", model: "Galaxy Watch 8", category: DEVICE_CATEGORIES.WEARABLE, supportsEsim: true },
+  { brand: "Samsung", model: "Galaxy A54", category: DEVICE_CATEGORIES.SMARTPHONE, supportsEsim: true },
+  { brand: "Samsung", model: "Galaxy S23", category: DEVICE_CATEGORIES.SMARTPHONE, supportsEsim: true },
+  { brand: "Samsung", model: "Galaxy S23+", category: DEVICE_CATEGORIES.SMARTPHONE, supportsEsim: true },
+  { brand: "Samsung", model: "Galaxy S23 Ultra", category: DEVICE_CATEGORIES.SMARTPHONE, supportsEsim: true },
+  { brand: "Samsung", model: "Galaxy S22 Ultra 5G", category: DEVICE_CATEGORIES.SMARTPHONE, supportsEsim: true },
+  { brand: "Apple", model: "iPhone 16 Pro", category: DEVICE_CATEGORIES.SMARTPHONE, supportsEsim: true },
+  { brand: "Apple", model: "iPhone 15 Pro Max", category: DEVICE_CATEGORIES.SMARTPHONE, supportsEsim: true },
+  { brand: "Apple", model: "iPhone 14", category: DEVICE_CATEGORIES.SMARTPHONE, supportsEsim: true },
+  { brand: "Apple", model: "iPhone 13 mini", category: DEVICE_CATEGORIES.SMARTPHONE, supportsEsim: true },
+  { brand: "Apple", model: "iPhone 8 Plus", category: DEVICE_CATEGORIES.SMARTPHONE, supportsEsim: false },
+  { brand: "Apple", model: "iPhone X", category: DEVICE_CATEGORIES.SMARTPHONE, supportsEsim: false },
+  { brand: "Samsung", model: "Galaxy S20 FE", category: DEVICE_CATEGORIES.SMARTPHONE, supportsEsim: false },
+  { brand: "Google", model: "Pixel 4a", category: DEVICE_CATEGORIES.SMARTPHONE, supportsEsim: true },
+  { brand: "Huawei", model: "Watch 4 Pro", category: DEVICE_CATEGORIES.WEARABLE, supportsEsim: true },
+  { brand: "Huawei", model: "MatePad Pro 13.2", category: DEVICE_CATEGORIES.TABLET, supportsEsim: false },
+];
+
+export const POPULAR_DEVICE_NAMES = [
+  "iPhone 17 Pro Max",
+  "Samsung Galaxy S26 Ultra",
+  "Apple Watch Series 11",
+  "iPad Pro 13 (M5, 2025)",
+  "Xiaomi 17 Ultra",
+  "Google Pixel 10 Pro XL",
+  "Samsung Galaxy Z Fold 7",
+  "Apple Watch Ultra 3",
+  "iPad Air 13 (M3, 2025)",
+  "Samsung Galaxy Watch 8",
+];
