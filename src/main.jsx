@@ -1006,6 +1006,7 @@ function App() {
       scene.querySelectorAll(".story-benefit"),
     );
     const safetyCopy = scene.querySelector(".safety-copy");
+    const checker = scene.querySelector(".device-checker");
     const safetyCharacters = Array.from(
       scene.querySelectorAll(".safety-character"),
     );
@@ -1018,6 +1019,7 @@ function App() {
       !buttonLabel ||
       !bottomFade ||
       !safetyCopy ||
+      !checker ||
       safetyCharacters.length === 0 ||
       featureElements.length !== CHIP_FEATURES.length ||
       storyElements.length !== STORY_BENEFITS.length
@@ -1092,6 +1094,8 @@ function App() {
     let currentSafety = 0;
     let targetReturnGradient = 0;
     let currentReturnGradient = 0;
+    let targetChecker = 0;
+    let currentChecker = 0;
     let videoDuration = 6;
     let pendingVideoTime = null;
     let currentFrameIndex = 0;
@@ -1288,9 +1292,18 @@ function App() {
       );
 
       const transitionIsActive = currentReveal > 0.0001;
+      const checkerReveal = clamp(currentChecker);
       scene.dataset.chipTransitionActive = transitionIsActive
         ? "true"
         : "false";
+      scene.dataset.checkerVisible = checkerReveal > 0.001
+        ? "true"
+        : "false";
+      scene.dataset.checkerInteractive = checkerReveal > 0.96
+        ? "true"
+        : "false";
+      scene.style.setProperty("--checker-reveal", checkerReveal.toFixed(4));
+      checker.inert = checkerReveal <= 0.96;
       scene.dataset.chipButtonInverted = buttonIsInverted
         ? "true"
         : "false";
@@ -1428,8 +1441,9 @@ function App() {
             ? 1
             : 0;
         bottomFade.style.opacity = isMobile
-          ? mobileFadeOpacity.toFixed(4)
+          ? (mobileFadeOpacity * (1 - checkerReveal)).toFixed(4)
           : "0";
+        button.style.opacity = (1 - checkerReveal).toFixed(4);
       } else {
         button.style.removeProperty("background");
         button.style.removeProperty("background-color");
@@ -1437,6 +1451,7 @@ function App() {
         buttonLabel.style.removeProperty("background");
         buttonLabel.style.removeProperty("color");
         buttonLabel.style.removeProperty("-webkit-text-fill-color");
+        button.style.removeProperty("opacity");
       }
     };
 
@@ -1478,6 +1493,7 @@ function App() {
       currentSafety += (targetSafety - currentSafety) * 0.1;
       currentReturnGradient +=
         (targetReturnGradient - currentReturnGradient) * 0.1;
+      currentChecker += (targetChecker - currentChecker) * 0.12;
 
       if (Math.abs(targetReveal - currentReveal) < 0.0005) {
         currentReveal = targetReveal;
@@ -1534,6 +1550,9 @@ function App() {
       ) {
         currentReturnGradient = targetReturnGradient;
       }
+      if (Math.abs(targetChecker - currentChecker) < 0.0005) {
+        currentChecker = targetChecker;
+      }
 
       renderScene();
 
@@ -1552,7 +1571,8 @@ function App() {
         currentBackground !== targetBackground ||
         currentStory !== targetStory ||
         currentSafety !== targetSafety ||
-        currentReturnGradient !== targetReturnGradient
+        currentReturnGradient !== targetReturnGradient ||
+        currentChecker !== targetChecker
       ) {
         rafId = window.requestAnimationFrame(render);
       } else {
@@ -1644,6 +1664,14 @@ function App() {
         ),
         returnGradientStart + 1,
       );
+      const checkerStart = Math.min(
+        safetyEnd - viewportHeight * 0.35,
+        scrollRange - 1,
+      );
+      const checkerEnd = Math.max(
+        Math.min(checkerStart + viewportHeight * 0.7, scrollRange),
+        checkerStart + 1,
+      );
 
       targetReveal = smoothstep(0, 0.7, progress);
       targetChip = smoothstep(0.04, 0.68, progress);
@@ -1691,6 +1719,11 @@ function App() {
         returnGradientEnd,
         scrollOffset,
       );
+      targetChecker = smoothstep(
+        checkerStart,
+        checkerEnd,
+        scrollOffset,
+      );
 
       if (reducedMotion) {
         currentReveal = targetReveal;
@@ -1708,6 +1741,7 @@ function App() {
         currentStory = targetStory;
         currentSafety = targetSafety;
         currentReturnGradient = targetReturnGradient;
+        currentChecker = targetChecker;
         renderScene();
         return;
       }
@@ -1736,6 +1770,11 @@ function App() {
       buttonLabel.style.removeProperty("color");
       buttonLabel.style.removeProperty("-webkit-text-fill-color");
       scene.removeAttribute("data-chip-button-inverted");
+      scene.removeAttribute("data-checker-visible");
+      scene.removeAttribute("data-checker-interactive");
+      scene.style.removeProperty("--checker-reveal");
+      checker.inert = false;
+      button.style.removeProperty("opacity");
       if (rafId) window.cancelAnimationFrame(rafId);
     };
   }, []);
@@ -1766,9 +1805,9 @@ function App() {
               Подключить eSIM
             </span>
           </button>
+          <DeviceChecker />
         </section>
       </div>
-      <DeviceChecker />
     </main>
   );
 }

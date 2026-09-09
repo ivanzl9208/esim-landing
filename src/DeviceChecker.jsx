@@ -178,7 +178,7 @@ const findPopularDevice = (label) =>
     (device) => getPopularName(device) === label || getFullName(device) === label,
   );
 
-function DeviceResult({ device }) {
+function DeviceResult({ device, onReset }) {
   const supportsEsim = device.supportsEsim;
   const fullName = getFullName(device);
 
@@ -207,7 +207,11 @@ function DeviceResult({ device }) {
           <button type="button" disabled>
             {supportsEsim ? "Подключить eSIM" : "Заказать сим-карту"}
           </button>
-          <button className="checker-result-secondary" type="button" disabled>
+          <button
+            className="checker-result-secondary"
+            type="button"
+            onClick={onReset}
+          >
             У меня другое устройство
           </button>
         </div>
@@ -247,13 +251,6 @@ function DeviceChecker() {
     }, TOAST_DURATION);
   };
 
-  const restoreMobileViewport = () => {
-    if (!window.matchMedia("(max-width: 700px)").matches) return;
-    window.requestAnimationFrame(() => {
-      sectionRef.current?.scrollIntoView({ block: "start", behavior: "smooth" });
-    });
-  };
-
   const runCheck = (device = null, submittedValue = query) => {
     const enteredValue = submittedValue.trim();
     if (!device && !enteredValue) return;
@@ -272,14 +269,12 @@ function DeviceChecker() {
         setSelectedDevice(null);
         setState("form");
         showNotFound();
-        restoreMobileViewport();
         return;
       }
 
       setQuery(getFullName(resolvedDevice));
       setSelectedDevice(resolvedDevice);
       setState("result");
-      restoreMobileViewport();
     }, CHECK_DELAY);
   };
 
@@ -292,6 +287,18 @@ function DeviceChecker() {
     setState("form");
     setActiveSuggestion(0);
     window.requestAnimationFrame(() => inputRef.current?.focus());
+  };
+
+  const resetCheck = () => {
+    window.clearTimeout(checkTimerRef.current);
+    checkTimerRef.current = 0;
+    hideToast();
+    setQuery("");
+    setSelectedDevice(null);
+    setState("form");
+    setActiveSuggestion(0);
+    setIsFocused(false);
+    inputRef.current?.blur();
   };
 
   const chooseDevice = (device) => {
@@ -364,7 +371,7 @@ function DeviceChecker() {
     >
       <div className="checker-panel">
         {state === "result" && selectedDevice ? (
-          <DeviceResult device={selectedDevice} />
+          <DeviceResult device={selectedDevice} onReset={resetCheck} />
         ) : (
           <div className="checker-form-view">
             <h2 className="checker-heading">Ваше устройство готово к eSIM?</h2>
