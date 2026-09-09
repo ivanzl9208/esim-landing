@@ -1293,6 +1293,8 @@ function App() {
 
       const transitionIsActive = currentReveal > 0.0001;
       const checkerReveal = clamp(currentChecker);
+      const checkerOffset = (1 - checkerReveal) *
+        (window.innerHeight + 48 * layoutScale);
       scene.dataset.chipTransitionActive = transitionIsActive
         ? "true"
         : "false";
@@ -1302,7 +1304,10 @@ function App() {
       scene.dataset.checkerInteractive = checkerReveal > 0.96
         ? "true"
         : "false";
-      scene.style.setProperty("--checker-reveal", checkerReveal.toFixed(4));
+      scene.style.setProperty(
+        "--checker-y",
+        `${checkerOffset.toFixed(2)}px`,
+      );
       checker.inert = checkerReveal <= 0.96;
       scene.dataset.chipButtonInverted = buttonIsInverted
         ? "true"
@@ -1665,11 +1670,11 @@ function App() {
         returnGradientStart + 1,
       );
       const checkerStart = Math.min(
-        safetyEnd - viewportHeight * 0.35,
+        safetyStart + (safetyEnd - safetyStart) * 0.62,
         scrollRange - 1,
       );
       const checkerEnd = Math.max(
-        Math.min(checkerStart + viewportHeight * 0.7, scrollRange),
+        Math.min(safetyEnd, scrollRange),
         checkerStart + 1,
       );
 
@@ -1772,7 +1777,7 @@ function App() {
       scene.removeAttribute("data-chip-button-inverted");
       scene.removeAttribute("data-checker-visible");
       scene.removeAttribute("data-checker-interactive");
-      scene.style.removeProperty("--checker-reveal");
+      scene.style.removeProperty("--checker-y");
       checker.inert = false;
       button.style.removeProperty("opacity");
       if (rafId) window.cancelAnimationFrame(rafId);

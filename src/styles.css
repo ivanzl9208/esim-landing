@@ -1128,10 +1128,10 @@ a {
   overflow: hidden;
   background: transparent;
   color: #fff;
-  opacity: var(--checker-reveal, 0);
   visibility: hidden;
+  transform: translate3d(0, var(--checker-y, 110vh), 0);
   pointer-events: none;
-  will-change: opacity;
+  will-change: transform;
 }
 
 .scroll-scene[data-checker-visible="true"] .device-checker {
@@ -1535,11 +1535,11 @@ button.checker-input-action:active {
   width: calc(440px * var(--layout-scale));
   min-height: calc(56px * var(--layout-scale));
   align-items: center;
-  gap: calc(12px * var(--layout-scale));
-  padding: calc(16px * var(--layout-scale));
-  border-radius: calc(20px * var(--layout-scale));
-  background: #222326;
-  box-shadow: 0 4px 8px rgba(11, 13, 15, 0.08), 0 0 2px rgba(11, 13, 15, 0.08);
+  gap: calc(20px * var(--layout-scale));
+  padding: calc(16px * var(--layout-scale)) calc(16px * var(--layout-scale)) calc(16px * var(--layout-scale)) calc(24px * var(--layout-scale));
+  border-radius: calc(24px * var(--layout-scale));
+  background: #1e1f21;
+  box-shadow: 0 4px 4px rgba(11, 13, 15, 0.08), 0 0 1px rgba(11, 13, 15, 0.08);
   color: #fff;
   opacity: 0;
   visibility: hidden;
@@ -1556,17 +1556,25 @@ button.checker-input-action:active {
   transition-delay: 0s;
 }
 
-.checker-toast-alert {
-  width: calc(20px * var(--layout-scale));
-  height: calc(20px * var(--layout-scale));
-  flex: 0 0 calc(20px * var(--layout-scale));
+.checker-toast-main {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: calc(8px * var(--layout-scale));
 }
 
-.checker-toast span {
+.checker-toast-alert {
+  width: calc(24px * var(--layout-scale));
+  height: calc(24px * var(--layout-scale));
+  flex: 0 0 calc(24px * var(--layout-scale));
+}
+
+.checker-toast-main span {
   flex: 1 1 auto;
-  font-size: calc(15px * var(--layout-scale));
-  line-height: calc(18px * var(--layout-scale));
-  letter-spacing: calc(-0.5px * var(--layout-scale));
+  font-size: calc(16px * var(--layout-scale));
+  line-height: calc(20px * var(--layout-scale));
+  letter-spacing: calc(-0.65px * var(--layout-scale));
 }
 
 .checker-toast button {
@@ -1574,7 +1582,7 @@ button.checker-input-action:active {
   width: calc(24px * var(--layout-scale));
   height: calc(24px * var(--layout-scale));
   flex: 0 0 calc(24px * var(--layout-scale));
-  padding: calc(5px * var(--layout-scale));
+  padding: 0;
   border: 0;
   background: transparent;
   cursor: pointer;

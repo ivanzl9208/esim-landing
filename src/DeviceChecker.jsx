@@ -477,8 +477,10 @@ function DeviceChecker() {
           role="status"
           aria-live="polite"
         >
-          <img className="checker-toast-alert" src={`${ASSET_ROOT}/esim-alert.svg`} alt="" />
-          <span>Устройство не найдено, измените модель</span>
+          <div className="checker-toast-main">
+            <img className="checker-toast-alert" src={`${ASSET_ROOT}/esim-alert.svg`} alt="" />
+            <span>Устройство не найдено, измените модель</span>
+          </div>
           <button type="button" aria-label="Закрыть уведомление" onClick={hideToast}>
             <img src={`${ASSET_ROOT}/esim-toast-close.svg`} alt="" />
           </button>
