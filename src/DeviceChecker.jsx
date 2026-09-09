@@ -6,53 +6,59 @@ const CHECK_DELAY = 720;
 const TOAST_DURATION = 10000;
 
 const BRAND_ALIASES = {
-  apple: ["apple", "эппл", "эпл", "аппл", "iphone", "айфон", "ipad", "айпад", "watch"],
-  samsung: ["samsung", "самсунг", "galaxy", "гэлакси", "гелекси", "галакси"],
-  xiaomi: ["xiaomi", "сяоми", "ксиаоми"],
-  google: ["google", "гугл", "pixel", "пиксель"],
-  huawei: ["huawei", "хуавей", "хуавэй"],
+  apple: ["apple", "iphone", "ipad"],
+  samsung: ["samsung", "galaxy"],
+  xiaomi: ["xiaomi"],
+  google: ["google", "pixel"],
+  huawei: ["huawei", "matepad"],
 };
 
-const ALIAS_REPLACEMENTS = [
-  [/\b(?:эппл|эпл|аппл)\b/gu, "apple"],
-  [/\b(?:айфон)\b/gu, "iphone"],
-  [/\b(?:айпад)\b/gu, "ipad"],
-  [/\b(?:самсунг)\b/gu, "samsung"],
-  [/\b(?:гэлакси|гелекси|галакси)\b/gu, "galaxy"],
-  [/\b(?:сяоми|ксиаоми)\b/gu, "xiaomi"],
-  [/\b(?:гугл)\b/gu, "google"],
-  [/\b(?:пиксель)\b/gu, "pixel"],
-  [/\b(?:хуавей|хуавэй)\b/gu, "huawei"],
-];
+const SEARCH_TOKEN_ALIASES = new Map([
+  ["эппл", "apple"],
+  ["эпл", "apple"],
+  ["аппл", "apple"],
+  ["айфон", "iphone"],
+  ["айфоун", "iphone"],
+  ["айпад", "ipad"],
+  ["айпэд", "ipad"],
+  ["вотч", "watch"],
+  ["воч", "watch"],
+  ["уотч", "watch"],
+  ["самсунг", "samsung"],
+  ["галакси", "galaxy"],
+  ["гелекси", "galaxy"],
+  ["гэлакси", "galaxy"],
+  ["гугл", "google"],
+  ["пиксель", "pixel"],
+  ["пиксел", "pixel"],
+  ["сяоми", "xiaomi"],
+  ["ксиаоми", "xiaomi"],
+  ["шаоми", "xiaomi"],
+  ["хуавей", "huawei"],
+  ["хуавэй", "huawei"],
+  ["мейтпад", "matepad"],
+  ["мэйтпад", "matepad"],
+  ["про", "pro"],
+  ["макс", "max"],
+  ["ультра", "ultra"],
+  ["плюс", "plus"],
+  ["мини", "mini"],
+  ["восемь", "8"],
+  ["фолд", "fold"],
+  ["флип", "flip"],
+  ["серия", "series"],
+  ["серии", "series"],
+  ["эйр", "air"],
+  ["аир", "air"],
+  ["икс", "x"],
+]);
 
-const normalizeSearch = (value) => {
-  let normalized = value
-    .normalize("NFKD")
-    .toLocaleLowerCase("ru-RU")
-    .replace(/ё/gu, "е")
-    .replace(/[^a-zа-я0-9+]+/giu, " ")
-    .trim();
-
-  ALIAS_REPLACEMENTS.forEach(([pattern, replacement]) => {
-    normalized = normalized.replace(pattern, replacement);
-  });
-
-  return normalized.replace(/\s+/gu, " ");
-};
-
-const getFullName = (device) => {
-  const model = device.model.trim();
-  return normalizeSearch(model).startsWith(normalizeSearch(device.brand))
-    ? model
-    : `${device.brand} ${model}`;
-};
-
-const getPopularName = (device) => {
-  if (device.brand === "Apple" && !/^Watch/u.test(device.model)) {
-    return device.model;
-  }
-  return getFullName(device);
-};
+const CYRILLIC_MODEL_PREFIXES = new Map([
+  ["а", "a"],
+  ["м", "m"],
+  ["с", "s"],
+  ["з", "z"],
+]);
 
 const levenshtein = (left, right) => {
   if (left === right) return 0;
@@ -78,6 +84,61 @@ const levenshtein = (left, right) => {
   }
 
   return previous[right.length];
+};
+
+const resolveSearchToken = (token) => {
+  const exactAlias = SEARCH_TOKEN_ALIASES.get(token);
+  if (exactAlias) return exactAlias;
+
+  const modelCode = token.match(/^([амсз])(\d+[a-zа-я]*)$/u);
+  if (modelCode) {
+    return `${CYRILLIC_MODEL_PREFIXES.get(modelCode[1])}${modelCode[2]}`;
+  }
+
+  if (!/[а-я]/u.test(token) || token.length < 4) return token;
+
+  const fuzzyAlias = Array.from(SEARCH_TOKEN_ALIASES.entries())
+    .filter(([alias]) => /[а-я]/u.test(alias))
+    .map(([alias, replacement]) => ({
+      replacement,
+      distance: levenshtein(token, alias),
+    }))
+    .sort((left, right) => left.distance - right.distance)[0];
+
+  const maxDistance = token.length >= 7 ? 2 : 1;
+  return fuzzyAlias?.distance <= maxDistance
+    ? fuzzyAlias.replacement
+    : token;
+};
+
+const normalizeSearch = (value) => {
+  const normalized = value
+    .normalize("NFKC")
+    .toLocaleLowerCase("ru-RU")
+    .replace(/ё/gu, "е")
+    .replace(/\+/gu, " плюс ")
+    .replace(/[^a-zа-я0-9]+/giu, " ")
+    .trim();
+
+  return normalized
+    .split(/\s+/gu)
+    .filter(Boolean)
+    .map(resolveSearchToken)
+    .join(" ");
+};
+
+const getFullName = (device) => {
+  const model = device.model.trim();
+  return normalizeSearch(model).startsWith(normalizeSearch(device.brand))
+    ? model
+    : `${device.brand} ${model}`;
+};
+
+const getPopularName = (device) => {
+  if (device.brand === "Apple" && !/^Watch/u.test(device.model)) {
+    return device.model;
+  }
+  return getFullName(device);
 };
 
 const getRecognizedBrand = (value) => {

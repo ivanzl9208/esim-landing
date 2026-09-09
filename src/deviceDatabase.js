@@ -21,6 +21,7 @@ export const DEVICE_DATABASE = [
   { brand: "Samsung", model: "Galaxy S23 Ultra", category: DEVICE_CATEGORIES.SMARTPHONE, supportsEsim: true },
   { brand: "Samsung", model: "Galaxy S22 Ultra 5G", category: DEVICE_CATEGORIES.SMARTPHONE, supportsEsim: true },
   { brand: "Apple", model: "iPhone 16 Pro", category: DEVICE_CATEGORIES.SMARTPHONE, supportsEsim: true },
+  { brand: "Apple", model: "iPhone 16 Pro Max", category: DEVICE_CATEGORIES.SMARTPHONE, supportsEsim: true },
   { brand: "Apple", model: "iPhone 15 Pro Max", category: DEVICE_CATEGORIES.SMARTPHONE, supportsEsim: true },
   { brand: "Apple", model: "iPhone 14", category: DEVICE_CATEGORIES.SMARTPHONE, supportsEsim: true },
   { brand: "Apple", model: "iPhone 13 mini", category: DEVICE_CATEGORIES.SMARTPHONE, supportsEsim: true },
@@ -28,6 +29,8 @@ export const DEVICE_DATABASE = [
   { brand: "Apple", model: "iPhone X", category: DEVICE_CATEGORIES.SMARTPHONE, supportsEsim: false },
   { brand: "Samsung", model: "Galaxy S20 FE", category: DEVICE_CATEGORIES.SMARTPHONE, supportsEsim: false },
   { brand: "Google", model: "Pixel 4a", category: DEVICE_CATEGORIES.SMARTPHONE, supportsEsim: true },
+  { brand: "Google", model: "Pixel 10 Pro", category: DEVICE_CATEGORIES.SMARTPHONE, supportsEsim: true },
+  { brand: "Apple", model: "Watch Ultra 2", category: DEVICE_CATEGORIES.WEARABLE, supportsEsim: true },
   { brand: "Huawei", model: "Watch 4 Pro", category: DEVICE_CATEGORIES.WEARABLE, supportsEsim: true },
   { brand: "Huawei", model: "MatePad Pro 13.2", category: DEVICE_CATEGORIES.TABLET, supportsEsim: false },
 ];
