@@ -1,0 +1,24 @@
+// All positions are viewport-height multiples measured from the scene top.
+// Overlap is intentional: safety, background return, and checker share one stage.
+export const TRACKS = {
+  curtain: [0, 1, 1, 'none'],
+  rouletteReveal: [0.8, 1, 1, 'smooth'],
+  roulette: [1.28, 4.35, 10, 'none'],
+  reveal: [4.28, 6.149, 1, 'smooth'],
+  chip: [4.3868, 6.0956, 1, 'smooth'],
+  marquee: [6.95, 12.45, 1, 'none'],
+  features: [12.45, 20.45, 1, 'none'],
+  playback: [6.95, 22.95, 2, 'none'],
+  definition: [20.55, 26.05, 1, 'none'],
+  definitionVisibility: [20.55, 20.73, 1, 'smooth'],
+  background: [20.3, 22.4, 1, 'smooth'],
+  story: [26.23, 33.43, 1, 'none'],
+  safety: [33.68, 39.68, 1, 'none'],
+  returnGradient: [37.16, 39.41, 1, 'smooth'],
+  checker: [37.4, 39.68, 1, 'smooth'],
+};
+export const getLayout = (width, height) => {
+  const mobile = width <= 700;
+  const raw = Math.min(width / (mobile ? 360 : 1440), height / (mobile ? 600 : 720));
+  return { width, height, mobile, scale: Math.min(Math.max(raw, mobile ? 0.88 : 0.72), mobile ? 1.25 : 1.6) };
+};

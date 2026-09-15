@@ -1,0 +1,5 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>eSIM — проверка lifecycle</title></head>
+<body><aside id="test-controls" style="position:fixed;z-index:9999;left:8px;top:8px;background:white;color:black;padding:8px;font:14px sans-serif">
+<button id="mount">Смонтировать</button><button id="unmount">Размонтировать</button><button id="inspect" onpointerdown="event.preventDefault()">Проверить состояние</button><button id="refresh">Пересчитать сцену</button><button id="motion">Переключить Reduce Motion</button><button id="keyboard">Клавиатура (имитация)</button><button id="audit" onpointerdown="event.preventDefault()">Проверить axe</button><pre id="test-report" style="max-height:180px;overflow:auto"></pre></aside><div id="test-app"></div>
+<script type="module" src="./browser.js"></script></body></html>
