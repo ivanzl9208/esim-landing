@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from "react";
 import { createRoot } from "react-dom/client";
 import DeviceChecker from "./DeviceChecker.jsx";
+import { getMediaPlayback } from "./mediaPlayback.js";
 import "./styles.css";
 
 const ASSET_ROOT = `${import.meta.env.BASE_URL}assets`;
@@ -238,14 +239,9 @@ function HeroContent() {
 
 function HeroVideo() {
   const videoRef = useRef(null);
-  const userAgent = window.navigator.userAgent;
-  const isSafari =
-    window.navigator.vendor.includes("Apple") &&
-    !/(CriOS|FxiOS|EdgiOS|OPiOS)/i.test(userAgent);
-  const videoSrc = isSafari
-    ? `${ASSET_ROOT}/hero-alpha.mov`
-    : `${ASSET_ROOT}/hero.webm`;
-  const videoType = isSafari
+  const { heroSource } = getMediaPlayback(window.navigator);
+  const videoSrc = `${ASSET_ROOT}/${heroSource}`;
+  const videoType = heroSource.endsWith(".mov")
     ? 'video/quicktime; codecs="hvc1"'
     : "video/webm";
 
@@ -370,15 +366,9 @@ function RouletteStage({ stageRef }) {
 }
 
 function ChipRevealStage({ marqueeRef, videoRef, frameRef }) {
-  const userAgent = window.navigator.userAgent;
-  const isSafari =
-    /Safari/i.test(userAgent) &&
-    !/(Chrome|Chromium|CriOS|FxiOS|Edg|EdgiOS|OPiOS|Android)/i.test(
-      userAgent,
-    );
-  const videoSrc = isSafari
-    ? `${ASSET_ROOT}/chip-scroll.mov`
-    : `${ASSET_ROOT}/chip-scroll.webm`;
+  const { chipFrames } = getMediaPlayback(window.navigator);
+  // The frame sequence is independent of video loading and seek support.
+  const videoSrc = chipFrames ? undefined : `${ASSET_ROOT}/chip-scroll.webm`;
 
   return (
     <div
@@ -409,10 +399,10 @@ function ChipRevealStage({ marqueeRef, videoRef, frameRef }) {
           ref={videoRef}
           src={videoSrc}
           poster={`${ASSET_ROOT}/chip-frames/frame-001.webp`}
-          data-video-format={isSafari ? "mov" : "webm"}
+          data-video-format={chipFrames ? "frames" : "webm"}
           muted
           playsInline
-          preload="auto"
+          preload={chipFrames ? "none" : "auto"}
           loop
           aria-hidden="true"
         />
@@ -1101,7 +1091,7 @@ function App() {
     let currentFrameIndex = 0;
     let playbackEndTurns = 1;
     let rafId = 0;
-    const useFrameSequence = video.dataset.videoFormat === "mov";
+    const useFrameSequence = video.dataset.videoFormat === "frames";
     const frameUrls = Array.from(
       { length: CHIP_FRAME_COUNT },
       (_, index) =>
@@ -1136,14 +1126,7 @@ function App() {
       pendingVideoTime = null;
       if (Math.abs(video.currentTime - nextTime) <= 0.012) return;
 
-      if (
-        video.dataset.videoFormat === "mov" &&
-        typeof video.fastSeek === "function"
-      ) {
-        video.fastSeek(nextTime);
-      } else {
-        video.currentTime = nextTime;
-      }
+      video.currentTime = nextTime;
     };
 
     const syncVideoMetadata = () => {

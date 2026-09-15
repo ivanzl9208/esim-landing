@@ -3,6 +3,7 @@ import { createApp } from 'vue';
 import { gsap } from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
 import App from '../src/App.vue';
+import { MEDIA_BROWSERS } from './fixtures/mediaBrowsers.js';
 import 'lenis/dist/lenis.css';
 import '../src/styles/reference.css';
 import '../src/styles/accessibility.css';
@@ -28,9 +29,11 @@ window.matchMedia = query => {
   if (params.has('touch') && query === '(pointer: fine)') Object.defineProperty(result, 'matches', { value: false });
   return result;
 };
-if (params.has('safari')) {
-  Object.defineProperty(navigator, 'userAgent', { configurable: true, value: 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 Version/18.0 Mobile/15E148 Safari/604.1' });
-  Object.defineProperty(navigator, 'vendor', { configurable: true, value: 'Apple Computer, Inc.' });
+const browserProfile = params.get('browser') ?? (params.has('safari') ? 'safari-ios' : null);
+if (browserProfile && MEDIA_BROWSERS[browserProfile]) {
+  for (const key of ['userAgent', 'vendor', 'platform', 'maxTouchPoints']) {
+    Object.defineProperty(navigator, key, { configurable: true, value: MEDIA_BROWSERS[browserProfile][key] });
+  }
 }
 const fixtureLoadedAt = Date.now();
 const resizeEvents = [];
@@ -56,7 +59,10 @@ const inspect = () => {
     activeTweens: gsap.globalTimeline.getChildren(true, true, true).filter(tween => tween.isActive()).length,
     ownedAnimations: gsap.globalTimeline.getChildren(true, true, true).filter(tween => !baselineAnimations.has(tween)).length,
     lenis: document.documentElement.classList.contains('lenis'), reduceMotion: reducedMedia.matches,
-    heroPaused: video?.paused, frame: frame?.getAttribute('src'), frameOpacity: frame ? getComputedStyle(frame).opacity : null,
+    browserProfile, heroSource: video?.getAttribute('src'), heroPaused: video?.paused,
+    chipVideoSource: document.querySelector('.chip-scroll-video')?.getAttribute('src'),
+    frame: frame?.getAttribute('src'), frameOpacity: frame ? getComputedStyle(frame).opacity : null,
+    frameLoaded: Boolean(frame?.complete && frame?.naturalWidth),
     keyboardSimulated: keyboardOpen, keyboardOffset: document.querySelector('.device-checker')?.style.getPropertyValue('--checker-keyboard-offset'),
     finePointer: window.matchMedia('(pointer: fine)').matches,
     frameRequests: performance.getEntriesByType('resource').filter(r => r.name.includes('/chip-frames/')).length,

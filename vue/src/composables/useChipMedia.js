@@ -1,5 +1,6 @@
 import { onMounted, onScopeDispose, ref, watch } from 'vue';
 import { asset } from '../utils/assets.js';
+import { getMediaPlayback } from '../utils/mediaPlayback.js';
 import { useMotionPreference } from './useMotionPreference.js';
 
 export const CHIP_FRAME_COUNT = 150;
@@ -59,6 +60,10 @@ export function useChipMedia(videoRef, frameRef) {
   const fallback = () => {
     if (disposed) return;
     frameMode.value = true;
+    pendingTime = null;
+    video.pause();
+    video.removeAttribute('src');
+    video.load();
     preload();
     draw();
   };
@@ -71,15 +76,16 @@ export function useChipMedia(videoRef, frameRef) {
   onMounted(() => {
     mounted = true;
     video = videoRef.value;
-    frameMode.value = /Safari/i.test(navigator.userAgent) && !/(Chrome|Chromium|CriOS|FxiOS|Edg|EdgiOS|OPiOS|Android)/i.test(navigator.userAgent);
+    frameMode.value = getMediaPlayback(navigator).chipFrames;
     video.defaultMuted = true;
     video.muted = true;
     video.addEventListener('loadedmetadata', metadata);
     video.addEventListener('loadeddata', metadata);
     video.addEventListener('seeked', flush);
     video.addEventListener('error', fallback);
-    video.src = asset(frameMode.value ? 'chip-scroll.mov' : 'chip-scroll.webm');
+    // Frame playback must not depend on video loading, decoding or seek events.
     if (frameMode.value) preload();
+    else video.src = asset('chip-scroll.webm');
     draw();
   });
   onScopeDispose(() => {
