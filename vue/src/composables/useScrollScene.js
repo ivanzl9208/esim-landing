@@ -121,7 +121,9 @@ export function useScrollScene(sceneRef, mediaRef, checkerRef, endingRef) {
             const intro = heroRevealFrame(state.faqReveal, mobile ? 347 - 64 : 548 - 96, 0, FAQ_REVEAL_OPACITY_END);
             faq.style.visibility = covered ? 'visible' : 'hidden';
             faq.style.transform = `translate3d(0, ${reduced ? 0 : intro.y}px, 0)`;
-            faq.style.opacity = reduced ? '1' : intro.opacity.toFixed(4);
+            // Hide the whole composition, including descendants with their own
+            // visibility transitions, until the curtain completely covers the checker.
+            faq.style.opacity = !covered ? '0' : reduced ? '1' : intro.opacity.toFixed(4);
             const ready = covered && (reduced || state.faqReveal >= 0.99999);
             faq.inert = !(covered && (reduced || state.faqReveal >= FAQ_REVEAL_OPACITY_END));
             ending.dataset.faqReady = String(ready);

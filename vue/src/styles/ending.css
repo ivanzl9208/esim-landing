@@ -24,7 +24,7 @@
 .faq-section { width: 100%; margin: 0 auto; }
 /* Keep the reveal clip and tab scroller at the page edges, including during entry. */
 .faq-reveal-clip { margin-inline: calc(-1 * var(--ending-gutter)); overflow: clip; overflow-clip-margin: 8px; }
-.faq-reveal-composition { visibility: hidden; }
+.faq-reveal-composition { visibility: hidden; opacity: 0; }
 .landing-ending[data-faq-ready="true"] .faq-reveal-clip { overflow: visible; }
 .faq-section h2, .faq-panel { width: min(calc(100% - 2 * var(--ending-gutter)), 830px); margin-inline: auto; }
 .faq-section h2 { margin-block: 0 48px; font: 600 64px/64px "SB Sans Display", Arial, sans-serif; letter-spacing: -1.28px; text-align: center; }
@@ -45,7 +45,7 @@
 .faq-item h3 img { flex: 0 0 24px; transition: transform 240ms ease; }
 .faq-item.is-open h3 img { transform: rotate(180deg); }
 .faq-answer { display: grid; grid-template-rows: 0fr; visibility: hidden; transition: grid-template-rows 260ms ease, visibility 260ms; }
-.faq-item.is-open .faq-answer { grid-template-rows: 1fr; visibility: visible; }
+.faq-item.is-open .faq-answer { grid-template-rows: 1fr; visibility: inherit; }
 .faq-answer-clip { min-height: 0; overflow: hidden; }
 .faq-answer p { margin: 0; padding: 0 0 24px; font-size: 17px; line-height: 26px; letter-spacing: -.75px; }
 .ending-button { display: inline-flex; align-items: center; justify-content: center; min-height: 50px; padding: 15px 32px; border: 0; border-radius: 100px; font: 600 17px/20px "SB Sans Display", Arial, sans-serif; letter-spacing: -.35px; text-decoration: none; cursor: pointer; transition: background-color 180ms ease, color 180ms ease; }
