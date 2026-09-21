@@ -5,7 +5,7 @@ import { createChipStoryRenderer } from '../animation/chipStory.js';
 import { smoothstep } from '../animation/math.js';
 
 /** One native sticky stage. ScrollTrigger supplies progress; Lenis only smooths desktop wheel input. */
-export function useScrollScene(sceneRef, mediaRef, checkerRef) {
+export function useScrollScene(sceneRef, mediaRef, checkerRef, endingRef) {
   let disposed = false;
   let cleanup = () => {};
   let navigate = () => {};
@@ -18,6 +18,7 @@ export function useScrollScene(sceneRef, mediaRef, checkerRef) {
     if (disposed) return;
     gsap.registerPlugin(ScrollTrigger);
     const scene = sceneRef.value;
+    const ending = endingRef?.value?.root;
     const previousScale = scene.style.getPropertyValue('--layout-scale');
     const media = gsap.matchMedia();
     let mediaScroll;
@@ -74,6 +75,8 @@ export function useScrollScene(sceneRef, mediaRef, checkerRef) {
         sceneContext?.revert();
         geometry = getLayout(window.innerWidth, window.innerHeight);
         scene.style.setProperty('--layout-scale', geometry.scale.toFixed(5));
+        ending?.style.setProperty('--ending-overlap', `${geometry.height}px`);
+        const sceneEnd = scene.getBoundingClientRect().top + window.scrollY + scene.offsetHeight - geometry.height;
         const renderRoulette = createRouletteRenderer(scene);
         const renderChip = createChipStoryRenderer(scene, mediaRef.value);
         const state = { ...Object.fromEntries(Object.keys(TRACKS).map(key => [key, 0])), buttonReveal: oldButtonProgress };
@@ -94,6 +97,16 @@ export function useScrollScene(sceneRef, mediaRef, checkerRef) {
           }
           renderRoulette(state, geometry, reduced);
           renderChip(state, geometry, reduced);
+          if (ending) {
+            // The following content starts at the existing curtain's lower edge.
+            // Compensate only for its scrub delay; after the curtain completes,
+            // this becomes zero and the page continues in ordinary document flow.
+            // Use the actual sticky end: svh and innerHeight can differ while
+            // mobile browser chrome expands or collapses.
+            const target = Math.min(1, 1 + (window.scrollY - sceneEnd) / geometry.height);
+            const offset = target > 0 || state.resultCurtain > 0 ? (target - state.resultCurtain) * geometry.height : 0;
+            ending.style.setProperty('--ending-reveal-offset', `${offset}px`);
+          }
           rendering = false;
         };
         sceneContext = gsap.context(() => {
@@ -171,6 +184,8 @@ export function useScrollScene(sceneRef, mediaRef, checkerRef) {
       media.revert();
       if (previousScale) scene.style.setProperty('--layout-scale', previousScale);
       else scene.style.removeProperty('--layout-scale');
+      ending?.style.removeProperty('--ending-overlap');
+      ending?.style.removeProperty('--ending-reveal-offset');
     };
   });
   onScopeDispose(() => { disposed = true; cleanup(); });

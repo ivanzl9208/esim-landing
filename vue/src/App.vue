@@ -5,12 +5,16 @@ import RouletteStage from './components/RouletteStage.vue';
 import ChipStory from './components/ChipStory.vue';
 import StoryTranscript from './components/StoryTranscript.vue';
 import DeviceChecker from './components/DeviceChecker.vue';
+import LandingEnding from './components/LandingEnding.vue';
+import SiteFooter from './components/SiteFooter.vue';
+import './styles/ending.css';
 import { useScrollScene } from './composables/useScrollScene.js';
 import { asset } from './utils/assets.js';
 const scene = ref(null);
 const media = ref(null);
 const checker = ref(null);
-const { goToChecker } = useScrollScene(scene, media, checker);
+const ending = ref(null);
+const { goToChecker } = useScrollScene(scene, media, checker, ending);
 </script>
 <template>
   <main>
@@ -30,5 +34,7 @@ const { goToChecker } = useScrollScene(scene, media, checker);
         </div>
       </section>
     </div>
+    <LandingEnding ref="ending" />
   </main>
+  <SiteFooter />
 </template>

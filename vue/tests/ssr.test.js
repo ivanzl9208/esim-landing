@@ -14,6 +14,10 @@ test('Imports and server-renders the complete app without browser globals', asyn
     assert.match(html, /Ваше устройство готово к eSIM/);
     assert.match(html, /story-transcript/);
     assert.match(html, /role="combobox"/);
+    assert.match(html, /Остались вопросы/);
+    assert.match(html, /role="tablist"/);
+    assert.match(html, /Подключайтесь/);
+    assert.match(html, /<footer/);
     assert.match(html, /id="device-checker"[^>]*inert/);
     assert.doesNotMatch(html, /<video[^>]*src=".*(?:mov|webm)"/);
   } finally { await server.close(); }
