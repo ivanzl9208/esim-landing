@@ -1142,6 +1142,9 @@ a {
   justify-items: center;
 }
 
+.checker-search-dock { display: contents; }
+.checker-popular-marquee { display: none; }
+
 .checker-heading {
   position: relative;
   width: calc(720px * var(--layout-scale));
@@ -1593,6 +1596,21 @@ button.checker-input-action:active {
 }
 
 @media (max-width: 700px) {
+  /* Preserve the original 97px gap + 60px field in the centered composition. */
+  .checker-form-view::after { content: ''; order: 2; height: calc(157px * var(--layout-scale)); }
+  .checker-search-dock {
+    position: absolute;
+    bottom: calc(24px * var(--layout-scale));
+    left: 50%;
+    z-index: 4;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    width: min(calc(328px * var(--layout-scale)), calc(100vw - 32px * var(--layout-scale)));
+    transform: translateX(-50%);
+  }
+  .checker-search-dock .checker-search-area { order: 0; width: 100%; margin: 0; }
+  .checker-search-dock .checker-eid-hint { position: static; width: 100%; transform: none; }
   .checker-heading {
     width: min(calc(328px * var(--layout-scale)), calc(100vw - 32px * var(--layout-scale)));
     font-size: calc(36px * var(--layout-scale));
@@ -1601,9 +1619,6 @@ button.checker-input-action:active {
   }
 
   .checker-search-area {
-    order: 2;
-    margin-top: calc(97px * var(--layout-scale));
-    width: min(calc(328px * var(--layout-scale)), calc(100vw - 32px * var(--layout-scale)));
     height: calc(60px * var(--layout-scale));
   }
 
@@ -1631,7 +1646,7 @@ button.checker-input-action:active {
   .checker-popular {
     order: 1;
     margin-top: calc(97px * var(--layout-scale));
-    width: calc(657px * var(--layout-scale));
+    width: 100%;
     gap: calc(16px * var(--layout-scale));
   }
 
@@ -1644,8 +1659,19 @@ button.checker-input-action:active {
   }
 
   .checker-popular-list {
-    gap: calc(8px * var(--layout-scale));
+    display: none;
   }
+
+  .checker-popular-marquee { display: grid; gap: calc(8px * var(--layout-scale)); width: 100%; }
+  .checker-model-row { overflow: hidden; padding-block: 7px; margin-block: -7px; }
+  .checker-model-track { display: flex; width: max-content; animation: checker-model-marquee var(--marquee-duration) linear infinite; animation-play-state: paused; }
+  .scroll-scene[data-checker-visible="true"] .checker-model-track { animation-play-state: running; }
+  .checker-model-group { display: flex; flex-shrink: 0; gap: calc(8px * var(--layout-scale)); padding-right: calc(8px * var(--layout-scale)); }
+  .checker-model-group button { flex-shrink: 0; }
+  /* Keyboard users get a stable, scrollable row with a single set of controls. */
+  .checker-popular-marquee:focus-within .checker-model-row { overflow-x: auto; scrollbar-width: none; overscroll-behavior-x: contain; }
+  .checker-popular-marquee:focus-within .checker-model-track { animation: none; padding-inline: calc(16px * var(--layout-scale)); }
+  .checker-popular-marquee:focus-within .is-copy { display: none; }
 
   .checker-popular button {
     min-height: calc(30px * var(--layout-scale));
@@ -1691,7 +1717,7 @@ button.checker-input-action:active {
   }
 
   .device-checker.is-focused[data-keyboard-open="true"] .checker-popular,
-  .device-checker.is-focused[data-keyboard-open="true"] .checker-search-area {
+  .device-checker.is-focused[data-keyboard-open="true"] .checker-search-dock {
     position: absolute;
     left: 50%;
     margin: 0;
@@ -1702,13 +1728,13 @@ button.checker-input-action:active {
     top: calc(8px * var(--layout-scale));
   }
 
-  .device-checker.is-focused[data-keyboard-open="true"] .checker-search-area {
+  .device-checker.is-focused[data-keyboard-open="true"] .checker-search-dock {
     top: auto;
     bottom: calc(var(--checker-keyboard-offset) + 16px * var(--layout-scale));
   }
 
   .device-checker.is-focused[data-keyboard-open="true"] .checker-eid-hint {
-    opacity: 0;
+    display: none;
   }
 
   .checker-result-card {
@@ -1766,6 +1792,16 @@ button.checker-input-action:active {
     line-height: calc(20px * var(--layout-scale));
     letter-spacing: calc(-0.65px * var(--layout-scale));
   }
+}
+
+@keyframes checker-model-marquee {
+  to { transform: translate3d(-50%, 0, 0); }
+}
+
+@media (max-width: 700px) and (prefers-reduced-motion: reduce) {
+  .checker-model-row { overflow-x: auto; scrollbar-width: none; overscroll-behavior-x: contain; }
+  .checker-model-track { animation: none; padding-inline: calc(16px * var(--layout-scale)); }
+  .checker-popular-marquee .is-copy { display: none; }
 }
 
 @media (prefers-reduced-motion: reduce) {

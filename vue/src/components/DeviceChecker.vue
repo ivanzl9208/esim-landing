@@ -5,6 +5,7 @@ import { findPopularDevice, getFullName } from '../utils/deviceSearch.js';
 import { asset } from '../utils/assets.js';
 import { useDeviceChecker } from '../composables/useDeviceChecker.js';
 import { useKeyboardViewport } from '../composables/useKeyboardViewport.js';
+import PopularModels from './PopularModels.vue';
 
 const section = ref(null);
 const input = ref(null);
@@ -13,6 +14,7 @@ const uid = useId();
 const inputId = `${uid}-model`;
 const listId = `${uid}-suggestions`;
 const hintId = `${uid}-eid`;
+const hint = 'Или наберите *#06# на устройстве и нажмите кнопку вызова. eSIM доступна, если в списке есть строка EID';
 const optionId = index => `${uid}-option-${index}`;
 const popular = POPULAR_DEVICE_NAMES.map(label => ({ label, device: findPopularDevice(label) }));
 const { query, state, focused, selection, toastVisible, activeIndex, statusMessage, suggestions, expanded, hideToast, runCheck, reset, choose, changeQuery, keydown, focusInput } = useDeviceChecker(input, resultHeading);
@@ -44,30 +46,31 @@ defineExpose({ focusInput });
         <h2 class="checker-heading">Ваше устройство готово к eSIM?</h2>
         <div class="checker-popular">
           <p>Популярные модели</p>
-          <div class="checker-popular-list">
-            <button v-for="item in popular" :key="item.label" type="button" :disabled="state === 'loading'" @click="choose(item.device)">{{ item.label }}</button>
-          </div>
+          <PopularModels :items="popular" :loading="state === 'loading'" @choose="choose" />
         </div>
-        <form class="checker-search-area" @submit.prevent="runCheck()">
-          <div :id="listId" :class="['checker-suggestions', { 'is-visible': expanded }]" role="listbox" aria-label="Модели устройств" data-lenis-prevent @pointermove="activeIndex = -1">
-            <div v-for="(device, index) in suggestions" :id="optionId(index)" :key="getFullName(device)"
-              :class="['checker-option', { 'is-active': index === activeIndex }]" role="option" :aria-selected="index === activeIndex"
-              @pointerdown.prevent @click="choose(device)">{{ getFullName(device) }}</div>
-          </div>
-          <div class="checker-input-shell">
-            <label class="sr-only" :for="inputId">Модель устройства</label>
-            <input :id="inputId" ref="input" :value="query" type="search" role="combobox" enterkeyhint="search"
-              autocomplete="off" :spellcheck="false" placeholder="Введите модель устройства"
-              :aria-controls="listId" :aria-expanded="expanded" aria-autocomplete="list" aria-haspopup="listbox"
-              :aria-activedescendant="expanded && activeIndex >= 0 ? optionId(activeIndex) : undefined" :aria-describedby="hintId"
-              :disabled="state === 'loading'" @focus="focused = true" @blur="focused = false; activeIndex = -1"
-              @input="changeQuery($event.target.value)" @keydown="keydown" />
-            <span v-if="state === 'loading'" class="checker-input-action checker-loader" aria-hidden="true" />
-            <button v-else-if="query.trim()" class="checker-input-action checker-input-submit" type="submit" aria-label="Проверить устройство" @pointerdown.prevent><img :src="asset('esim-search.svg')" alt="" /></button>
-          </div>
-        </form>
+        <div class="checker-search-dock">
+          <form class="checker-search-area" @submit.prevent="runCheck()">
+            <div :id="listId" :class="['checker-suggestions', { 'is-visible': expanded }]" role="listbox" aria-label="Модели устройств" data-lenis-prevent @pointermove="activeIndex = -1">
+              <div v-for="(device, index) in suggestions" :id="optionId(index)" :key="getFullName(device)"
+                :class="['checker-option', { 'is-active': index === activeIndex }]" role="option" :aria-selected="index === activeIndex"
+                @pointerdown.prevent @click="choose(device)">{{ getFullName(device) }}</div>
+            </div>
+            <div class="checker-input-shell">
+              <label class="sr-only" :for="inputId">Модель устройства</label>
+              <input :id="inputId" ref="input" :value="query" type="search" role="combobox" enterkeyhint="search"
+                autocomplete="off" :spellcheck="false" placeholder="Введите модель устройства"
+                :aria-controls="listId" :aria-expanded="expanded" aria-autocomplete="list" aria-haspopup="listbox"
+                :aria-activedescendant="expanded && activeIndex >= 0 ? optionId(activeIndex) : undefined" :aria-describedby="hintId"
+                :disabled="state === 'loading'" @focus="focused = true" @blur="focused = false; activeIndex = -1"
+                @input="changeQuery($event.target.value)" @keydown="keydown" />
+              <span v-if="state === 'loading'" class="checker-input-action checker-loader" aria-hidden="true" />
+              <button v-else-if="query.trim()" class="checker-input-action checker-input-submit" type="submit" aria-label="Проверить устройство" @pointerdown.prevent><img :src="asset('esim-search.svg')" alt="" /></button>
+            </div>
+          </form>
+          <p :id="hintId" class="checker-eid-hint">{{ hint }}</p>
+        </div>
       </div>
-      <p :id="hintId" class="checker-eid-hint">Или наберите *#06# на устройстве и нажмите кнопку вызова. eSIM доступна, если в списке есть строка EID</p>
+      <p v-if="state === 'result'" :id="hintId" class="checker-eid-hint">{{ hint }}</p>
       <div :class="['checker-toast', { 'is-visible': toastVisible }]" :inert="!toastVisible">
         <div class="checker-toast-main"><img class="checker-toast-alert" :src="asset('esim-alert.svg')" alt="" /><span>Устройство не найдено, измените модель</span></div>
         <button type="button" aria-label="Закрыть уведомление" @click="hideToast"><img :src="asset('esim-toast-close.svg')" alt="" /></button>
