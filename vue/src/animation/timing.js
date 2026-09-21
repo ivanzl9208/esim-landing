@@ -22,6 +22,9 @@ export const TRACKS = {
   resultCurtain: curtainTrack(RESULT_CURTAIN_START),
   faqReveal: heroRevealTrack(RESULT_CURTAIN_START + 1),
 };
+// One extra viewport belongs to the sticky stage itself.
+export const SCENE_BASE_HEIGHT = `${(TRACKS.resultCurtain[1] + 1) * 100}svh`;
+export const CHECKER_SCROLL_TARGET = TRACKS.checker[1] + 0.2;
 export const getLayout = (width, height) => {
   const mobile = width <= 700;
   const raw = Math.min(width / (mobile ? 360 : 1440), height / (mobile ? 600 : 720));

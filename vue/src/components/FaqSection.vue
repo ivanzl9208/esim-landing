@@ -36,7 +36,7 @@ const keydown = (event, index) => {
 <template>
   <section id="esim-faq" class="faq-section" :aria-labelledby="`${uid}-title`">
     <h2 :id="`${uid}-title`">Остались вопросы?</h2>
-    <div ref="tabStrip" class="faq-tabs-scroll" data-lenis-prevent>
+    <div ref="tabStrip" class="faq-tabs-scroll" data-lenis-prevent-horizontal>
       <div class="faq-tabs" role="tablist" aria-label="Категории вопросов об eSIM">
         <button v-for="(item, index) in faqCategories" :id="`${uid}-tab-${item.id}`" :key="item.id" ref="tabs" type="button" role="tab"
           :aria-selected="active === item.id" :aria-controls="`${uid}-panel-${item.id}`" :tabindex="active === item.id ? 0 : -1" :disabled="item.disabled"

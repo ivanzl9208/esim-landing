@@ -30,6 +30,8 @@
 .faq-section h2 { margin-block: 0 48px; font: 600 64px/64px "SB Sans Display", Arial, sans-serif; letter-spacing: -1.28px; text-align: center; }
 .faq-tabs-scroll { position: relative; overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: none; padding: 7px max(var(--ending-gutter), calc((100% - 830px) / 2)); margin-block: -7px 5px; }
 .faq-tabs-scroll::-webkit-scrollbar { display: none; }
+/* Override Lenis's bundled containment only for the page's vertical axis. */
+.landing-ending .faq-tabs-scroll[data-lenis-prevent-horizontal] { overscroll-behavior-y: auto; }
 .faq-tabs { display: flex; width: max-content; min-width: 100%; border-radius: 100px; background: #e9ebeb; }
 .faq-tabs button { flex: 1 0 auto; min-height: 48px; padding: 15px 24px; border: 0; border-radius: 100px; background: transparent; color: var(--ending-text); font: 600 15px/18px "SB Sans Text", Arial, sans-serif; letter-spacing: -.5px; white-space: nowrap; cursor: pointer; transition: background-color 180ms ease; }
 .faq-tabs button:hover:not(:disabled) { background: rgba(189,194,197,.53); }

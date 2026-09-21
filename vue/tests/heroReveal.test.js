@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { heroRevealFrame, HERO_REVEAL_SCROLL_DISTANCE, FAQ_REVEAL_OPACITY_END } from '../src/animation/heroReveal.js';
-import { TRACKS } from '../src/animation/timing.js';
+import { TRACKS, SCENE_BASE_HEIGHT, CHECKER_SCROLL_TARGET } from '../src/animation/timing.js';
 
 test('Shared Hero entrance preserves its sampled translation and opacity', () => {
   // Reference samples of the original first roulette line at 1440×720.
@@ -25,10 +25,17 @@ test('FAQ uses Figma endpoints and reverses without stateful animation', () => {
 
 test('FAQ starts after the complete curtain with the original Hero scroll duration', () => {
   assert.deepEqual(TRACKS.roulette, [1.28, 4.35, 10, 'none']);
-  assert.deepEqual(TRACKS.resultCurtain, [43, 44, 1, 'none']);
+  assert.deepEqual(TRACKS.resultCurtain, [40.43, 41.43, 1, 'none']);
   assert.equal(TRACKS.faqReveal[0], TRACKS.resultCurtain[1]);
   assert.ok(Math.abs(TRACKS.faqReveal[1] - TRACKS.faqReveal[0] - HERO_REVEAL_SCROLL_DISTANCE) < 1e-10);
   assert.equal(TRACKS.faqReveal[3], TRACKS.roulette[3]);
+});
+
+test('Checker hold is short, navigation stays before the curtain, and scene height follows it', () => {
+  assert.ok(Math.abs(TRACKS.resultCurtain[0] - TRACKS.checker[1] - .75) < 1e-10);
+  assert.ok(CHECKER_SCROLL_TARGET > TRACKS.checker[1]);
+  assert.ok(CHECKER_SCROLL_TARGET < TRACKS.resultCurtain[0]);
+  assert.equal(SCENE_BASE_HEIGHT, '4243svh');
 });
 
 test('FAQ reaches full opacity at its early review position without changing motion or Hero', () => {

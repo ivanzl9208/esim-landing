@@ -9,6 +9,7 @@ import LandingEnding from './components/LandingEnding.vue';
 import SiteFooter from './components/SiteFooter.vue';
 import './styles/ending.css';
 import { useScrollScene } from './composables/useScrollScene.js';
+import { SCENE_BASE_HEIGHT } from './animation/timing.js';
 import { asset } from './utils/assets.js';
 const scene = ref(null);
 const media = ref(null);
@@ -19,7 +20,7 @@ const { goToChecker } = useScrollScene(scene, media, checker, ending);
 <template>
   <main>
     <a class="skip-link" href="#device-checker" @click.prevent="goToChecker">Перейти к проверке устройства</a>
-    <div ref="scene" class="scroll-scene">
+    <div ref="scene" class="scroll-scene" :style="{ '--scene-base-height': SCENE_BASE_HEIGHT }">
       <section class="hero-stage" aria-label="eSIM от СберМобайла">
         <HeroIntro @check="goToChecker" />
         <StoryTranscript />

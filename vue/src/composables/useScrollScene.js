@@ -1,5 +1,5 @@
 import { onMounted, onScopeDispose } from 'vue';
-import { TRACKS, getLayout } from '../animation/timing.js';
+import { TRACKS, SCENE_BASE_HEIGHT, CHECKER_SCROLL_TARGET, getLayout } from '../animation/timing.js';
 import { createRouletteRenderer } from '../animation/roulette.js';
 import { createChipStoryRenderer } from '../animation/chipStory.js';
 import { smoothstep } from '../animation/math.js';
@@ -82,9 +82,9 @@ export function useScrollScene(sceneRef, mediaRef, checkerRef, endingRef) {
         geometry = getLayout(window.innerWidth, window.innerHeight);
         // Append the same scroll distance as the original Hero entrance.
         // Existing tracks retain their positions and the shared scrub.
-        // Round the layout extension up so offsetHeight cannot shorten the
-        // timeline and rescale any preceding track by a fractional pixel.
-        if (ending) scene.style.height = `calc(4500svh + ${Math.ceil(HERO_REVEAL_SCROLL_DISTANCE * geometry.height)}px)`;
+        // Round up and allow one pixel for the fractional svh base, so
+        // offsetHeight cannot shorten the timeline and rescale earlier tracks.
+        if (ending) scene.style.height = `calc(${SCENE_BASE_HEIGHT} + ${Math.ceil(HERO_REVEAL_SCROLL_DISTANCE * geometry.height) + 1}px)`;
         scene.style.setProperty('--layout-scale', geometry.scale.toFixed(5));
         ending?.style.setProperty('--ending-overlap', `${geometry.height}px`);
         const sceneEnd = scene.getBoundingClientRect().top + window.scrollY + scene.offsetHeight - geometry.height;
@@ -174,7 +174,7 @@ export function useScrollScene(sceneRef, mediaRef, checkerRef, endingRef) {
       };
       navigate = () => {
         if (!active) return;
-        const target = scene.getBoundingClientRect().top + window.scrollY + geometry.height * 40.2;
+        const target = scene.getBoundingClientRect().top + window.scrollY + geometry.height * CHECKER_SCROLL_TARGET;
         focusDelay?.kill();
         const focus = () => {
           focusDelay = gsap.delayedCall(reduced ? 0 : 0.35, () => { if (active) checkerRef.value?.focusInput(); });
