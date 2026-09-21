@@ -25,7 +25,10 @@ button:disabled { opacity: 1; }
   outline-offset: 4px;
   box-shadow: 0 0 0 6px #fff;
 }
-.checker-result-copy h2:focus { outline: none; }
+.checker-result-copy h2:focus {
+  outline: none;
+  box-shadow: none;
+}
 .skip-link {
   position: fixed;
   z-index: 100;
