@@ -1,5 +1,6 @@
 import { clamp, mix, smoothstep, cubicBezierValue, mixRgb } from './math.js';
 import { STORY_BENEFITS } from '../data/story.js';
+import { desktopStoryFrame } from './storyFocus.js';
 
 export function createChipStoryRenderer(scene, media) {
   const select = selector => scene.querySelector(selector);
@@ -216,6 +217,12 @@ export function createChipStoryRenderer(scene, media) {
 
       const storyTimeline = clamp(currentStory) * STORY_BENEFITS.length;
       storyElements.forEach((element, index) => {
+        if (!isMobile) {
+          const frame = desktopStoryFrame(currentStory, index);
+          element.style.opacity = frame.opacity.toFixed(4);
+          element.style.filter = `blur(${frame.blur.toFixed(3)}px)`;
+          return;
+        }
         const localProgress = storyTimeline - index;
         const enter = smoothstep(0, 0.22, localProgress);
         const exit = 1 - smoothstep(0.7, 1, localProgress);
