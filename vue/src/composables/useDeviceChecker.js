@@ -1,5 +1,5 @@
 import { computed, nextTick, onMounted, onScopeDispose, ref } from 'vue';
-import { getFullName, getSuggestions, findNearestDevice, isBrandOnly } from '../utils/deviceSearch.js';
+import { getFullName, getSuggestions, findNearestDevice } from '../utils/deviceSearch.js';
 
 export const CHECK_DELAY = 720;
 export const TOAST_DURATION = 10000;
@@ -10,7 +10,7 @@ export function useDeviceChecker(input, resultHeading) {
   const focused = ref(false);
   const selection = ref(null);
   const toastVisible = ref(false);
-  const activeIndex = ref(0);
+  const activeIndex = ref(-1);
   const statusMessage = ref('');
   const suggestions = computed(() => getSuggestions(query.value));
   const expanded = computed(() => state.value === 'form' && focused.value && query.value.trim().length > 0 && suggestions.value.length > 0);
@@ -67,18 +67,18 @@ export function useDeviceChecker(input, resultHeading) {
     selection.value = null;
     state.value = 'form';
     statusMessage.value = '';
-    activeIndex.value = 0;
+    activeIndex.value = -1;
     focused.value = false;
     await focusInput();
   };
   const choose = (device) => {
     query.value = getFullName(device);
-    activeIndex.value = 0;
+    activeIndex.value = -1;
     runCheck(device, query.value);
   };
   const changeQuery = (value) => {
     query.value = value;
-    activeIndex.value = 0;
+    activeIndex.value = -1;
     focused.value = true;
     hideToast();
   };
@@ -87,16 +87,19 @@ export function useDeviceChecker(input, resultHeading) {
     if ((event.key === 'ArrowDown' || event.key === 'ArrowUp') && suggestions.value.length) {
       event.preventDefault();
       focused.value = true;
-      activeIndex.value = (activeIndex.value + (event.key === 'ArrowDown' ? 1 : -1) + suggestions.value.length) % suggestions.value.length;
+      activeIndex.value = activeIndex.value < 0
+        ? (event.key === 'ArrowDown' ? 0 : suggestions.value.length - 1)
+        : (activeIndex.value + (event.key === 'ArrowDown' ? 1 : -1) + suggestions.value.length) % suggestions.value.length;
       nextTick(() => {
         if (!disposed) document.getElementById(input.value?.getAttribute('aria-activedescendant'))?.scrollIntoView({ block: 'nearest' });
       });
     } else if (event.key === 'Enter') {
       event.preventDefault();
-      if (!isBrandOnly(query.value) && expanded.value && suggestions.value[activeIndex.value]) choose(suggestions.value[activeIndex.value]);
+      if (expanded.value && suggestions.value[activeIndex.value]) choose(suggestions.value[activeIndex.value]);
       else runCheck();
     } else if (event.key === 'Escape') {
       event.preventDefault();
+      activeIndex.value = -1;
       focused.value = false;
       hideToast();
     }

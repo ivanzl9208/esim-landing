@@ -291,7 +291,7 @@ function DeviceChecker() {
   const [isFocused, setIsFocused] = useState(false);
   const [selectedDevice, setSelectedDevice] = useState(null);
   const [toastVisible, setToastVisible] = useState(false);
-  const [activeSuggestion, setActiveSuggestion] = useState(0);
+  const [activeSuggestion, setActiveSuggestion] = useState(-1);
 
   const suggestions = useMemo(() => getSuggestions(query), [query]);
   const showSuggestions =
@@ -346,7 +346,7 @@ function DeviceChecker() {
     setQuery("");
     setSelectedDevice(null);
     setState("form");
-    setActiveSuggestion(0);
+    setActiveSuggestion(-1);
     window.requestAnimationFrame(() => inputRef.current?.focus());
   };
 
@@ -357,36 +357,37 @@ function DeviceChecker() {
     setQuery("");
     setSelectedDevice(null);
     setState("form");
-    setActiveSuggestion(0);
+    setActiveSuggestion(-1);
     setIsFocused(false);
     inputRef.current?.blur();
   };
 
   const chooseDevice = (device) => {
     setQuery(getFullName(device));
-    setActiveSuggestion(0);
+    setActiveSuggestion(-1);
     runCheck(device, getFullName(device));
   };
 
   const handleKeyDown = (event) => {
     if (event.key === "ArrowDown" && suggestions.length) {
       event.preventDefault();
+      setIsFocused(true);
       setActiveSuggestion((current) => (current + 1) % suggestions.length);
     } else if (event.key === "ArrowUp" && suggestions.length) {
       event.preventDefault();
+      setIsFocused(true);
       setActiveSuggestion(
-        (current) => (current - 1 + suggestions.length) % suggestions.length,
+        (current) => current < 0 ? suggestions.length - 1 : (current - 1 + suggestions.length) % suggestions.length,
       );
     } else if (event.key === "Enter") {
       event.preventDefault();
-      if (isBrandOnly(query)) {
-        runCheck();
-      } else if (showSuggestions && suggestions[activeSuggestion]) {
+      if (showSuggestions && suggestions[activeSuggestion]) {
         chooseDevice(suggestions[activeSuggestion]);
       } else {
         runCheck();
       }
     } else if (event.key === "Escape") {
+      setActiveSuggestion(-1);
       setIsFocused(false);
       inputRef.current?.blur();
     }
@@ -465,6 +466,7 @@ function DeviceChecker() {
               <div
                 className={`checker-suggestions${showSuggestions ? " is-visible" : ""}`}
                 id="device-suggestions"
+                onPointerMove={() => setActiveSuggestion(-1)}
                 role="listbox"
               >
                 {suggestions.map((device, index) => (
@@ -497,10 +499,10 @@ function DeviceChecker() {
                   aria-autocomplete="list"
                   disabled={state === "loading"}
                   onFocus={() => setIsFocused(true)}
-                  onBlur={() => setIsFocused(false)}
+                  onBlur={() => { setIsFocused(false); setActiveSuggestion(-1); }}
                   onChange={(event) => {
                     setQuery(event.target.value);
-                    setActiveSuggestion(0);
+                    setActiveSuggestion(-1);
                     hideToast();
                   }}
                   onKeyDown={handleKeyDown}

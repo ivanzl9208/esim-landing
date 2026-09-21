@@ -49,7 +49,7 @@ defineExpose({ focusInput });
           </div>
         </div>
         <form class="checker-search-area" @submit.prevent="runCheck()">
-          <div :id="listId" :class="['checker-suggestions', { 'is-visible': expanded }]" role="listbox" aria-label="Модели устройств" data-lenis-prevent>
+          <div :id="listId" :class="['checker-suggestions', { 'is-visible': expanded }]" role="listbox" aria-label="Модели устройств" data-lenis-prevent @pointermove="activeIndex = -1">
             <div v-for="(device, index) in suggestions" :id="optionId(index)" :key="getFullName(device)"
               :class="['checker-option', { 'is-active': index === activeIndex }]" role="option" :aria-selected="index === activeIndex"
               @pointerdown.prevent @click="choose(device)">{{ getFullName(device) }}</div>
@@ -59,8 +59,8 @@ defineExpose({ focusInput });
             <input :id="inputId" ref="input" :value="query" type="search" role="combobox" enterkeyhint="search"
               autocomplete="off" :spellcheck="false" placeholder="Введите модель устройства"
               :aria-controls="listId" :aria-expanded="expanded" aria-autocomplete="list" aria-haspopup="listbox"
-              :aria-activedescendant="expanded ? optionId(activeIndex) : undefined" :aria-describedby="hintId"
-              :disabled="state === 'loading'" @focus="focused = true" @blur="focused = false"
+              :aria-activedescendant="expanded && activeIndex >= 0 ? optionId(activeIndex) : undefined" :aria-describedby="hintId"
+              :disabled="state === 'loading'" @focus="focused = true" @blur="focused = false; activeIndex = -1"
               @input="changeQuery($event.target.value)" @keydown="keydown" />
             <span v-if="state === 'loading'" class="checker-input-action checker-loader" aria-hidden="true" />
             <button v-else-if="query" class="checker-input-action" type="button" aria-label="Очистить поле" @pointerdown.prevent @click="reset"><img :src="asset('esim-clear.svg')" alt="" /></button>
