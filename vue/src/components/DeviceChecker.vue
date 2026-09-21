@@ -63,10 +63,8 @@ defineExpose({ focusInput });
               :disabled="state === 'loading'" @focus="focused = true" @blur="focused = false; activeIndex = -1"
               @input="changeQuery($event.target.value)" @keydown="keydown" />
             <span v-if="state === 'loading'" class="checker-input-action checker-loader" aria-hidden="true" />
-            <button v-else-if="query" class="checker-input-action" type="button" aria-label="Очистить поле" @pointerdown.prevent @click="reset"><img :src="asset('esim-clear.svg')" alt="" /></button>
-            <span v-else class="checker-input-action is-disabled" aria-hidden="true"><img :src="asset('esim-search.svg')" alt="" /></span>
+            <button v-else-if="query.trim()" class="checker-input-action checker-input-submit" type="submit" aria-label="Проверить устройство" @pointerdown.prevent><img :src="asset('esim-search.svg')" alt="" /></button>
           </div>
-          <button class="sr-only focus-reveal-submit" type="submit" :disabled="state === 'loading' || !query.trim()">Проверить устройство</button>
         </form>
       </div>
       <p :id="hintId" class="checker-eid-hint">Или наберите *#06# на устройстве и нажмите кнопку вызова. eSIM доступна, если в списке есть строка EID</p>

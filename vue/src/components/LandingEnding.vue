@@ -10,7 +10,10 @@ defineExpose({ root });
 </script>
 <template>
   <div ref="root" class="landing-ending">
-    <div class="ending-white"><FaqSection /><TransferBanner /></div>
+    <div class="ending-white">
+      <div class="faq-reveal-clip"><div class="faq-reveal-composition" inert><FaqSection /></div></div>
+      <TransferBanner />
+    </div>
     <ConnectCta />
   </div>
 </template>

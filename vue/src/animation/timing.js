@@ -1,11 +1,12 @@
 import { curtainTrack, RESULT_CURTAIN_START } from './curtain.js';
+import { ROULETTE_TRACK, heroRevealTrack } from './heroReveal.js';
 
 // All positions are viewport-height multiples measured from the scene top.
 // Overlap is intentional: safety, background return, and checker share one stage.
 export const TRACKS = {
   curtain: curtainTrack(0),
   rouletteReveal: [0.8, 1, 1, 'smooth'],
-  roulette: [1.28, 4.35, 10, 'none'],
+  roulette: ROULETTE_TRACK,
   reveal: [4.28, 6.149, 1, 'smooth'],
   chip: [4.3868, 6.0956, 1, 'smooth'],
   marquee: [6.95, 12.45, 1, 'none'],
@@ -19,6 +20,7 @@ export const TRACKS = {
   returnGradient: [37.16, 39.41, 1, 'smooth'],
   checker: [37.4, 39.68, 1, 'smooth'],
   resultCurtain: curtainTrack(RESULT_CURTAIN_START),
+  faqReveal: heroRevealTrack(RESULT_CURTAIN_START + 1),
 };
 export const getLayout = (width, height) => {
   const mobile = width <= 700;

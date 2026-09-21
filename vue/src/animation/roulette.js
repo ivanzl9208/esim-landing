@@ -1,5 +1,6 @@
 import { mix, smoothstep, sampleKeyframes } from './math.js';
 import { curtainOffset } from './curtain.js';
+import { heroRevealFrame } from './heroReveal.js';
 
 // The reference keyframe positions are preserved; GSAP owns timing and scrub.
 export function createRouletteRenderer(scene) {
@@ -26,7 +27,7 @@ export function createRouletteRenderer(scene) {
       rouletteLines.forEach((line, index) => {
         const slot = index - linePosition;
         const centerDistance = Math.abs(slot);
-        const y = centerTop + slot * lineStep;
+        let y = centerTop + slot * lineStep;
         const fadeStrength = slot >= 0 ? 1.609 : 2.996;
         const depthOpacity = Math.exp(
           -fadeStrength * centerDistance * centerDistance,
@@ -37,7 +38,9 @@ export function createRouletteRenderer(scene) {
           const introProgress = smoothstep(0, 1, currentTimeline);
 
           if (index === 0) {
-            opacity = mix(0.05, 1, introProgress);
+            const intro = heroRevealFrame(currentTimeline, centerTop + lineStep, centerTop);
+            opacity = intro.opacity;
+            y = intro.y;
           } else if (index === 1) {
             opacity = mix(0, 0.05, introProgress);
           } else if (isMobile && index === 2) {

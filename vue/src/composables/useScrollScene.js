@@ -3,6 +3,7 @@ import { TRACKS, getLayout } from '../animation/timing.js';
 import { createRouletteRenderer } from '../animation/roulette.js';
 import { createChipStoryRenderer } from '../animation/chipStory.js';
 import { smoothstep } from '../animation/math.js';
+import { HERO_REVEAL_SCROLL_DISTANCE, heroRevealFrame } from '../animation/heroReveal.js';
 
 /** One native sticky stage. ScrollTrigger supplies progress; Lenis only smooths desktop wheel input. */
 export function useScrollScene(sceneRef, mediaRef, checkerRef, endingRef) {
@@ -19,7 +20,9 @@ export function useScrollScene(sceneRef, mediaRef, checkerRef, endingRef) {
     gsap.registerPlugin(ScrollTrigger);
     const scene = sceneRef.value;
     const ending = endingRef?.value?.root;
+    const faq = ending?.querySelector('.faq-reveal-composition');
     const previousScale = scene.style.getPropertyValue('--layout-scale');
+    const previousHeight = scene.style.height;
     const media = gsap.matchMedia();
     let mediaScroll;
     let restorePosition = () => {};
@@ -27,7 +30,10 @@ export function useScrollScene(sceneRef, mediaRef, checkerRef, endingRef) {
     // Keep the browser's already-clamped position across a media-query rebuild.
     const rememberMediaScroll = () => { mediaScroll = window.scrollY; };
     const restoreMediaScroll = () => {
-      if (!disposed && mediaScroll !== undefined) restorePosition(mediaScroll);
+      if (!disposed && mediaScroll !== undefined) {
+        restorePosition(mediaScroll);
+        ScrollTrigger.refresh();
+      }
       mediaScroll = undefined;
     };
     gsap.addEventListener('matchMediaInit', rememberMediaScroll);
@@ -74,6 +80,11 @@ export function useScrollScene(sceneRef, mediaRef, checkerRef, endingRef) {
         buttonTween?.kill(); buttonTween = undefined;
         sceneContext?.revert();
         geometry = getLayout(window.innerWidth, window.innerHeight);
+        // Append the same scroll distance as the original Hero entrance.
+        // Existing tracks retain their positions and the shared scrub.
+        // Round the layout extension up so offsetHeight cannot shorten the
+        // timeline and rescale any preceding track by a fractional pixel.
+        if (ending) scene.style.height = `calc(4500svh + ${Math.ceil(HERO_REVEAL_SCROLL_DISTANCE * geometry.height)}px)`;
         scene.style.setProperty('--layout-scale', geometry.scale.toFixed(5));
         ending?.style.setProperty('--ending-overlap', `${geometry.height}px`);
         const sceneEnd = scene.getBoundingClientRect().top + window.scrollY + scene.offsetHeight - geometry.height;
@@ -98,14 +109,22 @@ export function useScrollScene(sceneRef, mediaRef, checkerRef, endingRef) {
           renderRoulette(state, geometry, reduced);
           renderChip(state, geometry, reduced);
           if (ending) {
-            // The following content starts at the existing curtain's lower edge.
-            // Compensate only for its scrub delay; after the curtain completes,
-            // this becomes zero and the page continues in ordinary document flow.
+            // Follow the curtain's edge, then hold the white surface at the
+            // viewport top while FAQ enters. At the extended sticky end this
+            // offset becomes zero and ordinary document scrolling resumes.
             // Use the actual sticky end: svh and innerHeight can differ while
             // mobile browser chrome expands or collapses.
             const target = Math.min(1, 1 + (window.scrollY - sceneEnd) / geometry.height);
             const offset = target > 0 || state.resultCurtain > 0 ? (target - state.resultCurtain) * geometry.height : 0;
             ending.style.setProperty('--ending-reveal-offset', `${offset}px`);
+            const covered = state.resultCurtain >= 0.99999;
+            const intro = heroRevealFrame(state.faqReveal, mobile ? 347 - 64 : 548 - 96, 0);
+            faq.style.visibility = covered ? 'visible' : 'hidden';
+            faq.style.transform = `translate3d(0, ${reduced ? 0 : intro.y}px, 0)`;
+            faq.style.opacity = reduced ? '1' : intro.opacity.toFixed(4);
+            const ready = covered && (reduced || state.faqReveal >= 0.99999);
+            faq.inert = !ready;
+            ending.dataset.faqReady = String(ready);
           }
           rendering = false;
         };
@@ -131,6 +150,7 @@ export function useScrollScene(sceneRef, mediaRef, checkerRef, endingRef) {
           render();
         }, scene);
         lenis?.resize();
+        ScrollTrigger.refresh();
       };
       const resize = () => {
         clearTimeout(resizeTimer);
@@ -184,8 +204,10 @@ export function useScrollScene(sceneRef, mediaRef, checkerRef, endingRef) {
       media.revert();
       if (previousScale) scene.style.setProperty('--layout-scale', previousScale);
       else scene.style.removeProperty('--layout-scale');
+      scene.style.height = previousHeight;
       ending?.style.removeProperty('--ending-overlap');
       ending?.style.removeProperty('--ending-reveal-offset');
+      if (ending) delete ending.dataset.faqReady;
     };
   });
   onScopeDispose(() => { disposed = true; cleanup(); });

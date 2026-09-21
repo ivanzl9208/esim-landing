@@ -11,12 +11,16 @@ export function useEndingMotion(root) {
     gsap.registerPlugin(ScrollTrigger);
     const section = root.value.querySelector('.connect-cta');
     const surface = section.querySelector('.connect-cta-surface');
+    // The footer is outside the temporarily translated FAQ/CTA wrapper.
+    // Its top is the CTA's layout bottom, so these bounds are equivalent
+    // to the original section bounds and remain stable during FAQ reveal.
+    const footer = root.value.parentElement.nextElementSibling;
     const media = gsap.matchMedia();
     media.add({ always: 'all', reduced: '(prefers-reduced-motion: reduce)' }, context => {
       if (context.conditions.reduced) return;
       gsap.fromTo(surface, { y: () => -section.offsetHeight }, {
         y: 0, ease: 'none',
-        scrollTrigger: { trigger: section, start: 'top bottom', end: () => `top bottom-=${section.offsetHeight}`, scrub: true, invalidateOnRefresh: true },
+        scrollTrigger: { trigger: footer, start: () => `top bottom+=${section.offsetHeight}`, end: 'top bottom', scrub: true, invalidateOnRefresh: true },
       });
     });
     let timer;
