@@ -11,8 +11,12 @@ defineExpose({ root });
 <template>
   <div ref="root" class="landing-ending">
     <div class="ending-white">
-      <div class="faq-reveal-clip"><div class="faq-reveal-composition" inert><FaqSection /></div></div>
-      <TransferBanner />
+      <div class="faq-reveal-clip">
+        <div class="faq-reveal-composition" inert>
+          <FaqSection />
+          <TransferBanner />
+        </div>
+      </div>
     </div>
     <ConnectCta />
   </div>

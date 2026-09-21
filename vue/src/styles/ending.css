@@ -55,7 +55,7 @@
 .ending-button-white { color: var(--ending-orange); background: #fff; }
 .ending-button-white:hover { background: #f4f4f4; }
 .ending-button:disabled { color: rgba(147,155,159,.46); background: #e9ebeb; cursor: default; }
-.transfer-banner { position: relative; display: flex; align-items: center; gap: 32px; width: min(100%, 870px); min-height: 126px; margin: 64px auto 0; padding: 24px 40px 24px 214px; border-radius: 24px; background: #f4f4f4; }
+.transfer-banner { position: relative; display: flex; align-items: center; gap: 32px; width: min(calc(100% - 2 * var(--ending-gutter)), 870px); min-height: 126px; margin: 64px auto 0; padding: 24px 40px 24px 214px; border-radius: 24px; background: #f4f4f4; }
 .transfer-banner-image { position: absolute; left: 44px; top: -16px; width: 125px; height: 125px; object-fit: contain; }
 .transfer-banner-copy { flex: 1; }
 .transfer-banner h3 { margin: 0 0 4px; font: 600 22px/24px "SB Sans Display", Arial, sans-serif; letter-spacing: -.7px; }
