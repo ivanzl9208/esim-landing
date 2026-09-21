@@ -4,9 +4,11 @@ import { clamp, mix, smoothstep } from './math.js';
 export const ROULETTE_TRACK = [1.28, 4.35, 10, 'none'];
 export const HERO_REVEAL_SCROLL_DISTANCE = (ROULETTE_TRACK[1] - ROULETTE_TRACK[0]) / ROULETTE_TRACK[2];
 export const heroRevealTrack = start => [start, start + HERO_REVEAL_SCROLL_DISTANCE, 1, 'none'];
+// FAQ becomes readable at the early, still-rising position approved in review.
+export const FAQ_REVEAL_OPACITY_END = 0.25;
 
 // Translation follows scroll linearly; only opacity uses smoothstep.
-export function heroRevealFrame(progress, fromY, toY) {
+export function heroRevealFrame(progress, fromY, toY, opacityEnd = 1) {
   const p = clamp(progress);
-  return { y: mix(fromY, toY, p), opacity: mix(0.05, 1, smoothstep(0, 1, p)) };
+  return { y: mix(fromY, toY, p), opacity: mix(0.05, 1, smoothstep(0, opacityEnd, p)) };
 }

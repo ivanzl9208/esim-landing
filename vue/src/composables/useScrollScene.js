@@ -3,7 +3,7 @@ import { TRACKS, getLayout } from '../animation/timing.js';
 import { createRouletteRenderer } from '../animation/roulette.js';
 import { createChipStoryRenderer } from '../animation/chipStory.js';
 import { smoothstep } from '../animation/math.js';
-import { HERO_REVEAL_SCROLL_DISTANCE, heroRevealFrame } from '../animation/heroReveal.js';
+import { HERO_REVEAL_SCROLL_DISTANCE, FAQ_REVEAL_OPACITY_END, heroRevealFrame } from '../animation/heroReveal.js';
 
 /** One native sticky stage. ScrollTrigger supplies progress; Lenis only smooths desktop wheel input. */
 export function useScrollScene(sceneRef, mediaRef, checkerRef, endingRef) {
@@ -118,12 +118,12 @@ export function useScrollScene(sceneRef, mediaRef, checkerRef, endingRef) {
             const offset = target > 0 || state.resultCurtain > 0 ? (target - state.resultCurtain) * geometry.height : 0;
             ending.style.setProperty('--ending-reveal-offset', `${offset}px`);
             const covered = state.resultCurtain >= 0.99999;
-            const intro = heroRevealFrame(state.faqReveal, mobile ? 347 - 64 : 548 - 96, 0);
+            const intro = heroRevealFrame(state.faqReveal, mobile ? 347 - 64 : 548 - 96, 0, FAQ_REVEAL_OPACITY_END);
             faq.style.visibility = covered ? 'visible' : 'hidden';
             faq.style.transform = `translate3d(0, ${reduced ? 0 : intro.y}px, 0)`;
             faq.style.opacity = reduced ? '1' : intro.opacity.toFixed(4);
             const ready = covered && (reduced || state.faqReveal >= 0.99999);
-            faq.inert = !ready;
+            faq.inert = !(covered && (reduced || state.faqReveal >= FAQ_REVEAL_OPACITY_END));
             ending.dataset.faqReady = String(ready);
           }
           rendering = false;

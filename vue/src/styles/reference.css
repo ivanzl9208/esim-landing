@@ -106,6 +106,8 @@ a {
 }
 
 .site-header {
+  /* Header dimensions follow Figma, independently of the scroll-scene scale. */
+  --layout-scale: 1;
   position: absolute;
   z-index: 4;
   top: 0;
@@ -165,52 +167,6 @@ a {
 }
 
 .desktop-nav button {
-  font-size: calc(14px * var(--layout-scale));
-  font-weight: 600;
-  line-height: calc(16px * var(--layout-scale));
-  letter-spacing: calc(-0.42px * var(--layout-scale));
-}
-
-.account-actions {
-  display: flex;
-  flex: 0 0 auto;
-  align-items: center;
-  gap: calc(4px * var(--layout-scale));
-}
-
-.bonuses {
-  display: flex;
-  height: calc(34px * var(--layout-scale));
-  align-items: center;
-  gap: calc(6px * var(--layout-scale));
-  padding: 0 calc(10px * var(--layout-scale));
-  border-radius: calc(17px * var(--layout-scale)) calc(17px * var(--layout-scale)) calc(17px * var(--layout-scale)) 0;
-  background: linear-gradient(
-    101deg,
-    #9ddb10 4%,
-    #32ba23 30%,
-    #1db565 66%,
-    #0d9fb0 100%
-  );
-  font-size: calc(16px * var(--layout-scale));
-  font-weight: 600;
-  line-height: calc(16px * var(--layout-scale));
-}
-
-.bonuses img {
-  width: calc(14px * var(--layout-scale));
-  height: calc(14px * var(--layout-scale));
-}
-
-.login {
-  display: flex;
-  height: calc(36px * var(--layout-scale));
-  align-items: center;
-  justify-content: center;
-  padding: 0 calc(16px * var(--layout-scale));
-  border-radius: 100px;
-  background: #fff;
-  color: #fa5f05;
   font-size: calc(14px * var(--layout-scale));
   font-weight: 600;
   line-height: calc(16px * var(--layout-scale));
@@ -738,19 +694,7 @@ a {
 }
 
 @media (max-width: 1199px) and (min-width: 701px) {
-  .site-header {
-    gap: calc(18px * var(--layout-scale));
-    padding-inline: calc(32px * var(--layout-scale));
-  }
-
-  .desktop-nav {
-    gap: calc(18px * var(--layout-scale));
-  }
-
-  .desktop-nav button:nth-child(4),
-  .desktop-nav button:nth-child(5) {
-    display: none;
-  }
+  .site-header { padding-inline: 32px; }
 
   .location {
     display: none;
@@ -763,6 +707,14 @@ a {
   }
 }
 
+/* Compact header also covers tablets; text is never scaled to squeeze it in. */
+@media (max-width: 1023px) {
+  .site-header { height: calc(67px + env(safe-area-inset-top)); gap: 0; padding: env(safe-area-inset-top) 16px 0; }
+  .brand-logo { width: 95px; height: 43px; flex-basis: 95px; }
+  .site-header .location, .desktop-nav { display: none; }
+  .mobile-menu { display: block; margin-left: auto; }
+}
+
 @media (max-width: 700px) {
   .scroll-scene {
     height: 4500svh;
@@ -771,53 +723,6 @@ a {
   .hero-stage {
     height: 100dvh;
     min-height: 100dvh;
-  }
-
-  .site-header {
-    height: calc(67px * var(--layout-scale) + env(safe-area-inset-top));
-    gap: 0;
-    padding: env(safe-area-inset-top) calc(16px * var(--layout-scale)) 0;
-  }
-
-  .brand-logo {
-    width: calc(95px * var(--layout-scale));
-    height: calc(43px * var(--layout-scale));
-    flex-basis: calc(95px * var(--layout-scale));
-  }
-
-  .location,
-  .desktop-nav {
-    display: none;
-  }
-
-  .account-actions {
-    margin-left: auto;
-  }
-
-  .bonuses {
-    height: calc(24px * var(--layout-scale));
-    gap: calc(3px * var(--layout-scale));
-    padding: 0 calc(7px * var(--layout-scale)) 0 calc(8px * var(--layout-scale));
-    border-radius: calc(12px * var(--layout-scale)) calc(12px * var(--layout-scale)) calc(12px * var(--layout-scale)) 0;
-    font-size: calc(13px * var(--layout-scale));
-    line-height: calc(13px * var(--layout-scale));
-  }
-
-  .bonuses img {
-    width: calc(12px * var(--layout-scale));
-    height: calc(12px * var(--layout-scale));
-  }
-
-  .login {
-    height: calc(32px * var(--layout-scale));
-    padding: 0 calc(10px * var(--layout-scale));
-    border-radius: calc(20px * var(--layout-scale));
-    font-size: calc(13px * var(--layout-scale));
-    line-height: calc(16px * var(--layout-scale));
-  }
-
-  .mobile-menu {
-    display: block;
   }
 
   .hero-video {

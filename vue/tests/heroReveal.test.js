@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { heroRevealFrame, HERO_REVEAL_SCROLL_DISTANCE } from '../src/animation/heroReveal.js';
+import { heroRevealFrame, HERO_REVEAL_SCROLL_DISTANCE, FAQ_REVEAL_OPACITY_END } from '../src/animation/heroReveal.js';
 import { TRACKS } from '../src/animation/timing.js';
 
 test('Shared Hero entrance preserves its sampled translation and opacity', () => {
@@ -29,4 +29,14 @@ test('FAQ starts after the complete curtain with the original Hero scroll durati
   assert.equal(TRACKS.faqReveal[0], TRACKS.resultCurtain[1]);
   assert.ok(Math.abs(TRACKS.faqReveal[1] - TRACKS.faqReveal[0] - HERO_REVEAL_SCROLL_DISTANCE) < 1e-10);
   assert.equal(TRACKS.faqReveal[3], TRACKS.roulette[3]);
+});
+
+test('FAQ reaches full opacity at its early review position without changing motion or Hero', () => {
+  for (const progress of [0, .125, .25, .5, 1]) {
+    const original = heroRevealFrame(progress, 452, 0);
+    const faq = heroRevealFrame(progress, 452, 0, FAQ_REVEAL_OPACITY_END);
+    assert.equal(faq.y, original.y);
+    if (progress >= .25) assert.equal(faq.opacity, 1);
+  }
+  assert.equal(heroRevealFrame(.25, 452, 0).opacity, .1984375);
 });

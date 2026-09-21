@@ -2,7 +2,7 @@
 import HeroVideo from './HeroVideo.vue';
 import { asset } from '../utils/assets.js';
 defineEmits(['check']);
-const navigation = ['Связь', 'Услуги и\u00a0сервисы', 'Оплата', 'Поддержка', 'Компания', 'Кабинет абонента'];
+const navigation = ['Связь', 'Услуги и\u00a0сервисы', 'Оплата', 'Помощь', 'Компания', 'Кабинет абонента'];
 </script>
 
 <template>
@@ -16,11 +16,7 @@ const navigation = ['Связь', 'Услуги и\u00a0сервисы', 'Опл
       <nav class="desktop-nav" aria-label="Основная навигация">
         <button v-for="item in navigation" :key="item" type="button" disabled>{{ item }}</button>
       </nav>
-      <div class="account-actions">
-        <div class="bonuses"><span>Бонусы</span><img :src="asset('bonus-icon.svg')" alt="СберСпасибо" /></div>
-        <button class="login" type="button" disabled>Войти</button>
-        <button class="mobile-menu" type="button" aria-label="Меню" disabled><img :src="asset('menu-icon.svg')" alt="" /></button>
-      </div>
+      <button class="mobile-menu" type="button" aria-label="Меню" disabled><img :src="asset('menu-icon.svg')" alt="" /></button>
     </header>
     <div class="hero-content">
       <div class="hero-copy">
