@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from "react";
 import { createRoot } from "react-dom/client";
 import DeviceChecker from "./DeviceChecker.jsx";
 import { getMediaPlayback } from "./mediaPlayback.js";
+import { advanceCurtain, curtainOffset, RESULT_CURTAIN_START } from "./curtain.js";
 import "./styles.css";
 
 const ASSET_ROOT = `${import.meta.env.BASE_URL}assets`;
@@ -582,6 +583,7 @@ function App() {
       roulette.querySelectorAll(".roulette-line"),
     );
     const rouletteFinale = roulette.querySelector(".roulette-finale");
+    const checker = scene.querySelector(".device-checker");
     const rouletteButton = scene.querySelector(".roulette-button");
     const rouletteBottomFade = scene.querySelector(
       ".roulette-bottom-fade",
@@ -618,6 +620,8 @@ function App() {
 
     let targetCurtain = 0;
     let currentCurtain = 0;
+    let targetResultCurtain = 0;
+    let currentResultCurtain = 0;
     let targetTimeline = 0;
     let currentTimeline = 0;
     let targetReveal = 0;
@@ -654,6 +658,7 @@ function App() {
       );
 
       targetCurtain = clamp(scrollOffset / viewportHeight);
+      targetResultCurtain = clamp(scrollOffset / viewportHeight - RESULT_CURTAIN_START);
       targetReveal = smoothstep(
         viewportHeight * 0.8,
         viewportHeight,
@@ -701,6 +706,7 @@ function App() {
 
       if (reducedMotion) {
         currentCurtain = targetCurtain;
+        currentResultCurtain = targetResultCurtain;
         currentTimeline = targetTimeline;
         currentReveal = targetReveal;
         currentButtonReveal = targetButtonReveal;
@@ -712,7 +718,7 @@ function App() {
     };
 
     const renderScene = () => {
-      const curtainOffset = (1 - currentCurtain) * 100;
+      const offset = curtainOffset(currentCurtain);
       const isMobile = window.matchMedia("(max-width: 700px)").matches;
       const layoutScale = getLayoutScale();
       const viewportHeight = window.innerHeight;
@@ -722,8 +728,11 @@ function App() {
         : viewportHeight / 2 - 48 * layoutScale;
       const linePosition = currentTimeline - 1;
 
-      scene.style.setProperty("--curtain-y", `${curtainOffset}%`);
-      roulette.style.setProperty("--curtain-clip", `${curtainOffset}%`);
+      scene.style.setProperty("--curtain-y", `${offset}%`);
+      scene.style.setProperty("--result-curtain-y", `${curtainOffset(currentResultCurtain)}%`);
+      scene.dataset.resultCurtainCovered = String(currentResultCurtain >= 0.999);
+      if (checker) checker.inert = scene.dataset.checkerInteractive !== "true" || currentResultCurtain >= 0.999;
+      roulette.style.setProperty("--curtain-clip", `${offset}%`);
       roulette.style.setProperty("--roulette-reveal", currentReveal);
 
       const buttonProgress = isMobile ? 1 : currentButtonReveal;
@@ -922,15 +931,13 @@ function App() {
     };
 
     const render = () => {
-      currentCurtain += (targetCurtain - currentCurtain) * 0.16;
+      currentCurtain = advanceCurtain(currentCurtain, targetCurtain);
+      currentResultCurtain = advanceCurtain(currentResultCurtain, targetResultCurtain);
       currentTimeline += (targetTimeline - currentTimeline) * 0.11;
       currentReveal += (targetReveal - currentReveal) * 0.16;
       currentButtonReveal +=
         (targetButtonReveal - currentButtonReveal) * 0.16;
 
-      if (Math.abs(targetCurtain - currentCurtain) < 0.0005) {
-        currentCurtain = targetCurtain;
-      }
       if (Math.abs(targetTimeline - currentTimeline) < 0.0005) {
         currentTimeline = targetTimeline;
       }
@@ -947,6 +954,7 @@ function App() {
 
       if (
         currentCurtain !== targetCurtain ||
+        currentResultCurtain !== targetResultCurtain ||
         currentTimeline !== targetTimeline ||
         currentReveal !== targetReveal ||
         currentButtonReveal !== targetButtonReveal
@@ -966,6 +974,8 @@ function App() {
       window.removeEventListener("resize", measure);
       if (buttonDelayId) window.clearTimeout(buttonDelayId);
       if (rafId) window.cancelAnimationFrame(rafId);
+      scene.style.removeProperty("--result-curtain-y");
+      scene.removeAttribute("data-result-curtain-covered");
     };
   }, []);
 
@@ -1291,7 +1301,7 @@ function App() {
         "--checker-y",
         `${checkerOffset.toFixed(2)}px`,
       );
-      checker.inert = checkerReveal <= 0.96;
+      checker.inert = checkerReveal <= 0.96 || scene.dataset.resultCurtainCovered === "true";
       scene.dataset.chipButtonInverted = buttonIsInverted
         ? "true"
         : "false";
@@ -1794,6 +1804,9 @@ function App() {
             </span>
           </button>
           <DeviceChecker />
+          <div className="result-curtain-viewport" aria-hidden="true">
+            <div className="white-curtain result-curtain" />
+          </div>
         </section>
       </div>
     </main>

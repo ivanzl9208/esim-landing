@@ -174,7 +174,7 @@ export function createChipStoryRenderer(scene, media) {
         "--checker-y",
         `${checkerOffset.toFixed(2)}px`,
       );
-      checker.inert = checkerReveal <= 0.96;
+      checker.inert = checkerReveal <= 0.96 || state.resultCurtain >= 0.999;
       scene.dataset.chipButtonInverted = buttonIsInverted
         ? "true"
         : "false";

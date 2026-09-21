@@ -1,4 +1,5 @@
 import { mix, smoothstep, sampleKeyframes } from './math.js';
+import { curtainOffset } from './curtain.js';
 
 // The reference keyframe positions are preserved; GSAP owns timing and scrub.
 export function createRouletteRenderer(scene) {
@@ -7,7 +8,7 @@ export function createRouletteRenderer(scene) {
   const rouletteFinale = roulette.querySelector('.roulette-finale');
   return (state, geometry, reduced) => {
     const { curtain: currentCurtain, roulette: currentTimeline, rouletteReveal: currentReveal } = state;
-      const curtainOffset = (1 - currentCurtain) * 100;
+      const offset = curtainOffset(currentCurtain);
       const isMobile = geometry.mobile;
       const layoutScale = geometry.scale;
       const viewportHeight = geometry.height;
@@ -17,8 +18,9 @@ export function createRouletteRenderer(scene) {
         : viewportHeight / 2 - 48 * layoutScale;
       const linePosition = currentTimeline - 1;
 
-      scene.style.setProperty("--curtain-y", `${curtainOffset}%`);
-      roulette.style.setProperty("--curtain-clip", `${curtainOffset}%`);
+      scene.style.setProperty("--curtain-y", `${offset}%`);
+      scene.style.setProperty('--result-curtain-y', `${curtainOffset(state.resultCurtain)}%`);
+      roulette.style.setProperty("--curtain-clip", `${offset}%`);
       roulette.style.setProperty("--roulette-reveal", currentReveal);
 
       rouletteLines.forEach((line, index) => {

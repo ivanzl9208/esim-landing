@@ -25,6 +25,9 @@ const { goToChecker } = useScrollScene(scene, media, checker);
         <div class="roulette-bottom-fade" aria-hidden="true"><div class="roulette-bottom-svg-layer"><img :src="asset('blur.svg')" alt="" /></div></div>
         <a class="roulette-button" href="#device-checker" tabindex="-1" inert @click.prevent="goToChecker"><span class="roulette-button-label">Подключить eSIM</span></a>
         <DeviceChecker ref="checker" />
+        <div class="result-curtain-viewport" aria-hidden="true">
+          <div class="white-curtain result-curtain" />
+        </div>
       </section>
     </div>
   </main>
