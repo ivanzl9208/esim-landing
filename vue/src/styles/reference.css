@@ -1538,7 +1538,9 @@ button.checker-input-action:active {
 @media (max-width: 700px) {
   /* Preserve the original 97px gap + 60px field in the centered composition. */
   .scroll-scene { margin-bottom: -100dvh; }
-  .checker-form-view { min-height: calc(600px * var(--layout-scale) + env(safe-area-inset-top) + env(safe-area-inset-bottom)); }
+  /* Let compact viewports fit the input and hint; scroll internally only when
+     the screen is too short for the composition's minimum content height. */
+  .checker-form-view { min-height: calc(480px * var(--layout-scale) + env(safe-area-inset-top) + env(safe-area-inset-bottom)); }
   .checker-result { padding-top: calc(32px + env(safe-area-inset-top)); padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
   .checker-form-view::after { content: ''; order: 2; height: calc(157px * var(--layout-scale)); }
   .checker-search-dock {
