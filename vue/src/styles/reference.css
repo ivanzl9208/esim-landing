@@ -1021,7 +1021,7 @@ a {
 }
 .device-checker[data-entering="true"] .checker-panel:not([inert]) { pointer-events: auto; }
 .checker-form-view, .checker-result { position: relative; min-height: 100%; }
-.checker-result { display: grid; place-items: center; padding: calc(32px + env(safe-area-inset-top)) 16px calc(32px + env(safe-area-inset-bottom)); }
+.checker-result { display: grid; place-items: center; padding: calc(96px + env(safe-area-inset-top)) 16px calc(96px + env(safe-area-inset-bottom)); }
 
 .checker-form-view,
 .checker-result {
@@ -1201,7 +1201,6 @@ button.checker-input-action:active {
 
 .checker-popular button:hover {
   background: rgba(0, 0, 0, 0.14);
-  transform: translateY(-1px);
 }
 
 .checker-popular button:active {
@@ -1491,7 +1490,7 @@ button.checker-input-action:active {
   /* Preserve the original 97px gap + 60px field in the centered composition. */
   .scroll-scene { margin-bottom: -100dvh; }
   .checker-form-view { min-height: calc(600px * var(--layout-scale) + env(safe-area-inset-top) + env(safe-area-inset-bottom)); }
-  .checker-result { padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
+  .checker-result { padding-top: calc(32px + env(safe-area-inset-top)); padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
   .checker-form-view::after { content: ''; order: 2; height: calc(157px * var(--layout-scale)); }
   .checker-search-dock {
     position: absolute;
@@ -1599,7 +1598,7 @@ button.checker-input-action:active {
 
   .checker-eid-hint {
     top: auto;
-    bottom: calc(24px * var(--layout-scale));
+    bottom: calc(24px * var(--layout-scale) + env(safe-area-inset-bottom));
     width: min(calc(328px * var(--layout-scale)), calc(100vw - 32px * var(--layout-scale)));
     font-size: calc(12px * var(--layout-scale));
     line-height: calc(14px * var(--layout-scale));

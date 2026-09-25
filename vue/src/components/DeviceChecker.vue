@@ -46,6 +46,7 @@ defineExpose({ focusInput, section });
             <button class="checker-result-secondary" type="button" @click="reset">У меня другое устройство</button>
           </div>
         </div>
+        <p :id="hintId" class="checker-eid-hint">{{ hint }}</p>
       </div>
       <div v-else class="checker-form-view" :aria-busy="state === 'loading'">
         <h2 class="checker-heading">Ваше устройство готово к eSIM?</h2>
