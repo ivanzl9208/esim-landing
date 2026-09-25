@@ -5,12 +5,12 @@ import { clamp, mix, smoothstep } from './math.js';
 export function storyComposition(progress, count, reduced = false) {
   const time = clamp(progress) * count;
   if (time === 0 || time === count) return { side: 0, presence: 0 };
-  const presence = Math.min(smoothstep(0, .22, time), 1 - smoothstep(count - .3, count, time));
+  const presence = Math.min(smoothstep(0, .45, time), 1 - smoothstep(count - .45, count, time));
   let side = Math.floor(time) % 2 ? 1 : -1;
   for (let boundary = 1; boundary < count; boundary += 1) {
-    if (time >= boundary - .3 && time <= boundary + .22) {
+    if (time >= boundary - .45 && time <= boundary + .4) {
       const previous = boundary % 2 ? -1 : 1;
-      side = mix(previous, -previous, smoothstep(boundary - .3, boundary + .22, time));
+      side = mix(previous, -previous, smoothstep(boundary - .45, boundary + .4, time));
       break;
     }
   }

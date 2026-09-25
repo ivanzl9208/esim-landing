@@ -106,7 +106,8 @@ export function createChipStoryRenderer(scene, media) {
       const chipScale = reduced ? 1 : mix(isMobile ? 0.84 : 0.88, 1, currentChip);
       const composition = storyComposition(currentStory, STORY_BENEFITS.length, reduced);
       const storyX = isMobile ? 0 : geometry.width * .25 * composition.side;
-      const storyScale = isMobile ? 1 : mix(1, Math.min(1.25, geometry.width * .46 / Math.max(video.offsetWidth, frame.offsetWidth, 1)), composition.presence);
+      gradient.style.setProperty('--chip-story-presence', composition.presence.toFixed(4));
+      gradient.dataset.storyActive = String(composition.presence > 0 && !reduced);
       const safetyTextProgress = clamp(currentSafety);
       const safetyGap = (isMobile ? 60 : 101) * layoutScale;
       const safetyExitMargin = (isMobile ? 24 : 40) * layoutScale;
@@ -176,7 +177,7 @@ export function createChipStoryRenderer(scene, media) {
         grayStageOpacity.toFixed(4);
       video.style.transform =
         `translate3d(calc(-50% + ${storyX.toFixed(2)}px), calc(-50% + ${(chipY + safetyChipExit).toFixed(2)}px), 0) ` +
-        `scale(${(chipScale * storyScale).toFixed(5)})`;
+        `scale(${chipScale.toFixed(5)})`;
       frame.style.transform = video.style.transform;
       marquee.style.setProperty(
         "--advantages-text-x",
@@ -205,8 +206,8 @@ export function createChipStoryRenderer(scene, media) {
       const storyTimeline = clamp(currentStory) * STORY_BENEFITS.length;
       storyElements.forEach((element, index) => {
         const localProgress = storyTimeline - index;
-        const enter = smoothstep(0, 0.22, localProgress);
-        const exit = 1 - smoothstep(0.7, 1, localProgress);
+        const enter = smoothstep(0.15, 0.4, localProgress);
+        const exit = 1 - smoothstep(0.6, 0.85, localProgress);
         const opacity = clamp(Math.min(enter, exit));
         element.style.opacity = opacity.toFixed(4);
         element.style.filter = `blur(${((1 - opacity) * 10).toFixed(3)}px)`;

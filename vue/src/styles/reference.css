@@ -447,6 +447,20 @@ a {
   will-change: transform, opacity;
 }
 
+/* Independent transform properties keep the gentle idle motion separate from
+   the scroll-driven placement shared by the video and Safari frame fallback. */
+.chip-scroll-video, .chip-scroll-frame {
+  animation: chip-story-float 6s ease-in-out infinite;
+  animation-play-state: paused;
+}
+.chip-gradient[data-story-active="true"] .chip-scroll-video,
+.chip-gradient[data-story-active="true"] .chip-scroll-frame { animation-play-state: running; }
+@keyframes chip-story-float {
+  0%, 100% { translate: 0 0; rotate: 0deg; }
+  25% { translate: 0 calc(-8px * var(--layout-scale) * var(--chip-story-presence, 0)); rotate: calc(-1.5deg * var(--chip-story-presence, 0)); }
+  75% { translate: 0 calc(8px * var(--layout-scale) * var(--chip-story-presence, 0)); rotate: calc(1.5deg * var(--chip-story-presence, 0)); }
+}
+
 .advantages-marquee {
   --advantages-text-x: 0px;
   position: absolute;
@@ -1729,6 +1743,7 @@ button.checker-input-action:active {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .chip-scroll-video, .chip-scroll-frame { animation: none; }
   .checker-input-submit::before { transition: none; transform: none; opacity: 1; }
   .checker-input-submit .checker-search-icon > * { transition: none; stroke-dashoffset: 0; opacity: 1; }
   .checker-search-leave-active { visibility: hidden; }
