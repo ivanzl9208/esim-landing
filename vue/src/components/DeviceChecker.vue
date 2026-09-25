@@ -70,12 +70,14 @@ defineExpose({ focusInput, section });
                 :disabled="state === 'loading'" @focus="focused = true" @blur="focused = false; activeIndex = -1"
                 @input="changeQuery($event.target.value)" @keydown="keydown" />
               <span v-if="state === 'loading'" class="checker-input-action checker-loader" aria-hidden="true" />
-              <button v-else-if="query.trim()" class="checker-input-action checker-input-submit" type="submit" aria-label="Проверить устройство" @pointerdown.prevent>
-                <svg class="checker-search-icon" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" aria-hidden="true" focusable="false">
-                  <path class="checker-search-handle" d="M19.5 19.5 16.45 16.45" pathLength="1" />
-                  <circle class="checker-search-ring" cx="11.5" cy="11.5" r="7" transform="rotate(45 11.5 11.5)" pathLength="1" />
-                </svg>
-              </button>
+              <Transition name="checker-search" :duration="{ enter: 360, leave: state === 'loading' ? 0 : 400 }">
+                <button v-show="query.trim() && state !== 'loading'" :inert="!query.trim() || state === 'loading'" :disabled="!query.trim() || state === 'loading'" class="checker-input-action checker-input-submit" type="submit" aria-label="Проверить устройство" @pointerdown.prevent>
+                  <svg class="checker-search-icon" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" aria-hidden="true" focusable="false">
+                    <path class="checker-search-handle" d="M19.5 19.5 16.45 16.45" pathLength="1" />
+                    <circle class="checker-search-ring" cx="11.5" cy="11.5" r="7" transform="rotate(45 11.5 11.5)" pathLength="1" />
+                  </svg>
+                </button>
+              </Transition>
             </div>
           </form>
           <p :id="hintId" class="checker-eid-hint">{{ hint }}</p>

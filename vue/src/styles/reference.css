@@ -1158,27 +1158,34 @@ button.checker-input-action:active {
   z-index: -1;
   border-radius: inherit;
   background: var(--search-action-background);
+  transform: scale(1);
+  opacity: 1;
   transition: background-color 180ms ease;
-  animation: checker-search-grow 360ms cubic-bezier(.22, 1, .36, 1) both;
 }
 
 .checker-search-icon { display: block; width: 100%; height: 100%; }
 .checker-search-icon > * {
   stroke-dasharray: 1;
   stroke-dashoffset: 0;
-  animation: checker-search-draw 60ms ease-out 120ms both;
+  opacity: 1;
 }
-.checker-search-icon .checker-search-ring { animation-duration: 150ms; animation-delay: 160ms; }
-
-@keyframes checker-search-grow {
-  from { transform: scale(.12); opacity: 0; }
-  15% { opacity: 1; }
-  to { transform: scale(1); opacity: 1; }
+.checker-search-enter-from::before,
+.checker-search-leave-to::before { transform: scale(.12); opacity: 0; }
+.checker-search-enter-active::before {
+  transition: transform 360ms cubic-bezier(.22, 1, .36, 1), opacity 60ms ease, background-color 180ms ease;
 }
-@keyframes checker-search-draw {
-  from { stroke-dashoffset: 1; opacity: 0; }
-  to { stroke-dashoffset: 0; opacity: 1; }
+.checker-search-leave-active::before {
+  transition: transform 240ms cubic-bezier(.64, 0, .78, 0) 160ms, opacity 60ms ease 340ms;
 }
+.checker-search-enter-from .checker-search-icon > *,
+.checker-search-leave-to .checker-search-icon > * { stroke-dashoffset: 1; opacity: 0; }
+.checker-search-enter-active .checker-search-handle { transition: stroke-dashoffset 60ms ease-out 120ms, opacity 60ms ease-out 120ms; }
+.checker-search-enter-active .checker-search-ring { transition: stroke-dashoffset 150ms ease-out 160ms, opacity 150ms ease-out 160ms; }
+.checker-search-leave-active .checker-search-ring { transition: stroke-dashoffset 150ms ease-in, opacity 150ms ease-in; }
+.checker-search-leave-active .checker-search-handle { transition: stroke-dashoffset 60ms ease-in 120ms, opacity 60ms ease-in 120ms; }
+.checker-search-leave-active { pointer-events: none; }
+/* Loading replaces the action immediately; only clearing the query plays the exit. */
+.device-checker.is-loading .checker-input-submit { visibility: hidden; }
 
 .checker-loader {
   width: calc(24px * var(--layout-scale));
@@ -1736,8 +1743,9 @@ button.checker-input-action:active {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .checker-input-submit::before,
-  .checker-search-icon > * { animation: none; }
+  .checker-input-submit::before { transition: none; transform: none; opacity: 1; }
+  .checker-input-submit .checker-search-icon > * { transition: none; stroke-dashoffset: 0; opacity: 1; }
+  .checker-search-leave-active { visibility: hidden; }
 
   .checker-heading > span,
   .checker-popular > *,
