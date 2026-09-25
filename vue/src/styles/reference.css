@@ -1166,9 +1166,9 @@ button.checker-input-action:active {
 .checker-search-icon > * {
   stroke-dasharray: 1;
   stroke-dashoffset: 0;
-  animation: checker-search-draw 120ms ease-out 200ms both;
+  animation: checker-search-draw 60ms ease-out 120ms both;
 }
-.checker-search-icon .checker-search-ring { animation-duration: 300ms; animation-delay: 280ms; }
+.checker-search-icon .checker-search-ring { animation-duration: 150ms; animation-delay: 160ms; }
 
 @keyframes checker-search-grow {
   from { transform: scale(.12); opacity: 0; }
