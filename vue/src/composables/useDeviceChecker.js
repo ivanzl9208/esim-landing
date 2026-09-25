@@ -2,7 +2,7 @@ import { computed, nextTick, onMounted, onScopeDispose, ref } from 'vue';
 import { getFullName, getSuggestions, findNearestDevice } from '../utils/deviceSearch.js';
 
 export const CHECK_DELAY = 720;
-export const TOAST_DURATION = 10000;
+export const TOAST_DURATION = 3000;
 
 export function useDeviceChecker(input, resultHeading) {
   const query = ref('');
