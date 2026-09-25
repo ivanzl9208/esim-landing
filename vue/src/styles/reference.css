@@ -1023,10 +1023,14 @@ a {
 .checker-form-view, .checker-result { position: relative; min-height: 100%; }
 .checker-result { display: grid; place-items: center; padding: calc(96px + env(safe-area-inset-top)) 16px calc(96px + env(safe-area-inset-bottom)); }
 
-.checker-form-view,
-.checker-result {
+/* Animate the changing content, leaving the shared EID hint at rest. */
+.checker-heading > span,
+.checker-popular > *,
+.checker-search-area,
+.checker-result-card {
   animation: checker-view-in 440ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
+.checker-heading > span { display: block; }
 
 .checker-form-view {
   height: 100%;
@@ -1700,8 +1704,10 @@ button.checker-input-action:active {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .checker-form-view,
-  .checker-result,
+  .checker-heading > span,
+  .checker-popular > *,
+  .checker-search-area,
+  .checker-result-card,
   .checker-loader {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;

@@ -49,7 +49,7 @@ defineExpose({ focusInput, section });
         <p :id="hintId" class="checker-eid-hint">{{ hint }}</p>
       </div>
       <div v-else class="checker-form-view" :aria-busy="state === 'loading'">
-        <h2 class="checker-heading">Ваше устройство готово к eSIM?</h2>
+        <h2 class="checker-heading"><span>Ваше устройство готово к eSIM?</span></h2>
         <div class="checker-popular">
           <p>Популярные модели</p>
           <PopularModels :items="popular" :loading="state === 'loading'" @choose="choose" />
