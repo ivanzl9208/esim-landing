@@ -7,7 +7,7 @@ defineEmits(['toggle']);
   <article class="faq-item" :class="{ 'is-open': open }">
     <h3>
       <button :id="`${id}-question`" type="button" :aria-expanded="open" :aria-controls="`${id}-answer`" @click="$emit('toggle')">
-        <span>{{ item.question }}</span><img :src="asset('ending/chevron.svg')" width="24" height="24" alt="" />
+        <span>{{ item.question }}</span><img draggable="false" :src="asset('ending/chevron.svg')" width="24" height="24" alt="" />
       </button>
     </h3>
     <div :id="`${id}-answer`" class="faq-answer" role="region" :aria-labelledby="`${id}-question`" :aria-hidden="!open" :inert="!open">

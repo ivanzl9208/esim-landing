@@ -32,7 +32,7 @@ defineExpose({ focusInput, section });
       <div v-if="state === 'result' && selection" class="checker-result">
         <div class="checker-result-card">
           <div class="checker-result-summary">
-            <img class="checker-result-image" :src="asset(selection.supportsEsim ? 'esim-check-success.png' : 'esim-check-fail.png')" alt="" />
+            <img draggable="false" class="checker-result-image" :src="asset(selection.supportsEsim ? 'esim-check-success.png' : 'esim-check-fail.png')" alt="" />
             <div class="checker-result-copy">
               <h2 ref="resultHeading" tabindex="-1">
                 <span class="checker-result-model">{{ getFullName(selection) }}</span>
@@ -84,8 +84,8 @@ defineExpose({ focusInput, section });
         </div>
       </div>
       <div :class="['checker-toast', { 'is-visible': toastVisible }]" :inert="!toastVisible">
-        <div class="checker-toast-main"><img class="checker-toast-alert" :src="asset('esim-alert.svg')" alt="" /><span>Устройство не найдено, измените модель</span></div>
-        <button type="button" aria-label="Закрыть уведомление" @click="hideToast"><img :src="asset('esim-toast-close.svg')" alt="" /></button>
+        <div class="checker-toast-main"><img draggable="false" class="checker-toast-alert" :src="asset('esim-alert.svg')" alt="" /><span>Устройство не найдено, измените модель</span></div>
+        <button type="button" aria-label="Закрыть уведомление" @click="hideToast"><img draggable="false" :src="asset('esim-toast-close.svg')" alt="" /></button>
       </div>
       <p class="sr-only" role="status" aria-live="polite" aria-atomic="true">{{ toastVisible ? 'Устройство не найдено, измените модель' : statusMessage }}</p>
     </div>

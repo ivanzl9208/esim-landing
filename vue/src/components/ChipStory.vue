@@ -20,7 +20,7 @@ defineExpose({ setPlayback: (progress, turns) => media.value?.setPlayback(progre
       <ChipMedia ref="media" />
       <div class="chip-features">
         <article v-for="(feature, index) in CHIP_FEATURES" :key="feature.icon" :class="`chip-feature chip-feature-${index}`">
-          <div class="chip-feature-rule"><span class="chip-feature-icon"><img class="chip-feature-icon-motion" :src="asset(`icons/${feature.icon}`)" alt="" /></span></div>
+          <div class="chip-feature-rule"><span class="chip-feature-icon"><img draggable="false" class="chip-feature-icon-motion" :src="asset(`icons/${feature.icon}`)" alt="" /></span></div>
           <div class="chip-feature-copy">
             <div class="chip-feature-title-clip"><h2><SoftBlurText :text="feature.title" /></h2></div>
             <div class="chip-feature-paragraph-clip"><p><SoftBlurText :text="feature.description" /></p></div>

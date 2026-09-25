@@ -26,7 +26,7 @@ const { goToChecker } = useScrollScene(scene, media, checker);
         <div class="white-curtain" aria-hidden="true" />
         <ChipStory ref="media" />
         <RouletteStage />
-        <div class="roulette-bottom-fade" aria-hidden="true"><div class="roulette-bottom-svg-layer"><img :src="asset('blur.svg')" alt="" /></div></div>
+        <div class="roulette-bottom-fade" aria-hidden="true"><div class="roulette-bottom-svg-layer"><img draggable="false" :src="asset('blur.svg')" alt="" /></div></div>
         <a class="roulette-button" href="#device-checker" tabindex="-1" inert @click.prevent="goToChecker"><span class="roulette-button-label">Подключить eSIM</span></a>
       </section>
     </div>
