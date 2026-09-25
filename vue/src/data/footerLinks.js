@@ -1,4 +1,4 @@
-// Public navigation read from sbermobile.ru/tariffs/pilotmasters/.
+// Public navigation read from sbermobile.ru/sberprime/.
 export const footerGroups = [
   {
     "links": [

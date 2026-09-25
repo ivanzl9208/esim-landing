@@ -11,14 +11,6 @@
   border: 0;
 }
 button:disabled { opacity: 1; }
-.desktop-nav button {
-  display: inline;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  color: inherit;
-  font-family: inherit;
-}
 .site-header button { -webkit-text-fill-color: currentColor; }
 :where(a, button, input, [tabindex]):focus-visible {
   outline: 3px solid #0b0c0d;

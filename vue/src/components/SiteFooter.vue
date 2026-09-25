@@ -11,7 +11,7 @@ const toggle = index => { expanded.value = expanded.value.includes(index) ? expa
     <div class="footer-container">
       <div class="footer-columns">
         <div class="footer-contact">
-          <div><a href="tel:901">901</a><p>Бесплатно с номеров СберМобайла<br />по России</p></div>
+          <div><a href="tel:901">901</a><p>Бесплатно с номеров СберМобайла<br /> по России</p></div>
           <div><a href="tel:+74996514444">+7 (499) 651-44-44</a><p>Бесплатно с номеров СберМобайла в роуминге, по тарифам оператора — с номеров других операторов</p></div>
           <a class="ending-button ending-button-orange" href="https://sbermobile.ru/faq/?feedback=true">Напишите нам</a>
         </div>
@@ -25,7 +25,7 @@ const toggle = index => { expanded.value = expanded.value.includes(index) ? expa
         <div class="footer-utilities">
           <div class="footer-app">
             <p class="footer-app-title">Скачать приложение<br />СберМобайл</p>
-            <div class="footer-qr"><img draggable="false" :src="asset('ending/footer-qr.png')" width="150" height="150" alt="QR-код для скачивания приложения СберМобайл" loading="lazy" /></div>
+            <div class="footer-qr"><img draggable="false" :src="asset('ending/footer-qr.png')" width="146" height="146" alt="QR-код для скачивания приложения СберМобайл" loading="lazy" /></div>
             <div class="footer-stores"><a v-for="store in appStores" :key="store.name" :href="store.href" :aria-label="`Приложение СберМобайл: ${store.name}`"><img draggable="false" :src="asset(store.icon)" width="32" height="32" alt="" loading="lazy" /><span>{{ store.verb }}<strong>{{ store.name }}</strong></span></a></div>
           </div>
           <a class="footer-service" href="https://sbermobile.ru/payment/pay"><strong>Оплата связи</strong><span>Пополните баланс рублями или бонусами Спасибо</span><img draggable="false" :src="asset('ending/footer-chevron.svg')" width="16" height="16" alt="" /></a>
@@ -34,7 +34,7 @@ const toggle = index => { expanded.value = expanded.value.includes(index) ? expa
       </div>
       <div class="footer-legal">
         <p class="footer-copyright">© 2017 — 2026, Сбербанк-Телеком</p>
-        <p class="footer-privacy">Оставаясь на сайте, вы соглашаетесь <a href="https://sbermobile.ru/upload/politika_pdn_sbermobail.pdf">на обработку данных</a> и использование <a href="https://sbermobile.ru/upload/cookies.pdf">cookies</a>. Вы можете принять или заблокировать cookies в настройках браузера</p>
+        <p class="footer-privacy">Оставаясь на сайте, вы соглашаетесь <a href="https://sbermobile.ru/upload/politika_pdn_sbermobail.pdf">на обработку данных</a> и использование <a href="https://sbermobile.ru/upload/cookies.pdf">cookies</a>. Вы можете принять или заблокировать cookies в настройках браузера.</p>
         <div class="footer-social"><a href="https://t.me/sbermobile_official" aria-label="СберМобайл в Telegram"><img draggable="false" :src="asset('ending/telegram.svg')" width="32" height="32" alt="" loading="lazy" /></a><a href="https://vk.com/sbermobile_official" aria-label="СберМобайл во ВКонтакте"><img draggable="false" :src="asset('ending/vk.svg')" width="32" height="32" alt="" loading="lazy" /></a></div>
       </div>
     </div>
