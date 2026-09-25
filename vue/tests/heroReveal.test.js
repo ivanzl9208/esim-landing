@@ -12,11 +12,11 @@ test('Shared Hero entrance preserves its sampled translation and opacity', () =>
   }
 });
 
-test('Checker holds for half a viewport after its entrance without stretching earlier tracks', () => {
+test('Checker holds for one viewport after its entrance without stretching earlier tracks', () => {
   assert.deepEqual(TRACKS.curtain, [0, 1, 1, 'none']);
   assert.deepEqual(TRACKS.roulette, [1.28, 4.35, 10, 'none']);
-  assert.equal(CHECKER_HOLD, .5);
-  assert.equal(SCENE_SCROLL_END, 40.18);
+  assert.equal(CHECKER_HOLD, 1);
+  assert.equal(SCENE_SCROLL_END, 40.68);
   assert.deepEqual(TRACKS.outro, [37.4, 39.68, 1, 'smooth']);
   assert.equal(Math.max(...Object.values(TRACKS).map(track => track[1])), 39.68);
   assert.equal('resultCurtain' in TRACKS, false);

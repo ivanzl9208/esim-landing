@@ -22,7 +22,7 @@ export const TRACKS = {
 };
 // Briefly hold the fully revealed checker before handing it to document flow.
 // This extends the existing stage, without stretching any entrance tracks.
-export const CHECKER_HOLD = 0.5;
+export const CHECKER_HOLD = 1;
 export const SCENE_SCROLL_END = TRACKS.outro[1] + CHECKER_HOLD;
 export const SCENE_BASE_HEIGHT = `${(SCENE_SCROLL_END + 1) * 100}svh`;
 export const getLayout = (width, height) => {
