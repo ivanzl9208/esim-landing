@@ -7,9 +7,12 @@
   font-family: "SB Sans Text", Arial, sans-serif;
 }
 .landing-ending {
+  --ending-radius: 60px;
   position: relative;
   z-index: 60;
-  background: #e9ebeb;
+  /* Extend the checker's orange surface behind the FAQ's rounded top corners.
+     The card stays in document flow, so its overlap adds no scroll range. */
+  background: linear-gradient(to bottom, #e44f03 0 var(--ending-radius), #e9ebeb var(--ending-radius) 100%);
 }
 .ending-white {
   --ending-gutter: 32px;
@@ -17,7 +20,7 @@
   z-index: 2;
   padding: 96px 0;
   background: #fff;
-  border-radius: 0 0 60px 60px;
+  border-radius: var(--ending-radius);
 }
 .faq-section { width: 100%; margin: 0 auto; }
 .faq-section h2, .faq-panel { width: min(calc(100% - 2 * var(--ending-gutter)), 830px); margin-inline: auto; }
@@ -116,7 +119,8 @@
   .footer-legal { flex-wrap: wrap; }
 }
 @media (max-width: 700px) {
-  .ending-white { --ending-gutter: 16px; padding: 64px 0; border-radius: 0 0 24px 24px; }
+  .landing-ending { --ending-radius: 24px; }
+  .ending-white { --ending-gutter: 16px; padding: 64px 0; }
   .faq-section h2 { margin-bottom: 32px; font-size: 36px; line-height: 36px; letter-spacing: -1.6px; }
   .faq-tabs-scroll { margin-bottom: 1px; }
   .faq-tabs button { min-height: 40px; padding: 12px 20px; font-size: 14px; line-height: 16px; letter-spacing: -.42px; }
