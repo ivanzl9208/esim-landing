@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { DEVICE_DATABASE, POPULAR_DEVICE_NAMES } from '../src/data/deviceDatabase.js';
-import { findNearestDevice, getFullName, getSuggestions, findPopularDevice, normalizeSearch } from '../src/utils/deviceSearch.js';
+import { findNearestDevice, getFullName, getSuggestions, findPopularDevice, normalizeSearch, isBrandOnly } from '../src/utils/deviceSearch.js';
 
 const aliases = [
   ['Айфон 16 про макс', 'Apple iPhone 16 Pro Max'],
@@ -30,4 +30,13 @@ test('Preserves reference database, popular choices and suggestion limit', () =>
 test('Preserves approximate variant matching for reference parity', () => {
   assert.equal(getFullName(findNearestDevice('iPhone 16')), 'Apple iPhone 16 Pro');
   assert.equal(getFullName(findNearestDevice('Samsung Galaxy S23 FE')), 'Samsung Galaxy S23');
+});
+test('Recognizes manufacturer-only queries in Latin, Cyrillic and existing aliases', () => {
+  for (const query of ['Samsung', ' Самсунг ', 'САМСУНГ', 'Apple', 'эпл', 'айфон', 'Google', 'гугл', 'Xiaomi', 'сяоми', 'Huawei', 'хуавей']) {
+    assert.equal(isBrandOnly(query), true, query);
+    assert.equal(findNearestDevice(query), null, query);
+  }
+  for (const query of ['Samsung Galaxy S23', 'Самсунг с23', 'iPhone 8 Plus', 'абракадабра', 'iPhone 99', '']) {
+    assert.equal(isBrandOnly(query), false, query);
+  }
 });

@@ -1,5 +1,5 @@
 import { computed, nextTick, onMounted, onScopeDispose, ref } from 'vue';
-import { getFullName, getSuggestions, findNearestDevice } from '../utils/deviceSearch.js';
+import { getFullName, getSuggestions, findNearestDevice, isBrandOnly } from '../utils/deviceSearch.js';
 
 export const CHECK_DELAY = 720;
 export const TOAST_DURATION = 3000;
@@ -10,6 +10,7 @@ export function useDeviceChecker(input, resultHeading) {
   const focused = ref(false);
   const selection = ref(null);
   const toastVisible = ref(false);
+  const toastMessage = ref('');
   const activeIndex = ref(-1);
   const statusMessage = ref('');
   const suggestions = computed(() => getSuggestions(query.value));
@@ -44,6 +45,9 @@ export function useDeviceChecker(input, resultHeading) {
         selection.value = null;
         state.value = 'form';
         statusMessage.value = '';
+        toastMessage.value = isBrandOnly(submitted)
+          ? 'Введите модель устройства'
+          : 'Устройство не найдено, измените модель';
         toastVisible.value = true;
         toastTimer = setTimeout(hideToast, TOAST_DURATION);
         await focusInput();
@@ -109,5 +113,5 @@ export function useDeviceChecker(input, resultHeading) {
     clearTimeout(checkTimer);
     clearTimeout(toastTimer);
   });
-  return { query, state, focused, selection, toastVisible, activeIndex, statusMessage, suggestions, expanded, hideToast, runCheck, reset, choose, changeQuery, keydown, focusInput };
+  return { query, state, focused, selection, toastVisible, toastMessage, activeIndex, statusMessage, suggestions, expanded, hideToast, runCheck, reset, choose, changeQuery, keydown, focusInput };
 }

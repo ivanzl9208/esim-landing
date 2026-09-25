@@ -17,7 +17,7 @@ const hintId = `${uid}-eid`;
 const hint = 'Или наберите *#06# на устройстве и нажмите кнопку вызова. eSIM доступна, если в списке есть строка EID';
 const optionId = index => `${uid}-option-${index}`;
 const popular = POPULAR_DEVICE_NAMES.map(label => ({ label, device: findPopularDevice(label) }));
-const { query, state, focused, selection, toastVisible, activeIndex, statusMessage, suggestions, expanded, hideToast, runCheck, reset, choose, changeQuery, keydown, focusInput } = useDeviceChecker(input, resultHeading);
+const { query, state, focused, selection, toastVisible, toastMessage, activeIndex, statusMessage, suggestions, expanded, hideToast, runCheck, reset, choose, changeQuery, keydown, focusInput } = useDeviceChecker(input, resultHeading);
 useKeyboardViewport(section);
 // On a short screen the form may have been scrolled internally. Start the
 // result at its heading without moving the surrounding document flow.
@@ -84,10 +84,10 @@ defineExpose({ focusInput, section });
         </div>
       </div>
       <div :class="['checker-toast', { 'is-visible': toastVisible }]" :inert="!toastVisible">
-        <div class="checker-toast-main"><img draggable="false" class="checker-toast-alert" :src="asset('esim-alert.svg')" alt="" /><span>Устройство не найдено, измените модель</span></div>
+        <div class="checker-toast-main"><img draggable="false" class="checker-toast-alert" :src="asset('esim-alert.svg')" alt="" /><span>{{ toastMessage }}</span></div>
         <button type="button" aria-label="Закрыть уведомление" @click="hideToast"><img draggable="false" :src="asset('esim-toast-close.svg')" alt="" /></button>
       </div>
-      <p class="sr-only" role="status" aria-live="polite" aria-atomic="true">{{ toastVisible ? 'Устройство не найдено, измените модель' : statusMessage }}</p>
+      <p class="sr-only" role="status" aria-live="polite" aria-atomic="true">{{ toastVisible ? toastMessage : statusMessage }}</p>
     </div>
   </section>
 </template>
