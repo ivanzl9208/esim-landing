@@ -18,7 +18,7 @@ export const TRACKS = {
   story: [26.23, 33.43, 1, 'none'],
   safety: [33.68, 39.68, 1, 'none'],
   returnGradient: [37.16, 39.41, 1, 'smooth'],
-  outro: [37.4, 39.68, 1, 'smooth'], // Existing floating CTA exits before checker.
+  outro: [37.4, 39.68, 1, 'smooth'], // Original checker entrance and floating CTA exit.
 };
 // The last viewport is shared with the incoming document-flow checker.
 export const SCENE_SCROLL_END = TRACKS.safety[1];

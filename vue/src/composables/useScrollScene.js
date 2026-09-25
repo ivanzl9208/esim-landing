@@ -2,6 +2,7 @@ import { onMounted, onScopeDispose } from 'vue';
 import { TRACKS, SCENE_SCROLL_END, getLayout } from '../animation/timing.js';
 import { createRouletteRenderer } from '../animation/roulette.js';
 import { createChipStoryRenderer } from '../animation/chipStory.js';
+import { createCheckerEntrance } from '../animation/checkerEntrance.js';
 import { smoothstep } from '../animation/math.js';
 
 /** One native sticky stage. ScrollTrigger supplies progress; Lenis only smooths desktop wheel input. */
@@ -52,6 +53,8 @@ export function useScrollScene(sceneRef, mediaRef, checkerRef) {
       let active = true;
       let geometry;
       let signature;
+      let renderEntrance = () => {};
+      const checkerEntrance = createCheckerEntrance(checkerRef.value.section);
       const tick = time => lenis?.raf(time * 1000);
       if (!reduced && fine && !mobile) {
         lenis = new Lenis({
@@ -97,6 +100,8 @@ export function useScrollScene(sceneRef, mediaRef, checkerRef) {
         const renderRoulette = createRouletteRenderer(scene);
         const renderChip = createChipStoryRenderer(scene, mediaRef.value);
         const state = { ...Object.fromEntries(Object.keys(TRACKS).map(key => [key, 0])), buttonReveal: oldButtonProgress };
+        const checkerTop = checkerElement.getBoundingClientRect().top + window.scrollY;
+        renderEntrance = () => checkerEntrance.render(state.outro, geometry, reduced, window.scrollY < checkerTop);
         let rendering = false;
         const render = () => {
           if (!active || rendering) return;
@@ -114,6 +119,7 @@ export function useScrollScene(sceneRef, mediaRef, checkerRef) {
           }
           renderRoulette(state, geometry, reduced);
           renderChip(state, geometry, reduced);
+          renderEntrance();
           rendering = false;
         };
         sceneContext = gsap.context(() => {
@@ -156,6 +162,9 @@ export function useScrollScene(sceneRef, mediaRef, checkerRef) {
       const fontsReady = () => { if (active && !disposed) rebuild(true); };
       rebuild(true);
       window.addEventListener('resize', resize, { passive: true });
+      // The fixed-to-flow handoff must also update outside the timeline's range.
+      const scroll = () => renderEntrance();
+      window.addEventListener('scroll', scroll, { passive: true });
       window.addEventListener('orientationchange', resize, { passive: true });
       document.fonts?.ready.then(fontsReady);
       restorePosition = top => {
@@ -185,9 +194,11 @@ export function useScrollScene(sceneRef, mediaRef, checkerRef) {
         active = false;
         clearTimeout(resizeTimer);
         window.removeEventListener('resize', resize);
+        window.removeEventListener('scroll', scroll);
         window.removeEventListener('orientationchange', resize);
         revealDelay?.kill(); buttonTween?.kill(); focusDelay?.kill();
         sceneContext?.revert();
+        checkerEntrance.clear();
         gsap.ticker.remove(tick);
         lenis?.off('scroll', ScrollTrigger.update);
         lenis?.destroy();

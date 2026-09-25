@@ -1009,6 +1009,17 @@ a {
 }
 
 .checker-panel { position: relative; height: 100%; }
+/* During its original entrance the checker shares the preceding sticky gradient.
+   At the scene boundary the same panel returns to its full-viewport flow slot. */
+.device-checker[data-entering="true"] { background: transparent; }
+.device-checker[data-entering="true"] .checker-panel {
+  position: fixed;
+  inset: 0;
+  height: 100svh;
+  height: 100dvh;
+  pointer-events: none;
+}
+.device-checker[data-entering="true"] .checker-panel:not([inert]) { pointer-events: auto; }
 .checker-form-view, .checker-result { position: relative; min-height: 100%; }
 .checker-result { display: grid; place-items: center; padding: calc(32px + env(safe-area-inset-top)) 16px calc(32px + env(safe-area-inset-bottom)); }
 
@@ -1549,7 +1560,8 @@ button.checker-input-action:active {
   .checker-popular-marquee { display: grid; gap: calc(8px * var(--layout-scale)); width: 100%; }
   .checker-model-row { overflow: hidden; padding-block: 7px; margin-block: -7px; }
   .checker-model-track { display: flex; width: max-content; animation: checker-model-marquee var(--marquee-duration) linear infinite; animation-play-state: paused; }
-  .device-checker[data-in-view="true"] .checker-model-track { animation-play-state: running; }
+  .device-checker[data-in-view="true"] .checker-model-track,
+  .device-checker[data-entering="true"][data-entrance-visible="true"] .checker-model-track { animation-play-state: running; }
   .checker-model-group { display: flex; flex-shrink: 0; gap: calc(8px * var(--layout-scale)); padding-right: calc(8px * var(--layout-scale)); }
   .checker-model-group button { flex-shrink: 0; }
   /* Keyboard users get a stable, scrollable row with a single set of controls. */
