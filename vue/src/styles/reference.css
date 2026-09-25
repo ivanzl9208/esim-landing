@@ -1178,15 +1178,15 @@ button.checker-input-action:active {
 .checker-search-enter-from::before,
 .checker-search-leave-to::before { transform: scale(.12); opacity: 0; }
 .checker-search-enter-active::before {
-  transition: transform 360ms cubic-bezier(.22, 1, .36, 1), opacity 60ms ease, background-color 180ms ease;
+  transition: transform 180ms cubic-bezier(.22, 1, .36, 1), opacity 30ms ease, background-color 180ms ease;
 }
 .checker-search-leave-active::before {
   transition: transform 240ms cubic-bezier(.64, 0, .78, 0) 160ms, opacity 60ms ease 340ms;
 }
 .checker-search-enter-from .checker-search-icon > *,
 .checker-search-leave-to .checker-search-icon > * { stroke-dashoffset: 1; opacity: 0; }
-.checker-search-enter-active .checker-search-handle { transition: stroke-dashoffset 60ms ease-out 120ms, opacity 60ms ease-out 120ms; }
-.checker-search-enter-active .checker-search-ring { transition: stroke-dashoffset 150ms ease-out 160ms, opacity 150ms ease-out 160ms; }
+.checker-search-enter-active .checker-search-handle { transition: stroke-dashoffset 30ms ease-out 60ms, opacity 30ms ease-out 60ms; }
+.checker-search-enter-active .checker-search-ring { transition: stroke-dashoffset 75ms ease-out 80ms, opacity 75ms ease-out 80ms; }
 .checker-search-leave-active .checker-search-ring { transition: stroke-dashoffset 150ms ease-in, opacity 150ms ease-in; }
 .checker-search-leave-active .checker-search-handle { transition: stroke-dashoffset 60ms ease-in 120ms, opacity 60ms ease-in 120ms; }
 .checker-search-leave-active { pointer-events: none; }
