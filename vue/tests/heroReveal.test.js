@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { heroRevealFrame } from '../src/animation/heroReveal.js';
-import { TRACKS, SCENE_SCROLL_END } from '../src/animation/timing.js';
+import { TRACKS, SCENE_SCROLL_END, CHECKER_HOLD } from '../src/animation/timing.js';
 
 test('Shared Hero entrance preserves its sampled translation and opacity', () => {
   // Reference samples of the original first roulette line at 1440×720.
@@ -12,11 +12,13 @@ test('Shared Hero entrance preserves its sampled translation and opacity', () =>
   }
 });
 
-test('Scene ends with safety; the opening curtain and Hero retain their tracks', () => {
+test('Checker holds for half a viewport after its entrance without stretching earlier tracks', () => {
   assert.deepEqual(TRACKS.curtain, [0, 1, 1, 'none']);
   assert.deepEqual(TRACKS.roulette, [1.28, 4.35, 10, 'none']);
-  assert.equal(SCENE_SCROLL_END, 39.68);
-  assert.equal(Math.max(...Object.values(TRACKS).map(track => track[1])), SCENE_SCROLL_END);
+  assert.equal(CHECKER_HOLD, .5);
+  assert.equal(SCENE_SCROLL_END, 40.18);
+  assert.deepEqual(TRACKS.outro, [37.4, 39.68, 1, 'smooth']);
+  assert.equal(Math.max(...Object.values(TRACKS).map(track => track[1])), 39.68);
   assert.equal('resultCurtain' in TRACKS, false);
   assert.equal('faqReveal' in TRACKS, false);
 });

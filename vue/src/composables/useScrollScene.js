@@ -91,7 +91,8 @@ export function useScrollScene(sceneRef, mediaRef, checkerRef) {
         buttonTween?.kill(); buttonTween = undefined;
         sceneContext?.revert();
         geometry = getLayout(window.innerWidth, window.innerHeight);
-        // Preserve preceding animation distances; no checker/FAQ hold is appended.
+        // Preserve preceding animation distances, then hold the finished checker
+        // briefly within this same stage before the document-flow handoff.
         // Mobile browser chrome changes the visible height, not the already
         // traversed scroll distance. Keep the checker's document top stable.
         scene.style.height = `${Math.ceil(SCENE_SCROLL_END * scrollUnit) + geometry.height}px`;

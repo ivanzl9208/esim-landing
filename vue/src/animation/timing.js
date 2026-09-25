@@ -20,8 +20,10 @@ export const TRACKS = {
   returnGradient: [37.16, 39.41, 1, 'smooth'],
   outro: [37.4, 39.68, 1, 'smooth'], // Original checker entrance and floating CTA exit.
 };
-// The last viewport is shared with the incoming document-flow checker.
-export const SCENE_SCROLL_END = TRACKS.safety[1];
+// Briefly hold the fully revealed checker before handing it to document flow.
+// This extends the existing stage, without stretching any entrance tracks.
+export const CHECKER_HOLD = 0.5;
+export const SCENE_SCROLL_END = TRACKS.outro[1] + CHECKER_HOLD;
 export const SCENE_BASE_HEIGHT = `${(SCENE_SCROLL_END + 1) * 100}svh`;
 export const getLayout = (width, height) => {
   const mobile = width <= 700;
