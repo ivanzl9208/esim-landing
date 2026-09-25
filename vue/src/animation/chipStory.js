@@ -1,5 +1,6 @@
 import { clamp, mix, smoothstep, cubicBezierValue, mixRgb } from './math.js';
 import { STORY_BENEFITS } from '../data/story.js';
+import { storyComposition } from './storyComposition.js';
 
 export function createChipStoryRenderer(scene, media) {
   const select = selector => scene.querySelector(selector);
@@ -103,6 +104,9 @@ export function createChipStoryRenderer(scene, media) {
         : 0;
       const chipY = reduced ? chipEndY : mix(chipStartY, chipEndY, currentChip);
       const chipScale = reduced ? 1 : mix(isMobile ? 0.84 : 0.88, 1, currentChip);
+      const composition = storyComposition(currentStory, STORY_BENEFITS.length, reduced);
+      const storyX = isMobile ? 0 : geometry.width * .25 * composition.side;
+      const storyScale = isMobile ? 1 : mix(1, Math.min(1.25, geometry.width * .46 / Math.max(video.offsetWidth, frame.offsetWidth, 1)), composition.presence);
       const safetyTextProgress = clamp(currentSafety);
       const safetyGap = (isMobile ? 60 : 101) * layoutScale;
       const safetyExitMargin = (isMobile ? 24 : 40) * layoutScale;
@@ -171,8 +175,8 @@ export function createChipStoryRenderer(scene, media) {
       backgroundTransition.style.opacity =
         grayStageOpacity.toFixed(4);
       video.style.transform =
-        `translate3d(-50%, calc(-50% + ${(chipY + safetyChipExit).toFixed(2)}px), 0) ` +
-        `scale(${chipScale.toFixed(5)})`;
+        `translate3d(calc(-50% + ${storyX.toFixed(2)}px), calc(-50% + ${(chipY + safetyChipExit).toFixed(2)}px), 0) ` +
+        `scale(${(chipScale * storyScale).toFixed(5)})`;
       frame.style.transform = video.style.transform;
       marquee.style.setProperty(
         "--advantages-text-x",

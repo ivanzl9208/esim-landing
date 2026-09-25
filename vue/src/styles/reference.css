@@ -623,39 +623,17 @@ a {
 }
 
 .story-benefit-1 {
-  top: 10.5556%;
-  left: 13.125%;
-  width: min(calc(423px * var(--layout-scale)), 34vw);
-  font-size: calc(36px * var(--layout-scale));
-  line-height: calc(36px * var(--layout-scale));
-  letter-spacing: calc(-1.8px * var(--layout-scale));
+  left: 54%;
 }
-
-.story-benefit-2 {
-  top: 23.3333%;
-  left: 68.9583%;
-  width: min(calc(335px * var(--layout-scale)), 26vw);
-  font-size: calc(28px * var(--layout-scale));
-  line-height: calc(28px * var(--layout-scale));
-  letter-spacing: calc(-1.2px * var(--layout-scale));
-}
-
-.story-benefit-3 {
-  top: 63.3333%;
-  left: 6.0417%;
-  width: min(calc(380px * var(--layout-scale)), 30vw);
-  font-size: calc(28px * var(--layout-scale));
-  line-height: calc(28px * var(--layout-scale));
-  letter-spacing: calc(-1.2px * var(--layout-scale));
-}
-
-.story-benefit-4 {
-  top: 74.4444%;
-  left: 62.3611%;
-  width: min(calc(430px * var(--layout-scale)), 34vw);
-  font-size: calc(36px * var(--layout-scale));
-  line-height: calc(36px * var(--layout-scale));
-  letter-spacing: calc(-1.8px * var(--layout-scale));
+.story-benefit-2, .story-benefit-4 { left: 6%; }
+.story-benefit-3 { left: 54%; }
+.story-benefit {
+  top: 50%;
+  width: min(calc(560px * var(--layout-scale)), 40vw);
+  font-size: calc(48px * var(--layout-scale));
+  line-height: 1.08;
+  letter-spacing: calc(-1.4px * var(--layout-scale));
+  transform: translateY(-50%);
 }
 
 .safety-copy {
