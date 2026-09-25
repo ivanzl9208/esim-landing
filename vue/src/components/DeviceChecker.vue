@@ -1,5 +1,5 @@
 <script setup>
-import { ref, useId } from 'vue';
+import { ref, useId, watch } from 'vue';
 import { POPULAR_DEVICE_NAMES } from '../data/deviceDatabase.js';
 import { findPopularDevice, getFullName } from '../utils/deviceSearch.js';
 import { asset } from '../utils/assets.js';
@@ -19,10 +19,15 @@ const optionId = index => `${uid}-option-${index}`;
 const popular = POPULAR_DEVICE_NAMES.map(label => ({ label, device: findPopularDevice(label) }));
 const { query, state, focused, selection, toastVisible, activeIndex, statusMessage, suggestions, expanded, hideToast, runCheck, reset, choose, changeQuery, keydown, focusInput } = useDeviceChecker(input, resultHeading);
 useKeyboardViewport(section);
-defineExpose({ focusInput });
+// On a short screen the form may have been scrolled internally. Start the
+// result at its heading without moving the surrounding document flow.
+watch(state, value => {
+  if (value === 'result' && section.value) section.value.scrollTop = 0;
+}, { flush: 'post' });
+defineExpose({ focusInput, section });
 </script>
 <template>
-  <section id="device-checker" ref="section" :class="['device-checker', `is-${state}`, { 'is-focused': focused }]" aria-label="Проверка поддержки eSIM" inert>
+  <section id="device-checker" ref="section" :class="['device-checker', `is-${state}`, { 'is-focused': focused }]" aria-label="Проверка поддержки eSIM">
     <div class="checker-panel">
       <div v-if="state === 'result' && selection" class="checker-result">
         <div class="checker-result-card">
@@ -70,7 +75,6 @@ defineExpose({ focusInput });
           <p :id="hintId" class="checker-eid-hint">{{ hint }}</p>
         </div>
       </div>
-      <p v-if="state === 'result'" :id="hintId" class="checker-eid-hint">{{ hint }}</p>
       <div :class="['checker-toast', { 'is-visible': toastVisible }]" :inert="!toastVisible">
         <div class="checker-toast-main"><img class="checker-toast-alert" :src="asset('esim-alert.svg')" alt="" /><span>Устройство не найдено, измените модель</span></div>
         <button type="button" aria-label="Закрыть уведомление" @click="hideToast"><img :src="asset('esim-toast-close.svg')" alt="" /></button>

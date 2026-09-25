@@ -20,7 +20,6 @@ export function createRouletteRenderer(scene) {
       const linePosition = currentTimeline - 1;
 
       scene.style.setProperty("--curtain-y", `${offset}%`);
-      scene.style.setProperty('--result-curtain-y', `${curtainOffset(state.resultCurtain)}%`);
       roulette.style.setProperty("--curtain-clip", `${offset}%`);
       roulette.style.setProperty("--roulette-reveal", currentReveal);
 

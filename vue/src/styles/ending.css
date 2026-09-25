@@ -9,23 +9,17 @@
 .landing-ending {
   position: relative;
   z-index: 60;
-  margin-top: calc(-1 * var(--ending-overlap, 100svh));
-  transform: translateY(var(--ending-reveal-offset, 0px));
   background: #e9ebeb;
 }
 .ending-white {
   --ending-gutter: 32px;
   position: relative;
   z-index: 2;
-  padding: 96px var(--ending-gutter);
+  padding: 96px 0;
   background: #fff;
   border-radius: 0 0 60px 60px;
 }
 .faq-section { width: 100%; margin: 0 auto; }
-/* Keep the reveal clip and tab scroller at the page edges, including during entry. */
-.faq-reveal-clip { margin-inline: calc(-1 * var(--ending-gutter)); overflow: clip; overflow-clip-margin: 8px; }
-.faq-reveal-composition { visibility: hidden; opacity: 0; }
-.landing-ending[data-faq-ready="true"] .faq-reveal-clip { overflow: visible; }
 .faq-section h2, .faq-panel { width: min(calc(100% - 2 * var(--ending-gutter)), 830px); margin-inline: auto; }
 .faq-section h2 { margin-block: 0 48px; font: 600 64px/64px "SB Sans Display", Arial, sans-serif; letter-spacing: -1.28px; text-align: center; }
 .faq-tabs-scroll { position: relative; overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: none; padding: 7px max(var(--ending-gutter), calc((100% - 830px) / 2)); margin-block: -7px 5px; }
@@ -122,7 +116,7 @@
   .footer-legal { flex-wrap: wrap; }
 }
 @media (max-width: 700px) {
-  .ending-white { --ending-gutter: 16px; padding: 64px var(--ending-gutter); border-radius: 0 0 24px 24px; }
+  .ending-white { --ending-gutter: 16px; padding: 64px 0; border-radius: 0 0 24px 24px; }
   .faq-section h2 { margin-bottom: 32px; font-size: 36px; line-height: 36px; letter-spacing: -1.6px; }
   .faq-tabs-scroll { margin-bottom: 1px; }
   .faq-tabs button { min-height: 40px; padding: 12px 20px; font-size: 14px; line-height: 16px; letter-spacing: -.42px; }

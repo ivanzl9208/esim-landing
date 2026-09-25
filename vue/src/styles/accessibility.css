@@ -50,11 +50,7 @@ button:disabled { opacity: 1; }
   .checker-input-shell input { font-size: max(16px, calc(16px * var(--layout-scale))); }
 }
 @media (max-height: 460px) {
-  .device-checker { overflow-y: auto; overscroll-behavior-y: auto; }
   .hero-stage { min-height: 100svh; }
-  .device-checker:not([data-keyboard-open='true']) .checker-panel {
-    min-height: calc(640px * var(--layout-scale));
-  }
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition-duration: 0.01ms !important; }

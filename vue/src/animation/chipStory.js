@@ -10,7 +10,6 @@ export function createChipStoryRenderer(scene, media) {
   const video = select('.chip-scroll-video'), frame = select('.chip-scroll-frame');
   const button = select('.roulette-button'), buttonLabel = select('.roulette-button-label');
   const bottomFade = select('.roulette-bottom-fade'), safetyCopy = select('.safety-copy');
-  const checker = select('.device-checker');
   const heroSurface = select('.hero-surface');
   const featureElements = [...scene.querySelectorAll('.chip-feature')];
   const storyElements = [...scene.querySelectorAll('.story-benefit')];
@@ -92,7 +91,7 @@ export function createChipStoryRenderer(scene, media) {
 
   return (state, layout, reduceMotion) => {
     geometry = layout; reduced = reduceMotion;
-    const { reveal: currentReveal, chip: currentChip, marquee: currentMarquee, features: currentVideo, playback: currentPlayback, definition: currentDefinition, definitionVisibility: currentDefinitionVisibility, background: currentBackground, story: currentStory, safety: currentSafety, returnGradient: currentReturnGradient, checker: currentChecker } = state;
+    const { reveal: currentReveal, chip: currentChip, marquee: currentMarquee, features: currentVideo, playback: currentPlayback, definition: currentDefinition, definitionVisibility: currentDefinitionVisibility, background: currentBackground, story: currentStory, safety: currentSafety, returnGradient: currentReturnGradient, outro: currentOutro } = state;
     const playbackEndTurns = 2;
       const isMobile = geometry.mobile;
       const layoutScale = geometry.scale;
@@ -159,23 +158,8 @@ export function createChipStoryRenderer(scene, media) {
       );
 
       const transitionIsActive = currentReveal > 0.0001;
-      const checkerReveal = clamp(currentChecker);
-      const checkerOffset = (1 - checkerReveal) *
-        (geometry.height + 48 * layoutScale);
-      scene.dataset.chipTransitionActive = transitionIsActive
-        ? "true"
-        : "false";
-      scene.dataset.checkerVisible = checkerReveal > 0.001
-        ? "true"
-        : "false";
-      scene.dataset.checkerInteractive = checkerReveal > 0.96
-        ? "true"
-        : "false";
-      scene.style.setProperty(
-        "--checker-y",
-        `${checkerOffset.toFixed(2)}px`,
-      );
-      checker.inert = checkerReveal <= 0.96 || state.resultCurtain >= 0.999;
+      const outroProgress = clamp(currentOutro);
+      scene.dataset.chipTransitionActive = transitionIsActive ? 'true' : 'false';
       scene.dataset.chipButtonInverted = buttonIsInverted
         ? "true"
         : "false";
@@ -275,7 +259,7 @@ export function createChipStoryRenderer(scene, media) {
       const buttonProgress = isMobile ? 1 : state.buttonReveal;
       const buttonOffset = isMobile ? 0 : -96 * layoutScale * (1 - buttonProgress);
       button.style.transform = 'translate3d(' + (isMobile ? '-50%' : '0') + ', ' + buttonOffset + 'px, 0)';
-      const interactive = buttonProgress > 0.98 && checkerReveal < 0.01;
+      const interactive = buttonProgress > 0.98 && outroProgress < 0.01;
       button.inert = !interactive;
       button.tabIndex = interactive ? 0 : -1;
       button.style.pointerEvents = interactive ? 'auto' : 'none';
@@ -310,8 +294,8 @@ export function createChipStoryRenderer(scene, media) {
         buttonLabel.style.color = buttonColor;
         buttonLabel.style.webkitTextFillColor = buttonColor;
         const fade = currentReturnGradient > 0 ? 1 - currentReturnGradient : !buttonIsInverted || currentStory > 0.0001 ? 1 : 0;
-        bottomFade.style.opacity = isMobile ? fade * (1 - checkerReveal) : 0;
-        button.style.opacity = 1 - checkerReveal;
+        bottomFade.style.opacity = isMobile ? fade * (1 - outroProgress) : 0;
+        button.style.opacity = 1 - outroProgress;
       }
       if (reduced) {
         gradient.style.clipPath = 'none';

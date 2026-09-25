@@ -18,7 +18,9 @@ test('Imports and server-renders the complete app without browser globals', asyn
     assert.match(html, /role="tablist"/);
     assert.match(html, /Подключайтесь/);
     assert.match(html, /<footer/);
-    assert.match(html, /id="device-checker"[^>]*inert/);
+    assert.doesNotMatch(html, /id="device-checker"[^>]*inert/);
+    assert.doesNotMatch(html, /result-curtain|faq-reveal|data-faq-ready/);
+    assert.match(html, /id="device-checker"[\s\S]*class="landing-ending"/);
     assert.doesNotMatch(html, /<video[^>]*src=".*(?:mov|webm)"/);
   } finally { await server.close(); }
 });

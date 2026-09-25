@@ -1,8 +1,8 @@
-import { curtainTrack, RESULT_CURTAIN_START } from './curtain.js';
-import { ROULETTE_TRACK, heroRevealTrack } from './heroReveal.js';
+import { curtainTrack } from './curtain.js';
+import { ROULETTE_TRACK } from './heroReveal.js';
 
 // All positions are viewport-height multiples measured from the scene top.
-// Overlap is intentional: safety, background return, and checker share one stage.
+// Safety and the returning gradient retain their original overlapping tracks.
 export const TRACKS = {
   curtain: curtainTrack(0),
   rouletteReveal: [0.8, 1, 1, 'smooth'],
@@ -18,13 +18,11 @@ export const TRACKS = {
   story: [26.23, 33.43, 1, 'none'],
   safety: [33.68, 39.68, 1, 'none'],
   returnGradient: [37.16, 39.41, 1, 'smooth'],
-  checker: [37.4, 39.68, 1, 'smooth'],
-  resultCurtain: curtainTrack(RESULT_CURTAIN_START),
-  faqReveal: heroRevealTrack(RESULT_CURTAIN_START + 1),
+  outro: [37.4, 39.68, 1, 'smooth'], // Existing floating CTA exits before checker.
 };
-// One extra viewport belongs to the sticky stage itself.
-export const SCENE_BASE_HEIGHT = `${(TRACKS.resultCurtain[1] + 1) * 100}svh`;
-export const CHECKER_SCROLL_TARGET = TRACKS.checker[1] + 0.2;
+// The last viewport is shared with the incoming document-flow checker.
+export const SCENE_SCROLL_END = TRACKS.safety[1];
+export const SCENE_BASE_HEIGHT = `${(SCENE_SCROLL_END + 1) * 100}svh`;
 export const getLayout = (width, height) => {
   const mobile = width <= 700;
   const raw = Math.min(width / (mobile ? 360 : 1440), height / (mobile ? 600 : 720));

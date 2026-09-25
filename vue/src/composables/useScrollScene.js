@@ -1,12 +1,11 @@
 import { onMounted, onScopeDispose } from 'vue';
-import { TRACKS, SCENE_BASE_HEIGHT, CHECKER_SCROLL_TARGET, getLayout } from '../animation/timing.js';
+import { TRACKS, SCENE_SCROLL_END, getLayout } from '../animation/timing.js';
 import { createRouletteRenderer } from '../animation/roulette.js';
 import { createChipStoryRenderer } from '../animation/chipStory.js';
 import { smoothstep } from '../animation/math.js';
-import { HERO_REVEAL_SCROLL_DISTANCE, FAQ_REVEAL_OPACITY_END, heroRevealFrame } from '../animation/heroReveal.js';
 
 /** One native sticky stage. ScrollTrigger supplies progress; Lenis only smooths desktop wheel input. */
-export function useScrollScene(sceneRef, mediaRef, checkerRef, endingRef) {
+export function useScrollScene(sceneRef, mediaRef, checkerRef) {
   let disposed = false;
   let cleanup = () => {};
   let navigate = () => {};
@@ -19,10 +18,11 @@ export function useScrollScene(sceneRef, mediaRef, checkerRef, endingRef) {
     if (disposed) return;
     gsap.registerPlugin(ScrollTrigger);
     const scene = sceneRef.value;
-    const ending = endingRef?.value?.root;
-    const faq = ending?.querySelector('.faq-reveal-composition');
     const previousScale = scene.style.getPropertyValue('--layout-scale');
     const previousHeight = scene.style.height;
+    const previousMargin = scene.style.marginBottom;
+    let scrollUnit = window.innerHeight;
+    let scrollWidth = window.innerWidth;
     const media = gsap.matchMedia();
     let mediaScroll;
     let restorePosition = () => {};
@@ -75,19 +75,25 @@ export function useScrollScene(sceneRef, mediaRef, checkerRef, endingRef) {
         const nextSignature = `${window.innerWidth}:${window.innerHeight}`;
         if (!force && signature === nextSignature) return;
         signature = nextSignature;
+        const checkerElement = checkerRef.value.section;
+        const oldCheckerTop = checkerElement.getBoundingClientRect().top + window.scrollY;
+        const flowOffset = geometry && window.scrollY >= oldCheckerTop - geometry.height
+          ? window.scrollY - oldCheckerTop : null;
+        if (scrollWidth !== window.innerWidth) {
+          scrollWidth = window.innerWidth;
+          scrollUnit = window.innerHeight;
+        }
         const oldButtonProgress = timeline?.data?.buttonReveal ?? 0;
         revealDelay?.kill(); revealDelay = undefined;
         buttonTween?.kill(); buttonTween = undefined;
         sceneContext?.revert();
         geometry = getLayout(window.innerWidth, window.innerHeight);
-        // Append the same scroll distance as the original Hero entrance.
-        // Existing tracks retain their positions and the shared scrub.
-        // Round up and allow one pixel for the fractional svh base, so
-        // offsetHeight cannot shorten the timeline and rescale earlier tracks.
-        if (ending) scene.style.height = `calc(${SCENE_BASE_HEIGHT} + ${Math.ceil(HERO_REVEAL_SCROLL_DISTANCE * geometry.height) + 1}px)`;
+        // Preserve preceding animation distances; no checker/FAQ hold is appended.
+        // Mobile browser chrome changes the visible height, not the already
+        // traversed scroll distance. Keep the checker's document top stable.
+        scene.style.height = `${Math.ceil(SCENE_SCROLL_END * scrollUnit) + geometry.height}px`;
+        scene.style.marginBottom = `-${geometry.height}px`;
         scene.style.setProperty('--layout-scale', geometry.scale.toFixed(5));
-        ending?.style.setProperty('--ending-overlap', `${geometry.height}px`);
-        const sceneEnd = scene.getBoundingClientRect().top + window.scrollY + scene.offsetHeight - geometry.height;
         const renderRoulette = createRouletteRenderer(scene);
         const renderChip = createChipStoryRenderer(scene, mediaRef.value);
         const state = { ...Object.fromEntries(Object.keys(TRACKS).map(key => [key, 0])), buttonReveal: oldButtonProgress };
@@ -108,31 +114,11 @@ export function useScrollScene(sceneRef, mediaRef, checkerRef, endingRef) {
           }
           renderRoulette(state, geometry, reduced);
           renderChip(state, geometry, reduced);
-          if (ending) {
-            // Follow the curtain's edge, then hold the white surface at the
-            // viewport top while FAQ enters. At the extended sticky end this
-            // offset becomes zero and ordinary document scrolling resumes.
-            // Use the actual sticky end: svh and innerHeight can differ while
-            // mobile browser chrome expands or collapses.
-            const target = Math.min(1, 1 + (window.scrollY - sceneEnd) / geometry.height);
-            const offset = target > 0 || state.resultCurtain > 0 ? (target - state.resultCurtain) * geometry.height : 0;
-            ending.style.setProperty('--ending-reveal-offset', `${offset}px`);
-            const covered = state.resultCurtain >= 0.99999;
-            const intro = heroRevealFrame(state.faqReveal, mobile ? 347 - 64 : 548 - 96, 0, FAQ_REVEAL_OPACITY_END);
-            faq.style.visibility = covered ? 'visible' : 'hidden';
-            faq.style.transform = `translate3d(0, ${reduced ? 0 : intro.y}px, 0)`;
-            // Hide the whole composition, including descendants with their own
-            // visibility transitions, until the curtain completely covers the checker.
-            faq.style.opacity = !covered ? '0' : reduced ? '1' : intro.opacity.toFixed(4);
-            const ready = covered && (reduced || state.faqReveal >= 0.99999);
-            faq.inert = !(covered && (reduced || state.faqReveal >= FAQ_REVEAL_OPACITY_END));
-            ending.dataset.faqReady = String(ready);
-          }
           rendering = false;
         };
         sceneContext = gsap.context(() => {
           timeline = gsap.timeline({ paused: true, onUpdate: render, data: state });
-          const units = Math.max((scene.offsetHeight - geometry.height) / geometry.height, 1);
+          const units = Math.max((scene.offsetHeight - geometry.height) / scrollUnit, 1);
           timeline.to({ hold: 0 }, { hold: 1, duration: units, ease: 'none' }, 0);
           for (const [key, [start, end, value, ease]] of Object.entries(TRACKS)) {
             timeline.fromTo(state, { [key]: 0 }, {
@@ -153,6 +139,15 @@ export function useScrollScene(sceneRef, mediaRef, checkerRef, endingRef) {
         }, scene);
         lenis?.resize();
         ScrollTrigger.refresh();
+        if (flowOffset !== null) {
+          const top = checkerElement.getBoundingClientRect().top + window.scrollY + flowOffset;
+          if (Math.abs(top - window.scrollY) > 0.5) {
+            if (lenis) lenis.scrollTo(top, { immediate: true });
+            else window.scrollTo({ top, behavior: 'instant' });
+            ScrollTrigger.update();
+            timeline.totalProgress(trigger.progress, false);
+          }
+        }
       };
       const resize = () => {
         clearTimeout(resizeTimer);
@@ -174,7 +169,7 @@ export function useScrollScene(sceneRef, mediaRef, checkerRef, endingRef) {
       };
       navigate = () => {
         if (!active) return;
-        const target = scene.getBoundingClientRect().top + window.scrollY + geometry.height * CHECKER_SCROLL_TARGET;
+        const target = checkerRef.value.section.getBoundingClientRect().top + window.scrollY;
         focusDelay?.kill();
         const focus = () => {
           focusDelay = gsap.delayedCall(reduced ? 0 : 0.35, () => { if (active) checkerRef.value?.focusInput(); });
@@ -207,9 +202,7 @@ export function useScrollScene(sceneRef, mediaRef, checkerRef, endingRef) {
       if (previousScale) scene.style.setProperty('--layout-scale', previousScale);
       else scene.style.removeProperty('--layout-scale');
       scene.style.height = previousHeight;
-      ending?.style.removeProperty('--ending-overlap');
-      ending?.style.removeProperty('--ending-reveal-offset');
-      if (ending) delete ending.dataset.faqReady;
+      scene.style.marginBottom = previousMargin;
     };
   });
   onScopeDispose(() => { disposed = true; cleanup(); });

@@ -72,6 +72,7 @@ a {
   --curtain-y: 100%;
   position: relative;
   height: var(--scene-base-height);
+  margin-bottom: -100svh;
   background: #fff;
 }
 
@@ -264,20 +265,6 @@ a {
   background: #fff;
   transform: translate3d(0, var(--curtain-y), 0);
   will-change: transform;
-}
-
-.result-curtain-viewport {
-  position: absolute;
-  z-index: 50;
-  inset: 0;
-  overflow: clip;
-  pointer-events: none;
-}
-
-/* Clip only this moving layer so it cannot enlarge the sticky stage's scrollable area. */
-.result-curtain {
-  --curtain-y: var(--result-curtain-y, 100%);
-  pointer-events: auto;
 }
 
 .roulette-stage {
@@ -1008,32 +995,22 @@ a {
 
 .device-checker {
   --checker-keyboard-offset: 0px;
-  position: absolute;
+  --layout-scale: 1;
+  position: relative;
   z-index: 40;
-  inset: 0;
-  overflow: hidden;
-  background: transparent;
+  width: 100%;
+  height: 100svh;
+  height: 100dvh;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overflow-anchor: none;
+  background: linear-gradient(180deg, #ffbc35 0%, #e44f03 100%);
   color: #fff;
-  visibility: hidden;
-  transform: translate3d(0, var(--checker-y, 110vh), 0);
-  pointer-events: none;
-  will-change: transform;
 }
 
-.scroll-scene[data-checker-visible="true"] .device-checker {
-  visibility: visible;
-}
-
-.scroll-scene[data-checker-interactive="true"] .device-checker {
-  pointer-events: auto;
-}
-
-.checker-panel,
-.checker-form-view,
-.checker-result {
-  position: absolute;
-  inset: 0;
-}
+.checker-panel { position: relative; height: 100%; }
+.checker-form-view, .checker-result { position: relative; min-height: 100%; }
+.checker-result { display: grid; place-items: center; padding: calc(32px + env(safe-area-inset-top)) 16px calc(32px + env(safe-area-inset-bottom)); }
 
 .checker-form-view,
 .checker-result {
@@ -1041,6 +1018,8 @@ a {
 }
 
 .checker-form-view {
+  height: 100%;
+  min-height: calc(480px * var(--layout-scale));
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   align-content: center;
@@ -1052,7 +1031,7 @@ a {
 
 .checker-heading {
   position: relative;
-  width: calc(720px * var(--layout-scale));
+  width: min(calc(720px * var(--layout-scale)), calc(100% - 32px));
   margin: 0;
   font-family: "SB Sans Display", Arial, sans-serif;
   font-size: calc(64px * var(--layout-scale));
@@ -1067,7 +1046,7 @@ a {
   position: relative;
   z-index: 4;
   order: 1;
-  width: calc(720px * var(--layout-scale));
+  width: min(calc(720px * var(--layout-scale)), calc(100% - 32px));
   height: calc(72px * var(--layout-scale));
   margin: calc(32px * var(--layout-scale)) 0 0;
   transition: top 360ms cubic-bezier(0.22, 1, 0.36, 1), bottom 360ms cubic-bezier(0.22, 1, 0.36, 1);
@@ -1171,7 +1150,7 @@ button.checker-input-action:active {
   order: 2;
   margin-top: calc(24px * var(--layout-scale));
   display: flex;
-  width: calc(720px * var(--layout-scale));
+  width: min(calc(720px * var(--layout-scale)), calc(100% - 32px));
   flex-direction: column;
   align-items: center;
   gap: calc(16px * var(--layout-scale));
@@ -1291,9 +1270,9 @@ button.checker-input-action:active {
   position: absolute;
   z-index: 2;
   top: auto;
-  bottom: calc(40px * var(--layout-scale));
+  bottom: calc(40px * var(--layout-scale) + env(safe-area-inset-bottom));
   left: 50%;
-  width: calc(560px * var(--layout-scale));
+  width: min(calc(560px * var(--layout-scale)), calc(100% - 32px));
   margin: 0;
   color: rgba(255, 255, 255, 0.7);
   transform: translateX(-50%);
@@ -1307,15 +1286,12 @@ button.checker-input-action:active {
 }
 
 .checker-result-card {
-  position: absolute;
-  top: 50%;
-  left: 50%;
+  position: relative;
   display: flex;
-  width: calc(720px * var(--layout-scale));
+  width: min(calc(720px * var(--layout-scale)), calc(100% - 32px));
   flex-direction: column;
   align-items: center;
   gap: calc(32px * var(--layout-scale));
-  transform: translate(-50%, -50%);
 }
 
 .checker-result-summary {
@@ -1419,7 +1395,7 @@ button.checker-input-action:active {
   top: calc(32px * var(--layout-scale));
   left: 50%;
   display: flex;
-  width: calc(440px * var(--layout-scale));
+  width: min(calc(440px * var(--layout-scale)), calc(100% - 32px));
   min-height: calc(56px * var(--layout-scale));
   align-items: center;
   gap: calc(20px * var(--layout-scale));
@@ -1502,10 +1478,13 @@ button.checker-input-action:active {
 
 @media (max-width: 700px) {
   /* Preserve the original 97px gap + 60px field in the centered composition. */
+  .scroll-scene { margin-bottom: -100dvh; }
+  .checker-form-view { min-height: calc(600px * var(--layout-scale) + env(safe-area-inset-top) + env(safe-area-inset-bottom)); }
+  .checker-result { padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
   .checker-form-view::after { content: ''; order: 2; height: calc(157px * var(--layout-scale)); }
   .checker-search-dock {
     position: absolute;
-    bottom: calc(24px * var(--layout-scale));
+    bottom: calc(24px * var(--layout-scale) + env(safe-area-inset-bottom));
     left: 50%;
     z-index: 4;
     display: flex;
@@ -1570,7 +1549,7 @@ button.checker-input-action:active {
   .checker-popular-marquee { display: grid; gap: calc(8px * var(--layout-scale)); width: 100%; }
   .checker-model-row { overflow: hidden; padding-block: 7px; margin-block: -7px; }
   .checker-model-track { display: flex; width: max-content; animation: checker-model-marquee var(--marquee-duration) linear infinite; animation-play-state: paused; }
-  .scroll-scene[data-checker-visible="true"] .checker-model-track { animation-play-state: running; }
+  .device-checker[data-in-view="true"] .checker-model-track { animation-play-state: running; }
   .checker-model-group { display: flex; flex-shrink: 0; gap: calc(8px * var(--layout-scale)); padding-right: calc(8px * var(--layout-scale)); }
   .checker-model-group button { flex-shrink: 0; }
   /* Keyboard users get a stable, scrollable row with a single set of controls. */
@@ -1635,7 +1614,7 @@ button.checker-input-action:active {
 
   .device-checker.is-focused[data-keyboard-open="true"] .checker-search-dock {
     top: auto;
-    bottom: calc(var(--checker-keyboard-offset) + 16px * var(--layout-scale));
+    bottom: calc(var(--checker-keyboard-offset) + 16px * var(--layout-scale) + env(safe-area-inset-bottom));
   }
 
   .device-checker.is-focused[data-keyboard-open="true"] .checker-eid-hint {
@@ -1643,7 +1622,6 @@ button.checker-input-action:active {
   }
 
   .checker-result-card {
-    top: calc(50% - 26px * var(--layout-scale));
     width: min(calc(328px * var(--layout-scale)), calc(100vw - 32px * var(--layout-scale)));
     gap: calc(24px * var(--layout-scale));
   }
@@ -1682,7 +1660,8 @@ button.checker-input-action:active {
   .checker-result-actions button {
     width: 100%;
     min-height: calc(50px * var(--layout-scale));
-    padding: calc(15px * var(--layout-scale)) calc(32px * var(--layout-scale));
+    padding: calc(15px * var(--layout-scale)) calc(24px * var(--layout-scale));
+    white-space: nowrap;
   }
 
   .checker-toast {

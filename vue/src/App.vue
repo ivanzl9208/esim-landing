@@ -14,8 +14,7 @@ import { asset } from './utils/assets.js';
 const scene = ref(null);
 const media = ref(null);
 const checker = ref(null);
-const ending = ref(null);
-const { goToChecker } = useScrollScene(scene, media, checker, ending);
+const { goToChecker } = useScrollScene(scene, media, checker);
 </script>
 <template>
   <main>
@@ -29,13 +28,10 @@ const { goToChecker } = useScrollScene(scene, media, checker, ending);
         <RouletteStage />
         <div class="roulette-bottom-fade" aria-hidden="true"><div class="roulette-bottom-svg-layer"><img :src="asset('blur.svg')" alt="" /></div></div>
         <a class="roulette-button" href="#device-checker" tabindex="-1" inert @click.prevent="goToChecker"><span class="roulette-button-label">Подключить eSIM</span></a>
-        <DeviceChecker ref="checker" />
-        <div class="result-curtain-viewport" aria-hidden="true">
-          <div class="white-curtain result-curtain" />
-        </div>
       </section>
     </div>
-    <LandingEnding ref="ending" />
+    <DeviceChecker ref="checker" />
+    <LandingEnding />
   </main>
   <SiteFooter />
 </template>

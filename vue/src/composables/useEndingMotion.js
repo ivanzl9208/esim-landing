@@ -11,9 +11,7 @@ export function useEndingMotion(root) {
     gsap.registerPlugin(ScrollTrigger);
     const section = root.value.querySelector('.connect-cta');
     const surface = section.querySelector('.connect-cta-surface');
-    // The footer is outside the temporarily translated FAQ/CTA wrapper.
-    // Its top is the CTA's layout bottom, so these bounds are equivalent
-    // to the original section bounds and remain stable during FAQ reveal.
+    // Keep the existing parallax bounds anchored to the footer / CTA bottom.
     const footer = root.value.parentElement.nextElementSibling;
     const media = gsap.matchMedia();
     media.add({ always: 'all', reduced: '(prefers-reduced-motion: reduce)' }, context => {
