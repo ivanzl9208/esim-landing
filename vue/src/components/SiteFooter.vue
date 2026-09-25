@@ -14,7 +14,7 @@ import { asset } from '../utils/assets.js';
         <div class="footer-navigation" aria-label="Разделы сайта СберМобайл">
           <section v-for="group in footerGroups" :key="group.title" class="footer-link-group">
             <h3>{{ group.title }}</h3>
-            <ul><li v-for="link in group.links" :key="link.href"><span>{{ link.label }}</span></li></ul>
+            <ul><li v-for="label in group.links" :key="label"><span>{{ label }}</span></li></ul>
           </section>
         </div>
         <div class="footer-utilities">

@@ -11,6 +11,7 @@ export function useDeviceChecker(input, resultHeading) {
   const selection = ref(null);
   const toastVisible = ref(false);
   const toastMessage = ref('');
+  const invalidQuery = ref(false);
   const activeIndex = ref(-1);
   const statusMessage = ref('');
   const suggestions = computed(() => getSuggestions(query.value));
@@ -33,6 +34,7 @@ export function useDeviceChecker(input, resultHeading) {
     if (disposed || (!device && !submitted.trim())) return;
     clearTimeout(checkTimer);
     hideToast();
+    invalidQuery.value = false;
     focused.value = false;
     input.value?.blur();
     state.value = 'loading';
@@ -44,6 +46,7 @@ export function useDeviceChecker(input, resultHeading) {
       if (!resolved) {
         selection.value = null;
         state.value = 'form';
+        invalidQuery.value = true;
         statusMessage.value = '';
         toastMessage.value = isBrandOnly(submitted)
           ? 'Введите модель устройства'
@@ -68,6 +71,7 @@ export function useDeviceChecker(input, resultHeading) {
     checkTimer = undefined;
     hideToast();
     query.value = '';
+    invalidQuery.value = false;
     selection.value = null;
     state.value = 'form';
     statusMessage.value = '';
@@ -82,9 +86,17 @@ export function useDeviceChecker(input, resultHeading) {
   };
   const changeQuery = (value) => {
     query.value = value;
+    invalidQuery.value = false;
     activeIndex.value = -1;
     focused.value = true;
     hideToast();
+  };
+  const clearQuery = async () => {
+    query.value = '';
+    invalidQuery.value = false;
+    activeIndex.value = -1;
+    hideToast();
+    await focusInput();
   };
   const keydown = (event) => {
     if (event.isComposing) return;
@@ -113,5 +125,5 @@ export function useDeviceChecker(input, resultHeading) {
     clearTimeout(checkTimer);
     clearTimeout(toastTimer);
   });
-  return { query, state, focused, selection, toastVisible, toastMessage, activeIndex, statusMessage, suggestions, expanded, hideToast, runCheck, reset, choose, changeQuery, keydown, focusInput };
+  return { query, state, focused, selection, toastVisible, toastMessage, invalidQuery, activeIndex, statusMessage, suggestions, expanded, hideToast, runCheck, reset, choose, changeQuery, clearQuery, keydown, focusInput };
 }

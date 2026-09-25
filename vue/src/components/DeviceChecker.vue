@@ -17,7 +17,7 @@ const hintId = `${uid}-eid`;
 const hint = 'Или наберите *#06# на устройстве и нажмите кнопку вызова. eSIM доступна, если в списке есть строка EID';
 const optionId = index => `${uid}-option-${index}`;
 const popular = POPULAR_DEVICE_NAMES.map(label => ({ label, device: findPopularDevice(label) }));
-const { query, state, focused, selection, toastVisible, toastMessage, activeIndex, statusMessage, suggestions, expanded, hideToast, runCheck, reset, choose, changeQuery, keydown, focusInput } = useDeviceChecker(input, resultHeading);
+const { query, state, focused, selection, toastVisible, toastMessage, invalidQuery, activeIndex, statusMessage, suggestions, expanded, hideToast, runCheck, reset, choose, changeQuery, clearQuery, keydown, focusInput } = useDeviceChecker(input, resultHeading);
 useKeyboardViewport(section);
 // On a short screen the form may have been scrolled internally. Start the
 // result at its heading without moving the surrounding document flow.
@@ -70,8 +70,11 @@ defineExpose({ focusInput, section });
                 :disabled="state === 'loading'" @focus="focused = true" @blur="focused = false; activeIndex = -1"
                 @input="changeQuery($event.target.value)" @keydown="keydown" />
               <span v-if="state === 'loading'" class="checker-input-action checker-loader" aria-hidden="true" />
+              <button v-if="invalidQuery && query.trim() && state === 'form'" class="checker-input-action checker-input-clear" type="button" aria-label="Очистить поле" @click="clearQuery">
+                <img draggable="false" :src="asset('esim-clear.svg')" width="24" height="24" alt="" />
+              </button>
               <Transition name="checker-search" :duration="{ enter: 180, leave: state === 'loading' ? 0 : 400 }">
-                <button v-show="query.trim() && state !== 'loading'" :inert="!query.trim() || state === 'loading'" :disabled="!query.trim() || state === 'loading'" class="checker-input-action checker-input-submit" type="submit" aria-label="Проверить устройство" @pointerdown.prevent>
+                <button v-show="query.trim() && !invalidQuery && state !== 'loading'" :inert="!query.trim() || invalidQuery || state === 'loading'" :disabled="!query.trim() || invalidQuery || state === 'loading'" class="checker-input-action checker-input-submit" type="submit" aria-label="Проверить устройство" @pointerdown.prevent>
                   <svg class="checker-search-icon" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" aria-hidden="true" focusable="false">
                     <path class="checker-search-handle" d="M19.5 19.5 16.45 16.45" pathLength="1" />
                     <circle class="checker-search-ring" cx="11.5" cy="11.5" r="7" transform="rotate(45 11.5 11.5)" pathLength="1" />

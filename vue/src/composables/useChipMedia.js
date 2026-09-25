@@ -17,6 +17,8 @@ export function useChipMedia(videoRef, frameRef) {
   let pendingTime = null;
   let frameIndex = 0;
   let images = [];
+  let mediaRequested = false;
+  let mediaLoaded = false;
   const frameUrl = (index) => asset(`chip-frames/frame-${String(index + 1).padStart(3, '0')}.webp`);
 
   const preload = () => {
@@ -27,6 +29,19 @@ export function useChipMedia(videoRef, frameRef) {
       image.src = frameUrl(index);
       return image;
     });
+  };
+  const loadMedia = () => {
+    if (!mounted || disposed || reduced.value || mediaLoaded) return;
+    mediaLoaded = true;
+    if (frameMode.value) preload();
+    else {
+      video.preload = 'auto';
+      video.src = asset('chip-scroll.webm');
+    }
+  };
+  const prepare = () => {
+    mediaRequested = true;
+    loadMedia();
   };
   const flush = () => {
     if (disposed || frameMode.value || !video || video.readyState < 1 || video.seeking || pendingTime === null) return;
@@ -50,6 +65,7 @@ export function useChipMedia(videoRef, frameRef) {
   };
   const setPlayback = (progress, turns = 1) => {
     requestedProgress = progress >= turns - 0.0005 ? 1 : progress >= 1 ? progress % 1 : Math.max(0, progress);
+    if (progress > 0 && !mediaRequested) prepare();
     draw();
   };
   const metadata = () => {
@@ -64,13 +80,14 @@ export function useChipMedia(videoRef, frameRef) {
     video.pause();
     video.removeAttribute('src');
     video.load();
-    preload();
+    mediaLoaded = false;
+    if (mediaRequested) loadMedia();
     draw();
   };
   watch(reduced, () => {
     if (!mounted) return;
     video.pause();
-    if (frameMode.value) preload();
+    if (mediaRequested) loadMedia();
     draw();
   });
   onMounted(() => {
@@ -83,9 +100,9 @@ export function useChipMedia(videoRef, frameRef) {
     video.addEventListener('loadeddata', metadata);
     video.addEventListener('seeked', flush);
     video.addEventListener('error', fallback);
-    // Frame playback must not depend on video loading, decoding or seek events.
-    if (frameMode.value) preload();
-    else video.src = asset('chip-scroll.webm');
+    // The scroll scene calls prepare before the chip appears. A direct jump
+    // into playback also prepares the media in setPlayback above.
+    if (mediaRequested) loadMedia();
     draw();
   });
   onScopeDispose(() => {
@@ -103,5 +120,5 @@ export function useChipMedia(videoRef, frameRef) {
     images.forEach(image => image.removeAttribute('src'));
     images = [];
   });
-  return { frameMode, reduced, setPlayback };
+  return { frameMode, reduced, prepare, setPlayback };
 }

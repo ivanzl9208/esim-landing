@@ -26,7 +26,7 @@ Dev: http://127.0.0.1:5174. Production: `npm run build`, затем `npm run pre
 
 Версии точные и в package.json, и в package-lock.json. React, ReactDOM, plugin-react и дополнительные UI/animation библиотеки не устанавливались.
 
-**Smooth scrolling: Lenis.** Он работает с нативной позицией страницы, сохраняет CSS sticky и интегрируется в ticker GSAP без собственного RAF-цикла приложения. Используется только при ширине более 700 px, `pointer: fine` и выключенном Reduce Motion. На мобильных и устройствах с coarse pointer — нативный scroll; `syncTouch: false`. Так основной touch-scroll и работа экранной клавиатуры остаются под управлением браузера. Autocomplete и внутренний scroll checker в низких окнах исключены из сглаживания.
+**Smooth scrolling: Lenis.** Он работает с нативной позицией страницы, сохраняет CSS sticky и интегрируется в ticker GSAP без собственного RAF-цикла приложения. Модуль загружается и используется только при ширине более 700 px, `pointer: fine` и выключенном Reduce Motion. На мобильных и устройствах с coarse pointer — нативный scroll; `syncTouch: false`. Так основной touch-scroll и работа экранной клавиатуры остаются под управлением браузера. Autocomplete и внутренний scroll checker в низких окнах исключены из сглаживания.
 
 Актуальность версии 1.3.26 и схема интеграции проверены по [официальному репозиторию Lenis](https://github.com/darkroomengineering/lenis). [Лицензия MIT](https://github.com/darkroomengineering/lenis/blob/main/LICENSE) допускает коммерческое использование с сохранением copyright/license notice. У GSAP собственная [Standard License](https://gsap.com/community/standard-license/), допускающая использование в коммерческом лендинге; это не MIT. Notices Vue, Lenis и GSAP включены в `public/third-party-notices.txt` и production build. Права на исходные брендовые изображения и шрифты этим не переоформляются.
 
@@ -113,7 +113,7 @@ React wheel-handler, spring scroll и собственные RAF-циклы не
 
 ## Чип и lifecycle
 
-`ChipMedia` / `useChipMedia` изолируют видео от scroll orchestration. Видео не проигрывается циклом: задаётся последняя запрошенная позиция, ожидающий seek завершается через `seeked`. Ветка Apple включает Safari на macOS и браузеры на iPhone/iPad, в том числе Chrome, Firefox и Edge; она сохраняет все 150 WebP-кадров и их предварительную загрузку. Скрытый video чипа в этом режиме не получает src: кадры и завершение сцены не зависят от video seek или готовности декодера. При ошибке видео также доступен кадровый fallback. В Reduce Motion показан статичный кадр, hero video приостановлен; Lenis выключен.
+`ChipMedia` / `useChipMedia` изолируют видео от scroll orchestration. Видео не проигрывается циклом: задаётся последняя запрошенная позиция, ожидающий seek завершается через `seeked`. Ветка Apple включает Safari на macOS и браузеры на iPhone/iPad, в том числе Chrome, Firefox и Edge; она сохраняет все 150 WebP-кадров. Их загрузка начинается за два viewport до появления чипа, как и загрузка WebM на остальных устройствах. Скрытый video чипа в режиме Apple не получает src: кадры и завершение сцены не зависят от video seek или готовности декодера. При ошибке видео также доступен кадровый fallback. В Reduce Motion показан статичный кадр, hero video приостановлен; Lenis выключен.
 
 При unmount и смене media query:
 

@@ -5,7 +5,7 @@ import SoftBlurText from './SoftBlurText.vue';
 import { CHIP_FEATURES, STORY_BENEFITS, SAFETY_COPY } from '../data/story.js';
 import { asset } from '../utils/assets.js';
 const media = ref(null);
-defineExpose({ setPlayback: (progress, turns) => media.value?.setPlayback(progress, turns) });
+defineExpose({ prepare: () => media.value?.prepare(), setPlayback: (progress, turns) => media.value?.setPlayback(progress, turns) });
 </script>
 <template>
   <div class="chip-reveal-layer" aria-hidden="true">

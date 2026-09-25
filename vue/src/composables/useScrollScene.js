@@ -13,8 +13,8 @@ export function useScrollScene(sceneRef, mediaRef, checkerRef) {
 
   onMounted(async () => {
     // Browser-dependent packages are evaluated only after mounting (also safe in Nuxt SSR).
-    const [{ gsap }, { ScrollTrigger }, { default: Lenis }] = await Promise.all([
-      import('gsap'), import('gsap/ScrollTrigger'), import('lenis'),
+    const [{ gsap }, { ScrollTrigger }] = await Promise.all([
+      import('gsap'), import('gsap/ScrollTrigger'),
     ]);
     if (disposed) return;
     gsap.registerPlugin(ScrollTrigger);
@@ -57,16 +57,20 @@ export function useScrollScene(sceneRef, mediaRef, checkerRef) {
       const checkerEntrance = createCheckerEntrance(checkerRef.value.section);
       const tick = time => lenis?.raf(time * 1000);
       if (!reduced && fine && !mobile) {
-        lenis = new Lenis({
-          autoRaf: false, lerp: 0.11, smoothWheel: true, syncTouch: false,
-          prevent: node => {
-            if (node.closest?.('[data-lenis-prevent]')) return true;
-            const checker = node.closest?.('.device-checker');
-            return Boolean(checker && checker.scrollHeight > checker.clientHeight && getComputedStyle(checker).overflowY === 'auto');
-          },
+        import('lenis').then(({ default: Lenis }) => {
+          if (!active || disposed) return;
+          lenis = new Lenis({
+            autoRaf: false, lerp: 0.11, smoothWheel: true, syncTouch: false,
+            prevent: node => {
+              if (node.closest?.('[data-lenis-prevent]')) return true;
+              const checker = node.closest?.('.device-checker');
+              return Boolean(checker && checker.scrollHeight > checker.clientHeight && getComputedStyle(checker).overflowY === 'auto');
+            },
+          });
+          lenis.on('scroll', ScrollTrigger.update);
+          gsap.ticker.add(tick);
+          lenis.resize();
         });
-        lenis.on('scroll', ScrollTrigger.update);
-        gsap.ticker.add(tick);
       }
 
       const keyboardIsOpen = () => {
@@ -119,6 +123,9 @@ export function useScrollScene(sceneRef, mediaRef, checkerRef) {
             state.buttonReveal = 0;
           }
           renderRoulette(state, geometry, reduced);
+          // The pinned story is always in the viewport, so visibility cannot
+          // tell us when to fetch its media. Prepare two scroll units early.
+          if (timeline?.time() >= TRACKS.reveal[0] - 2) mediaRef.value?.prepare();
           renderChip(state, geometry, reduced);
           renderEntrance();
           rendering = false;

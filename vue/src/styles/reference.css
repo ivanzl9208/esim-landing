@@ -1042,6 +1042,8 @@ button.checker-input-action:active {
   height: 100%;
 }
 
+.checker-input-clear { background: rgba(211, 213, 214, 0.4); }
+
 .checker-input-action.checker-input-submit {
   --search-action-background: #fa5f05;
   background: transparent;
