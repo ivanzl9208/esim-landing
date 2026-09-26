@@ -18,7 +18,7 @@ export function useDeviceChecker(input, resultHeading, beforeResult) {
   const preparing = ref(false);
   const busy = computed(() => preparing.value || state.value === 'loading');
   const suggestions = computed(() => getSuggestions(query.value));
-  const expanded = computed(() => state.value === 'form' && focused.value && query.value.trim().length > 0 && suggestions.value.length > 0);
+  const expanded = computed(() => state.value === 'form' && focused.value && !invalidQuery.value && query.value.trim().length > 0 && suggestions.value.length > 0);
   let checkTimer;
   let toastTimer;
   let disposed = true;
@@ -81,8 +81,8 @@ export function useDeviceChecker(input, resultHeading, beforeResult) {
         toastVisible.value = true;
         toastTimer = setTimeout(hideToast, TOAST_DURATION);
         await focusInput();
-        // Keep the submitted query available for correction, without reopening suggestions.
-        focused.value = false;
+        // Keep real focus so the visualViewport keyboard layout stays active.
+        // invalidQuery hides suggestions until the user edits the submitted query.
         return;
       }
       query.value = getFullName(resolved);
