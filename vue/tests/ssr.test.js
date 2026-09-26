@@ -11,7 +11,7 @@ test('Imports and server-renders the complete app without browser globals', asyn
   try {
     const { default: App } = await server.ssrLoadModule('/src/App.vue');
     const html = await renderToString(createSSRApp(App));
-    assert.match(html, /Ваше устройство готово к eSIM/);
+    assert.match(html, /Ваше устройство готово к\u00a0eSIM/);
     assert.match(html, /story-transcript/);
     assert.match(html, /role="combobox"/);
     assert.match(html, /Остались вопросы/);
@@ -22,5 +22,6 @@ test('Imports and server-renders the complete app without browser globals', asyn
     assert.doesNotMatch(html, /result-curtain|faq-reveal|data-faq-ready/);
     assert.match(html, /id="device-checker"[\s\S]*class="landing-ending"/);
     assert.doesNotMatch(html, /<video[^>]*src=".*(?:mov|webm)"/);
+    assert.match(html, /class="hero-video hero-video-fallback"[^>]*hero-poster\.webp/);
   } finally { await server.close(); }
 });

@@ -2,6 +2,7 @@
 import { nextTick, ref, useId } from 'vue';
 import { faqCategories } from '../data/faq.js';
 import FaqAccordionItem from './FaqAccordionItem.vue';
+import { typograph } from '../utils/typography.js';
 const uid = useId();
 const active = ref(faqCategories[0].id);
 const openQuestions = ref({ general: 'general-what' });
@@ -40,7 +41,7 @@ const keydown = (event, index) => {
       <div class="faq-tabs" role="tablist" aria-label="Категории вопросов об eSIM">
         <button v-for="(item, index) in faqCategories" :id="`${uid}-tab-${item.id}`" :key="item.id" ref="tabs" type="button" role="tab"
           :aria-selected="active === item.id" :aria-controls="`${uid}-panel-${item.id}`" :tabindex="active === item.id ? 0 : -1" :disabled="item.disabled"
-          @click="select(item)" @keydown="keydown($event, index)">{{ item.label }}</button>
+          @click="select(item)" @keydown="keydown($event, index)">{{ typograph(item.label) }}</button>
       </div>
     </div>
     <div v-for="item in faqCategories" :id="`${uid}-panel-${item.id}`" :key="item.id" role="tabpanel" :aria-labelledby="`${uid}-tab-${item.id}`" :hidden="active !== item.id" tabindex="0" class="faq-panel">

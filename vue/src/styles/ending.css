@@ -16,6 +16,7 @@
 }
 .ending-white {
   --ending-gutter: 32px;
+  container: ending / inline-size;
   position: relative;
   z-index: 2;
   padding: 96px 0;
@@ -56,7 +57,7 @@
 .ending-button:disabled { color: rgba(147,155,159,.46); background: #e9ebeb; cursor: default; }
 .transfer-banner { position: relative; display: flex; align-items: center; gap: 32px; width: min(calc(100% - 2 * var(--ending-gutter)), 870px); min-height: 126px; margin: 64px auto 0; padding: 24px 40px 24px 214px; border-radius: 24px; background: #f4f4f4; }
 .transfer-banner-image { position: absolute; left: 44px; top: -16px; width: 125px; height: 125px; object-fit: contain; }
-.transfer-banner-copy { flex: 1; }
+.transfer-banner-copy { flex: 1; min-width: 0; }
 .transfer-banner h3 { margin: 0 0 4px; font: 600 22px/24px "SB Sans Display", Arial, sans-serif; letter-spacing: -.7px; }
 .transfer-banner p { margin: 0; color: var(--ending-secondary); font-size: 17px; line-height: 22px; letter-spacing: -.75px; }
 .transfer-banner .ending-button { flex-shrink: 0; }
@@ -122,17 +123,21 @@
   .faq-tabs button { min-height: 40px; padding: 12px 20px; font-size: 14px; line-height: 16px; letter-spacing: -.42px; }
   .faq-item h3 button { min-height: 63px; padding: 20px 0; font-size: 17px; line-height: 20px; letter-spacing: -.35px; }
   .faq-answer p { padding-bottom: 20px; font-size: 16px; line-height: 24px; letter-spacing: -.65px; }
-  .transfer-banner { display: flex; flex-direction: column; align-items: stretch; gap: 16px; margin-top: 48px; min-height: 172px; padding: 24px 16px; }
-  .transfer-banner-image { left: auto; right: -8px; top: -12px; width: 84px; height: 84px; }
-  .transfer-banner-copy { padding-right: 64px; }
-  .transfer-banner h3 { font-size: 20px; line-height: 22px; letter-spacing: -.6px; }
-  .transfer-banner p { font-size: 14px; line-height: 16px; letter-spacing: -.42px; }
   .connect-cta { height: 468px; margin-top: -48px; }
   .connect-cta-surface { padding: 48px 16px 0; border-radius: 0 0 24px 24px; }
   .connect-cta-content { max-width: 328px; gap: 24px; }
   .connect-cta h2 { font-size: 36px; line-height: 36px; letter-spacing: -.72px; }
   .connect-cta h2 img { top: -50px; right: -12px; width: 77px; height: 77px; }
   .connect-cta .ending-button { min-height: 50px; }
+}
+/* Image/padding/button need 492px before the copy receives any space. Keep
+   the stacked composition until its container can give the copy >= 300px. */
+@container ending (max-width: 860px) {
+  .transfer-banner { flex-direction: column; align-items: stretch; gap: 16px; margin-top: 48px; min-height: 172px; padding: 24px 16px; }
+  .transfer-banner-image { left: auto; right: -8px; top: -12px; width: 84px; height: 84px; }
+  .transfer-banner-copy { padding-right: 64px; }
+  .transfer-banner h3 { font-size: 20px; line-height: 22px; letter-spacing: -.6px; }
+  .transfer-banner p { font-size: 14px; line-height: 16px; letter-spacing: -.42px; }
 }
 @media (min-width: 1280px) and (max-width: 1439px) {
   .footer-navigation { margin-inline: 48px 24px; }

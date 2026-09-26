@@ -75,7 +75,6 @@ a {
 }
 
 .scroll-scene {
-  --curtain-y: 100%;
   position: relative;
   height: var(--scene-base-height);
   margin-bottom: -100svh;
@@ -183,6 +182,7 @@ a {
 }
 
 .white-curtain {
+  --curtain-y: 100%;
   position: absolute;
   z-index: 20;
   inset: 0;
@@ -910,6 +910,8 @@ a {
   color: #fff;
 }
 
+.hero-video-fallback { z-index: 2; pointer-events: none; }
+
 .checker-panel { position: relative; height: 100%; }
 /* During its original entrance the checker shares the preceding sticky gradient.
    At the scene boundary the same panel returns to its full-viewport flow slot. */
@@ -925,18 +927,21 @@ a {
 .checker-form-view, .checker-result { position: relative; min-height: 100%; }
 .checker-result { display: grid; place-items: center; padding: calc(96px + env(safe-area-inset-top)) 16px calc(96px + env(safe-area-inset-bottom)); }
 
-/* Animate the changing content, leaving the shared EID hint at rest. */
-.checker-heading > span,
-.checker-popular > *,
-.checker-search-area,
-.checker-result-card {
+/* Only animate an actual form/result change; never depend on a completed
+   mount keyframe to make initially offscreen content visible. */
+.checker-panel.is-changing .checker-heading > span,
+.checker-panel.is-changing .checker-popular > *,
+.checker-panel.is-changing .checker-search-area,
+.checker-panel.is-changing .checker-result-card {
   animation: checker-view-in 440ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 .checker-heading > span { display: block; }
 
 .checker-form-view {
   height: 100%;
-  min-height: calc(480px * var(--layout-scale));
+  /* Centered form + bottom hint need their own space. Short desktops scroll
+     inside this viewport rather than painting the hint over the model rows. */
+  min-height: calc(620px * var(--layout-scale));
   display: grid;
   grid-template-columns: minmax(0, 1fr);
   align-content: center;

@@ -4,6 +4,7 @@ import { heroRevealFrame } from './heroReveal.js';
 
 // The reference keyframe positions are preserved; GSAP owns timing and scrub.
 export function createRouletteRenderer(scene) {
+  const curtain = scene.querySelector('.white-curtain');
   const roulette = scene.querySelector('.roulette-stage');
   const rouletteLines = [...roulette.querySelectorAll('.roulette-line')];
   const rouletteFinale = roulette.querySelector('.roulette-finale');
@@ -19,7 +20,8 @@ export function createRouletteRenderer(scene) {
         : viewportHeight / 2 - 48 * layoutScale;
       const linePosition = currentTimeline - 1;
 
-      scene.style.setProperty("--curtain-y", `${offset}%`);
+      // This value belongs to the moving leaf, not the whole story subtree.
+      curtain.style.setProperty("--curtain-y", `${offset}%`);
       roulette.style.setProperty("--curtain-clip", `${offset}%`);
       roulette.style.setProperty("--roulette-reveal", currentReveal);
 
@@ -180,7 +182,6 @@ export function createRouletteRenderer(scene) {
       rouletteFinale.style.transform =
         `translate3d(-50%, 0, 0) scale(${finaleScale.toFixed(5)})`;
     roulette.style.clipPath = reduced ? 'none' : '';
-    const curtain = scene.querySelector('.white-curtain');
     curtain.style.opacity = reduced ? (currentCurtain >= 0.8 ? '1' : '0') : '';
     curtain.style.transform = reduced ? 'none' : '';
     if (reduced) {

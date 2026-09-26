@@ -1,0 +1,10 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Проверка выбора eSIM</title></head>
+<body><aside style="position:fixed;z-index:9999;top:0;left:0;max-width:100%;background:white;font:12px sans-serif">
+<button id="start" onpointerdown="event.preventDefault()">Начать ввод</button>
+<button id="tap" onpointerdown="event.preventDefault()">Touch: blur → release без click</button>
+<button id="pan" onpointerdown="event.preventDefault()">Touch: прокрутка и отмена</button>
+<button id="read" onpointerdown="event.preventDefault()">Снимок состояния</button>
+<output id="summary" aria-label="Итог выбора"></output>
+<pre id="report" style="max-height:90px;overflow:auto;max-width:100vw"></pre></aside>
+<div id="app"></div><script type="module" src="./checker-interaction.js"></script></body></html>

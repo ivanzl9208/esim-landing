@@ -52,14 +52,18 @@ document.getElementById('keyboard').onclick = () => {
 };
 const inspect = () => {
   const video = document.querySelector('.hero-video');
+  const fallback = document.querySelector('.hero-video-fallback');
   const frame = document.querySelector('.chip-scroll-frame');
   report.textContent = JSON.stringify({ fixtureLoadedAt, resizeEvents, mounted: Boolean(app), triggers: ScrollTrigger.getAll().length,
-    progress: ScrollTrigger.getAll()[0]?.progress, renderedChecker: document.querySelector('.device-checker')?.getAttribute('data-in-view'), curtain: document.querySelector('.scroll-scene')?.style.getPropertyValue('--curtain-y'),
+    progress: ScrollTrigger.getAll()[0]?.progress, renderedChecker: document.querySelector('.device-checker')?.getAttribute('data-in-view'), curtain: document.querySelector('.white-curtain')?.style.getPropertyValue('--curtain-y'),
     ownedTickerCallbacks: ticks.size,
     activeTweens: gsap.globalTimeline.getChildren(true, true, true).filter(tween => tween.isActive()).length,
     ownedAnimations: gsap.globalTimeline.getChildren(true, true, true).filter(tween => !baselineAnimations.has(tween)).length,
     lenis: document.documentElement.classList.contains('lenis'), reduceMotion: reducedMedia.matches,
     browserProfile, heroSource: video?.getAttribute('src'), heroPaused: video?.paused,
+    heroReady: video?.readyState, heroError: video?.getAttribute('data-playback-error'),
+    heroFallback: Boolean(fallback && getComputedStyle(fallback).display !== 'none'),
+    heroRequests: performance.getEntriesByType('resource').filter(r => /hero.*\.(mov|webm)/.test(r.name)).map(r => r.name),
     chipVideoSource: document.querySelector('.chip-scroll-video')?.getAttribute('src'),
     frame: frame?.getAttribute('src'), frameOpacity: frame ? getComputedStyle(frame).opacity : null,
     frameLoaded: Boolean(frame?.complete && frame?.naturalWidth),

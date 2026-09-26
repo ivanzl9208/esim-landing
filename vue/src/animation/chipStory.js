@@ -18,6 +18,62 @@ export function createChipStoryRenderer(scene, media) {
     icon: element.querySelector('.chip-feature-icon-motion'), units: [...element.querySelectorAll('.soft-blur-unit')],
   }]));
   let geometry, reduced;
+  let preludeLayout;
+  const renderControls = state => {
+    const { reveal, background, story, returnGradient, outro } = state;
+    const isMobile = geometry.mobile;
+    const layoutScale = geometry.scale;
+    const transitionIsActive = reveal > 0.0001;
+    const buttonIsInverted = reveal >= 0.95;
+    const grayStage = clamp(background * (1 - returnGradient)) >= 0.95;
+    const buttonProgress = isMobile ? 1 : state.buttonReveal;
+    const buttonOffset = isMobile ? 0 : -96 * layoutScale * (1 - buttonProgress);
+    button.style.transform = 'translate3d(' + (isMobile ? '-50%' : '0') + ', ' + buttonOffset + 'px, 0)';
+    const interactive = buttonProgress > 0.98 && clamp(outro) < 0.01;
+    button.inert = !interactive;
+    button.tabIndex = interactive ? 0 : -1;
+    button.style.pointerEvents = interactive ? 'auto' : 'none';
+    const heroCovered = state.curtain > 0.01;
+    if (heroSurface.inert !== heroCovered) {
+      heroSurface.inert = heroCovered;
+      heroSurface.querySelector('.hero-video')?.dispatchEvent(new Event('scenevisibilitychange'));
+    }
+    if (!transitionIsActive) {
+      if (isMobile) {
+        const curtainTop = (1 - state.curtain) * geometry.height;
+        const buttonHeight = 50 * layoutScale;
+        const buttonTop = geometry.height - 24 * layoutScale - buttonHeight;
+        const split = clamp((curtainTop - buttonTop) / buttonHeight);
+        button.style.removeProperty('background');
+        button.style.removeProperty('color');
+        buttonLabel.style.removeProperty('background');
+        buttonLabel.style.removeProperty('color');
+        buttonLabel.style.removeProperty('-webkit-text-fill-color');
+        button.style.setProperty('--button-curtain-split', (split * 100) + '%');
+        bottomFade.style.opacity = state.curtain;
+      } else {
+        button.style.background = '#fa5f05';
+        button.style.color = '#fff';
+        bottomFade.style.opacity = '0';
+      }
+      button.style.opacity = '1';
+    } else {
+      const buttonBackground = returnGradient > 0
+        ? mixRgb([250, 95, 5], [255, 255, 255], returnGradient)
+        : grayStage ? '#fa5f05' : buttonIsInverted ? '#fff' : '#fa5f05';
+      const buttonColor = returnGradient > 0
+        ? mixRgb([255, 255, 255], [250, 95, 5], returnGradient)
+        : grayStage ? '#fff' : buttonIsInverted ? '#fa5f05' : '#fff';
+      button.style.background = buttonBackground;
+      button.style.color = buttonColor;
+      buttonLabel.style.background = 'none';
+      buttonLabel.style.color = buttonColor;
+      buttonLabel.style.webkitTextFillColor = buttonColor;
+      const fade = returnGradient > 0 ? 1 - returnGradient : !buttonIsInverted || story > 0.0001 ? 1 : 0;
+      bottomFade.style.opacity = isMobile ? fade * (1 - clamp(outro)) : 0;
+      button.style.opacity = 1 - clamp(outro);
+    }
+  };
     const setFeatureProgress = (
       element,
       start,
@@ -92,6 +148,14 @@ export function createChipStoryRenderer(scene, media) {
   return (state, layout, reduceMotion) => {
     geometry = layout; reduced = reduceMotion;
     const { reveal: currentReveal, chip: currentChip, marquee: currentMarquee, features: currentVideo, playback: currentPlayback, definition: currentDefinition, definitionVisibility: currentDefinitionVisibility, background: currentBackground, story: currentStory, safety: currentSafety, returnGradient: currentReturnGradient, outro: currentOutro } = state;
+    renderControls(state);
+    const layoutKey = `${geometry.width}:${geometry.height}:${geometry.scale}:${reduced}`;
+    const prelude = currentReveal === 0 && currentOutro === 0;
+    // During the curtain only the controls change. Initialize/reset hidden
+    // chip content once; don't read its layout and rewrite every blur unit on
+    // every frame of the opening scroll. Re-entering the prelude resets it.
+    if (prelude && preludeLayout === layoutKey) return;
+    preludeLayout = prelude ? layoutKey : undefined;
     const playbackEndTurns = 2;
       const isMobile = geometry.mobile;
       const layoutScale = geometry.scale;
@@ -129,21 +193,6 @@ export function createChipStoryRenderer(scene, media) {
         currentBackground * (1 - currentReturnGradient),
       );
       const buttonIsInverted = currentReveal >= 0.95;
-      const buttonUsesGrayStageStyle = grayStageOpacity >= 0.95;
-      const buttonBackground = currentReturnGradient > 0
-        ? mixRgb([250, 95, 5], [255, 255, 255], currentReturnGradient)
-        : buttonUsesGrayStageStyle
-          ? "#fa5f05"
-          : buttonIsInverted
-            ? "#fff"
-            : "#fa5f05";
-      const buttonColor = currentReturnGradient > 0
-        ? mixRgb([255, 255, 255], [250, 95, 5], currentReturnGradient)
-        : buttonUsesGrayStageStyle
-          ? "#fff"
-          : buttonIsInverted
-            ? "#fa5f05"
-            : "#fff";
       const marqueeTravel =
         (geometry.width + marquee.offsetWidth) / 2;
       const marqueeOffset = mix(
@@ -162,7 +211,6 @@ export function createChipStoryRenderer(scene, media) {
       );
 
       const transitionIsActive = currentReveal > 0.0001;
-      const outroProgress = clamp(currentOutro);
       scene.dataset.chipTransitionActive = transitionIsActive ? 'true' : 'false';
       scene.dataset.chipButtonInverted = buttonIsInverted
         ? "true"
@@ -254,47 +302,6 @@ export function createChipStoryRenderer(scene, media) {
         );
       });
 
-      const buttonProgress = isMobile ? 1 : state.buttonReveal;
-      const buttonOffset = isMobile ? 0 : -96 * layoutScale * (1 - buttonProgress);
-      button.style.transform = 'translate3d(' + (isMobile ? '-50%' : '0') + ', ' + buttonOffset + 'px, 0)';
-      const interactive = buttonProgress > 0.98 && outroProgress < 0.01;
-      button.inert = !interactive;
-      button.tabIndex = interactive ? 0 : -1;
-      button.style.pointerEvents = interactive ? 'auto' : 'none';
-      const heroCovered = state.curtain > 0.01;
-      if (heroSurface.inert !== heroCovered) {
-        heroSurface.inert = heroCovered;
-        heroSurface.querySelector('.hero-video')?.dispatchEvent(new Event('scenevisibilitychange'));
-      }
-      if (!transitionIsActive) {
-        if (isMobile) {
-          const curtainTop = (1 - state.curtain) * geometry.height;
-          const buttonHeight = 50 * layoutScale;
-          const buttonTop = geometry.height - 24 * layoutScale - buttonHeight;
-          const split = clamp((curtainTop - buttonTop) / buttonHeight);
-          button.style.removeProperty('background');
-          button.style.removeProperty('color');
-          buttonLabel.style.removeProperty('background');
-          buttonLabel.style.removeProperty('color');
-          buttonLabel.style.removeProperty('-webkit-text-fill-color');
-          button.style.setProperty('--button-curtain-split', (split * 100) + '%');
-          bottomFade.style.opacity = state.curtain;
-        } else {
-          button.style.background = '#fa5f05';
-          button.style.color = '#fff';
-          bottomFade.style.opacity = '0';
-        }
-        button.style.opacity = '1';
-      } else {
-        button.style.background = buttonBackground;
-        button.style.color = buttonColor;
-        buttonLabel.style.background = 'none';
-        buttonLabel.style.color = buttonColor;
-        buttonLabel.style.webkitTextFillColor = buttonColor;
-        const fade = currentReturnGradient > 0 ? 1 - currentReturnGradient : !buttonIsInverted || currentStory > 0.0001 ? 1 : 0;
-        bottomFade.style.opacity = isMobile ? fade * (1 - outroProgress) : 0;
-        button.style.opacity = 1 - outroProgress;
-      }
       if (reduced) {
         gradient.style.clipPath = 'none';
         marquee.style.setProperty('--advantages-text-x', '0px');

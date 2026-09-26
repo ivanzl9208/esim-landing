@@ -14,7 +14,7 @@ import { asset } from './utils/assets.js';
 const scene = ref(null);
 const media = ref(null);
 const checker = ref(null);
-const { goToChecker } = useScrollScene(scene, media, checker);
+const { goToChecker, prepareCheckerResult } = useScrollScene(scene, media, checker);
 </script>
 <template>
   <main>
@@ -30,7 +30,7 @@ const { goToChecker } = useScrollScene(scene, media, checker);
         <a class="roulette-button" href="#device-checker" tabindex="-1" inert @click.prevent="goToChecker"><span class="roulette-button-label">Подключить eSIM</span></a>
       </section>
     </div>
-    <DeviceChecker ref="checker" />
+    <DeviceChecker ref="checker" :prepare-result="prepareCheckerResult" />
     <LandingEnding />
   </main>
   <SiteFooter />

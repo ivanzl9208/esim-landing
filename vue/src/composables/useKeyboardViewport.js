@@ -1,13 +1,15 @@
 import { onMounted, onScopeDispose } from 'vue';
 import { getLayout } from '../animation/timing.js';
+import { keyboardIsOpen, waitForKeyboardClose } from '../utils/keyboardViewport.js';
 
 export function useKeyboardViewport(section) {
   let viewport;
   let observer;
   let sizeObserver;
+  let closeController;
   const sync = () => {
     if (!section.value) return;
-    const keyboardOpen = viewport && window.innerHeight - viewport.height - viewport.offsetTop > 100;
+    const keyboardOpen = keyboardIsOpen(viewport, window.innerHeight);
     const panel = section.value.querySelector('.checker-panel');
     const offset = keyboardOpen
       ? Math.max(0, panel.getBoundingClientRect().bottom - viewport.height - viewport.offsetTop)
@@ -32,6 +34,7 @@ export function useKeyboardViewport(section) {
     observer.observe(section.value);
   });
   onScopeDispose(() => {
+    closeController?.abort();
     viewport?.removeEventListener('resize', sync);
     viewport?.removeEventListener('scroll', sync);
     window.removeEventListener('scroll', sync);
@@ -40,4 +43,11 @@ export function useKeyboardViewport(section) {
     sizeObserver?.disconnect();
     observer?.disconnect();
   });
+  return {
+    waitForKeyboardClose: () => {
+      closeController?.abort();
+      closeController = new AbortController();
+      return waitForKeyboardClose({ viewport, layoutTarget: window, layoutHeight: () => window.innerHeight, signal: closeController.signal });
+    },
+  };
 }
