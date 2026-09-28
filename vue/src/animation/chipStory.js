@@ -1,6 +1,6 @@
 import { clamp, mix, smoothstep, cubicBezierValue, mixRgb } from './math.js';
 import { STORY_BENEFITS } from '../data/story.js';
-import { storyComposition } from './storyComposition.js';
+import { storyComposition, storyThesisFrame } from './storyComposition.js';
 
 export function createChipStoryRenderer(scene, media) {
   const select = selector => scene.querySelector(selector);
@@ -252,14 +252,14 @@ export function createChipStoryRenderer(scene, media) {
         definitionOpacity > 0.001 ? "visible" : "hidden";
 
       const storyTimeline = clamp(currentStory) * STORY_BENEFITS.length;
+      let storyHolding = false;
       storyElements.forEach((element, index) => {
-        const localProgress = storyTimeline - index;
-        const enter = smoothstep(0.15, 0.4, localProgress);
-        const exit = 1 - smoothstep(0.6, 0.85, localProgress);
-        const opacity = clamp(Math.min(enter, exit));
+        const { opacity, holding } = storyThesisFrame(storyTimeline - index);
+        storyHolding ||= holding;
         element.style.opacity = opacity.toFixed(4);
         element.style.filter = `blur(${((1 - opacity) * 10).toFixed(3)}px)`;
       });
+      gradient.dataset.storyHold = String(storyHolding && !reduced);
 
       const safetyReveal = clamp(safetyTextProgress / 0.9);
       safetyCopy.style.visibility =

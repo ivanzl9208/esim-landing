@@ -5,7 +5,7 @@ import { smoothstep } from '../src/animation/math.js';
 import { TRACKS, getLayout } from '../src/animation/timing.js';
 
 test('Checker retains the original entrance track and desktop/mobile displacement in both directions', () => {
-  assert.deepEqual(TRACKS.outro, [37.4, 39.68, 1, 'smooth']);
+  assert.deepEqual(TRACKS.outro, [38.6, 40.88, 1, 'smooth']);
   for (const [width, height, offsets] of [[1440, 720, [768, 648, 384, 120, 0]], [360, 600, [648, 546.75, 324, 101.25, 0]]]) {
     const geometry = getLayout(width, height);
     for (const index of [0, 1, 2, 3, 4, 3, 2, 1, 0]) {

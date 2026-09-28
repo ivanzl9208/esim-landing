@@ -15,10 +15,16 @@ test('Shared Hero entrance preserves its sampled translation and opacity', () =>
 test('Checker holds for one viewport after its entrance without stretching earlier tracks', () => {
   assert.deepEqual(TRACKS.curtain, [0, 1, 1, 'none']);
   assert.deepEqual(TRACKS.roulette, [1.28, 4.35, 10, 'none']);
+  assert.deepEqual(TRACKS.definition, [20.55, 26.05, 1, 'none']);
   assert.equal(CHECKER_HOLD, 1);
-  assert.equal(SCENE_SCROLL_END, 40.68);
-  assert.deepEqual(TRACKS.outro, [37.4, 39.68, 1, 'smooth']);
-  assert.equal(Math.max(...Object.values(TRACKS).map(track => track[1])), 39.68);
+  assert.deepEqual(TRACKS.story, [26.23, 34.63, 1, 'none']);
+  assert.ok(Math.abs(TRACKS.story[1] - TRACKS.story[0] - 8.4) < 1e-10);
+  assert.ok(Math.abs(TRACKS.safety[0] - TRACKS.story[1] - 0.25) < 1e-10);
+  assert.ok(Math.abs(TRACKS.safety[1] - TRACKS.safety[0] - 6) < 1e-10);
+  assert.ok(Math.abs(TRACKS.returnGradient[1] - TRACKS.returnGradient[0] - 2.25) < 1e-10);
+  assert.equal(SCENE_SCROLL_END, 41.88);
+  assert.deepEqual(TRACKS.outro, [38.6, 40.88, 1, 'smooth']);
+  assert.equal(Math.max(...Object.values(TRACKS).map(track => track[1])), 40.88);
   assert.equal('resultCurtain' in TRACKS, false);
   assert.equal('faqReveal' in TRACKS, false);
 });

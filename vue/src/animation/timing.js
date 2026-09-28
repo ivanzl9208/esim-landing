@@ -3,6 +3,8 @@ import { ROULETTE_TRACK } from './heroReveal.js';
 
 // All positions are viewport-height multiples measured from the scene top.
 // Safety and the returning gradient retain their original overlapping tracks.
+// Four theses gain 0.3 viewport each; later tracks shift without being compressed.
+const STORY_EXTENSION = 1.2;
 export const TRACKS = {
   curtain: curtainTrack(0),
   rouletteReveal: [0.8, 1, 1, 'smooth'],
@@ -15,10 +17,10 @@ export const TRACKS = {
   definition: [20.55, 26.05, 1, 'none'],
   definitionVisibility: [20.55, 20.73, 1, 'smooth'],
   background: [20.3, 22.4, 1, 'smooth'],
-  story: [26.23, 33.43, 1, 'none'],
-  safety: [33.68, 39.68, 1, 'none'],
-  returnGradient: [37.16, 39.41, 1, 'smooth'],
-  outro: [37.4, 39.68, 1, 'smooth'], // Original checker entrance and floating CTA exit.
+  story: [26.23, 33.43 + STORY_EXTENSION, 1, 'none'],
+  safety: [33.68 + STORY_EXTENSION, 39.68 + STORY_EXTENSION, 1, 'none'],
+  returnGradient: [37.16 + STORY_EXTENSION, 39.41 + STORY_EXTENSION, 1, 'smooth'],
+  outro: [37.4 + STORY_EXTENSION, 39.68 + STORY_EXTENSION, 1, 'smooth'], // Original checker entrance and floating CTA exit.
 };
 // Briefly hold the fully revealed checker before handing it to document flow.
 // This extends the existing stage, without stretching any entrance tracks.
