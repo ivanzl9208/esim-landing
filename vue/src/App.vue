@@ -11,6 +11,7 @@ import './styles/ending.css';
 import { useScrollScene } from './composables/useScrollScene.js';
 import { SCENE_BASE_HEIGHT } from './animation/timing.js';
 import { asset } from './utils/assets.js';
+import { typograph } from './utils/typography.js';
 const scene = ref(null);
 const media = ref(null);
 const checker = ref(null);
@@ -18,7 +19,7 @@ const { goToChecker, prepareCheckerResult } = useScrollScene(scene, media, check
 </script>
 <template>
   <main>
-    <a class="skip-link" href="#device-checker" @click.prevent="goToChecker">Перейти к проверке устройства</a>
+    <a class="skip-link" href="#device-checker" @click.prevent="goToChecker">{{ typograph('Перейти к проверке устройства') }}</a>
     <div ref="scene" class="scroll-scene" :style="{ '--scene-base-height': SCENE_BASE_HEIGHT }">
       <section class="hero-stage" aria-label="eSIM от СберМобайла">
         <HeroIntro @check="goToChecker" />

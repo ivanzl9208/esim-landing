@@ -1,5 +1,6 @@
 <script setup>
 import { asset } from '../utils/assets.js';
+import { typograph } from '../utils/typography.js';
 
 const navigation = ['Связь', 'Услуги и сервисы', 'Оплата', 'Помощь', 'Компания', 'Кабинет абонента'];
 </script>
@@ -20,7 +21,7 @@ const navigation = ['Связь', 'Услуги и сервисы', 'Оплат�
       </div>
       <div class="site-header-actions">
         <div class="desktop-nav" aria-label="Разделы сайта">
-          <span v-for="item in navigation" :key="item">{{ item }}</span>
+          <span v-for="item in navigation" :key="item">{{ typograph(item) }}</span>
         </div>
         <div class="header-account">
           <span class="header-bonus">Бонусы<img :src="asset('site-chrome/spasibo.svg')" draggable="false" width="16" height="16" alt="" /></span>
