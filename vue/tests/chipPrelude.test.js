@@ -32,7 +32,8 @@ test('Opening curtain keeps controls live without reading hidden chip layout eve
   assert.equal(node('.roulette-button').inert, false);
   assert.equal(node('.roulette-button').style['--button-curtain-split'], '0%');
   assert.equal(node('.roulette-bottom-fade').style.opacity, 1);
-  assert.equal(visibilityEvents, 1);
+  // Covering interactive controls must not interrupt the background video.
+  assert.equal(visibilityEvents, 0);
 
   // Changing geometry must still recompute the composition once.
   render(state, { ...layout, height: 650 }, false);
@@ -46,5 +47,5 @@ test('Opening curtain keeps controls live without reading hidden chip layout eve
   render(state, layout, false);
   assert.equal(node('.chip-reveal-layer').style.visibility, 'hidden');
   assert.equal(node('.hero-surface').inert, false);
-  assert.equal(visibilityEvents, 2);
+  assert.equal(visibilityEvents, 0);
 });

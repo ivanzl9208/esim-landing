@@ -5,6 +5,7 @@ import { heroRevealFrame } from './heroReveal.js';
 // The reference keyframe positions are preserved; GSAP owns timing and scrub.
 export function createRouletteRenderer(scene) {
   const curtain = scene.querySelector('.white-curtain');
+  const rouletteViewport = scene.querySelector('.roulette-viewport');
   const roulette = scene.querySelector('.roulette-stage');
   const rouletteLines = [...roulette.querySelectorAll('.roulette-line')];
   const rouletteFinale = roulette.querySelector('.roulette-finale');
@@ -22,7 +23,7 @@ export function createRouletteRenderer(scene) {
 
       // This value belongs to the moving leaf, not the whole story subtree.
       curtain.style.setProperty("--curtain-y", `${offset}%`);
-      roulette.style.setProperty("--curtain-clip", `${offset}%`);
+      rouletteViewport.style.setProperty("--curtain-y", `${offset}%`);
       roulette.style.setProperty("--roulette-reveal", currentReveal);
 
       rouletteLines.forEach((line, index) => {
@@ -181,11 +182,11 @@ export function createRouletteRenderer(scene) {
       rouletteFinale.style.opacity = finaleFrame.opacity.toFixed(4);
       rouletteFinale.style.transform =
         `translate3d(-50%, 0, 0) scale(${finaleScale.toFixed(5)})`;
-    roulette.style.clipPath = reduced ? 'none' : '';
+    rouletteViewport.style.transform = reduced ? 'none' : '';
+    roulette.style.transform = reduced ? 'none' : '';
     curtain.style.opacity = reduced ? (currentCurtain >= 0.8 ? '1' : '0') : '';
     curtain.style.transform = reduced ? 'none' : '';
     if (reduced) {
-      roulette.style.clipPath = 'none';
       rouletteLines.forEach((line, index) => {
         line.style.opacity = currentTimeline < 6 && index === Math.round(Math.max(0, currentTimeline - 1)) ? '1' : '0';
         line.style.transform = 'translate(-50%, ' + centerTop + 'px)';

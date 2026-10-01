@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { storyComposition, storyThesisFrame } from '../src/animation/storyComposition.js';
+import { storyComposition, STORY_ENTER_END, STORY_EXIT_START } from '../src/animation/storyComposition.js';
+import { TRACKS } from '../src/animation/timing.js';
 
 test('the object alternates opposite the four theses and rejoins adjacent scenes at the centre', () => {
   assert.deepEqual(storyComposition(0, 4), { side: 0, presence: 0 });
@@ -15,20 +16,16 @@ test('forward and reverse sampling is continuous across column changes', () => {
   for (let i = 1; i < forward.length; i++) assert.ok(Math.abs(forward[i] - forward[i - 1]) < .04);
 });
 
-test('all four theses keep a full-opacity, stationary half-segment in both scroll directions', () => {
+test('all four theses double their reading hold while preserving entrance and exit distances', () => {
+  const distance = (TRACKS.story[1] - TRACKS.story[0]) / 4;
+  assert.ok(Math.abs(distance * STORY_ENTER_END - 0.525) < 1e-10);
+  assert.ok(Math.abs(distance * (1 - STORY_EXIT_START) - 0.525) < 1e-10);
+  assert.ok(Math.abs(distance * (STORY_EXIT_START - STORY_ENTER_END) - 2.1) < 1e-10);
   for (let index = 0; index < 4; index++) {
     const side = index % 2 ? 1 : -1;
-    for (const local of [0.25, 0.5, 0.75]) {
-      assert.deepEqual(storyThesisFrame(local), { opacity: 1, holding: true });
+    for (const local of [STORY_ENTER_END, 0.25, 0.5, 0.75, STORY_EXIT_START]) {
       assert.deepEqual(storyComposition((index + local) / 4, 4), { side, presence: 1 });
     }
-    assert.equal(storyThesisFrame(0).opacity, 0);
-    assert.equal(storyThesisFrame(1).opacity, 0);
-    assert.equal(storyThesisFrame(0.24).holding, false);
-    assert.equal(storyThesisFrame(0.76).holding, false);
-    const forward = [0, 0.125, 0.25, 0.5, 0.75, 0.875, 1].map(local => storyThesisFrame(local).opacity);
-    const reverse = [1, 0.875, 0.75, 0.5, 0.25, 0.125, 0].map(local => storyThesisFrame(local).opacity);
-    assert.deepEqual(reverse, [...forward].reverse());
   }
 });
 

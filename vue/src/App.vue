@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue';
+import { provide, ref } from 'vue';
 import HeroIntro from './components/HeroIntro.vue';
 import RouletteStage from './components/RouletteStage.vue';
 import ChipStory from './components/ChipStory.vue';
@@ -9,13 +9,16 @@ import LandingEnding from './components/LandingEnding.vue';
 import SiteFooter from './components/SiteFooter.vue';
 import './styles/ending.css';
 import { useScrollScene } from './composables/useScrollScene.js';
+import { provideMediaConnection } from './composables/useMediaConnection.js';
 import { SCENE_BASE_HEIGHT } from './animation/timing.js';
 import { asset } from './utils/assets.js';
 import { typograph } from './utils/typography.js';
 const scene = ref(null);
 const media = ref(null);
 const checker = ref(null);
-const { goToChecker, prepareCheckerResult } = useScrollScene(scene, media, checker);
+provideMediaConnection();
+const { goToChecker, prepareCheckerResult, setScrollPosition } = useScrollScene(scene, media, checker);
+provide('setScrollPosition', setScrollPosition);
 </script>
 <template>
   <main>

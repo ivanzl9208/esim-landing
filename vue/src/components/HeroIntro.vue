@@ -10,7 +10,7 @@ defineEmits(['check']);
     <SiteHeader />
     <div class="hero-content">
       <div class="hero-copy">
-        <h1>eSIM&nbsp;—&nbsp;виртуальная сим-карта</h1>
+        <h1>eSIM&nbsp;— виртуальная сим&#8209;карта</h1>
         <p>Безопасное подключение онлайн за&nbsp;5&nbsp;минут</p>
       </div>
       <a class="connect-button" href="#device-checker" @click.prevent="$emit('check')">Подключить eSIM</a>

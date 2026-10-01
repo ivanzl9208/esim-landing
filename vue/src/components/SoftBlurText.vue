@@ -7,9 +7,7 @@ const segments = computed(() => typograph(props.text).split(/(\n|[ \t]+)/u).filt
 <template>
   <template v-for="(segment, segmentIndex) in segments" :key="segmentIndex">
     <br v-if="segment === '\n'" />
-    <template v-else-if="/^[ \t]+$/u.test(segment)">
-      <span v-for="(character, index) in Array.from(segment)" :key="index" class="soft-blur-unit soft-blur-space">{{ character }}</span>
-    </template>
-    <span v-else class="soft-blur-word"><span v-for="(character, index) in Array.from(segment)" :key="index" class="soft-blur-unit">{{ character }}</span></span>
+    <span v-else-if="/^[ \t]+$/u.test(segment)" class="soft-blur-space">{{ segment }}</span>
+    <span v-else class="soft-blur-word soft-blur-unit">{{ segment }}</span>
   </template>
 </template>

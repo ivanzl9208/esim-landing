@@ -169,7 +169,9 @@ const rankDevice = (device, value) => {
     return Number.POSITIVE_INFINITY;
   }
 
-  if (fullName === query || model === query) return 0;
+  // Fuzzy scores can be negative after the token-coverage bonus. Reserve
+  // a lower score for exact names so a neighbouring variant cannot win.
+  if (fullName === query || model === query) return -1;
   if (fullName.includes(query) || model.includes(query)) {
     return 0.04 + Math.abs(fullName.length - query.length) / 500;
   }
@@ -209,10 +211,59 @@ const findNearestDevice = (value) => {
   return best.score <= 0.34 ? best.device : null;
 };
 
+const modelNameOrder = new Intl.Collator('en', { numeric: true, sensitivity: 'base' });
+const variantOrder = (variant) => {
+  if (/pro max/u.test(variant)) return 4;
+  if (/pro|ultra/u.test(variant)) return 3;
+  if (/plus/u.test(variant)) return 2;
+  if (/mini/u.test(variant)) return 1;
+  if (/edge/u.test(variant)) return 5;
+  if (/fe|^e$/u.test(variant)) return 6;
+  return 0;
+};
+
+// Catalogue queries follow product generations, independently of fuzzy scores.
+const catalogueOrderKey = (device) => {
+  const model = normalizeSearch(device.model);
+  const iphone = model.match(/^iphone (\d+)(.*)$/u);
+  if (iphone) return [0, Number(iphone[1]), variantOrder(iphone[2].trim())];
+  const iphoneX = ['iphone x', 'iphone xr', 'iphone xs', 'iphone xs max'].indexOf(model);
+  if (iphoneX >= 0) return [0, 10, iphoneX];
+  if (model.startsWith('iphone ')) return [1, 0, 0];
+  if (model.startsWith('ipad ')) return [2, 0, 0];
+  if (model.startsWith('watch ')) return [3, 0, 0];
+
+  const galaxySeries = [/^galaxy s(\d+)(.*)$/u, /^galaxy a(\d+)(.*)$/u,
+    /^galaxy z fold (\d+)(.*)$/u, /^galaxy z flip (\d+)(.*)$/u,
+    /^galaxy watch (\d+)(.*)$/u];
+  for (const [series, pattern] of galaxySeries.entries()) {
+    const match = model.match(pattern);
+    if (match) return [series, Number(match[1]), variantOrder(match[2].trim())];
+  }
+  return [99, 0, 0];
+};
+
+const compareCatalogueDevices = (left, right) => {
+  const leftKey = catalogueOrderKey(left);
+  const rightKey = catalogueOrderKey(right);
+  for (let index = 0; index < leftKey.length; index += 1) {
+    if (leftKey[index] !== rightKey[index]) return leftKey[index] - rightKey[index];
+  }
+  return modelNameOrder.compare(left.model, right.model);
+};
+
 const getSuggestions = (value) => {
   const query = normalizeSearch(value);
   if (!query) return [];
   const recognizedBrand = getRecognizedBrand(query);
+  const catalogueQuery = ['apple', 'iphone', 'samsung'].includes(query);
+
+  if (catalogueQuery) {
+    return DEVICE_DATABASE
+      .filter(device => normalizeSearch(device.brand) === recognizedBrand &&
+        (query !== 'iphone' || normalizeSearch(device.model).startsWith('iphone')))
+      .sort(compareCatalogueDevices);
+  }
 
   return DEVICE_DATABASE
     .map((device) => ({ device, score: rankDevice(device, query) }))

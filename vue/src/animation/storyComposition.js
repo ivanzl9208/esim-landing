@@ -1,14 +1,9 @@
 import { clamp, mix, smoothstep } from './math.js';
 
-export const STORY_ENTER_END = 0.25;
-export const STORY_EXIT_START = 0.75;
-
-export function storyThesisFrame(progress) {
-  return {
-    opacity: Math.min(smoothstep(0, STORY_ENTER_END, progress), 1 - smoothstep(STORY_EXIT_START, 1, progress)),
-    holding: progress >= STORY_ENTER_END && progress <= STORY_EXIT_START,
-  };
-}
+// Each thesis uses 3.15 viewport heights: 0.525 in, 2.1 hold, 0.525 out.
+// Only the hold grows; the word and column transitions keep their distance.
+export const STORY_ENTER_END = 1 / 6;
+export const STORY_EXIT_START = 5 / 6;
 
 // Change columns only while the adjacent theses are fading out / coming in.
 // The object returns to the centre before the existing safety scene begins.

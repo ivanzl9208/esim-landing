@@ -5,6 +5,8 @@ import { createChipStoryRenderer } from '../animation/chipStory.js';
 import { createCheckerEntrance } from '../animation/checkerEntrance.js';
 import { smoothstep } from '../animation/math.js';
 import { captureScenePosition, restoreScenePosition } from '../animation/scenePosition.js';
+import { storyComposition } from '../animation/storyComposition.js';
+import { STORY_BENEFITS } from '../data/story.js';
 
 /** One native sticky stage. ScrollTrigger supplies progress; Lenis only smooths desktop wheel input. */
 export function useScrollScene(sceneRef, mediaRef, checkerRef) {
@@ -12,6 +14,7 @@ export function useScrollScene(sceneRef, mediaRef, checkerRef) {
   let cleanup = () => {};
   let navigate = () => {};
   let anchorResult = async () => {};
+  let positionViewport = top => window.scrollTo({ top, behavior: 'instant' });
 
   onMounted(async () => {
     // Browser-dependent packages are evaluated only after mounting (also safe in Nuxt SSR).
@@ -20,6 +23,9 @@ export function useScrollScene(sceneRef, mediaRef, checkerRef) {
     ]);
     if (disposed) return;
     gsap.registerPlugin(ScrollTrigger);
+    // Safari's address bar changes innerHeight repeatedly during one touch
+    // gesture. Those small changes must not refresh the scrubbed timeline.
+    ScrollTrigger.config({ ignoreMobileResize: true });
     const scene = sceneRef.value;
     const previousScale = scene.style.getPropertyValue('--layout-scale');
     const previousHeight = scene.style.height;
@@ -84,7 +90,9 @@ export function useScrollScene(sceneRef, mediaRef, checkerRef) {
         return viewport && window.innerHeight - viewport.height - viewport.offsetTop > 100;
       };
       const updateGeometry = () => {
-        geometry = getLayout(window.innerWidth, window.innerHeight);
+        // Keep typography and the scroll unit stable while mobile browser
+        // chrome changes the live stage height. Width changes reset scrollUnit.
+        geometry = { ...getLayout(window.innerWidth, (mobile || !fine) ? scrollUnit : window.innerHeight), height: window.innerHeight };
         scene.style.height = `${Math.ceil(SCENE_SCROLL_END * scrollUnit) + geometry.height}px`;
         scene.style.marginBottom = `-${geometry.height}px`;
         scene.style.setProperty('--layout-scale', geometry.scale.toFixed(5));
@@ -137,6 +145,23 @@ export function useScrollScene(sceneRef, mediaRef, checkerRef) {
         const renderRoulette = createRouletteRenderer(scene);
         const renderChip = createChipStoryRenderer(scene, mediaRef.value);
         const state = { ...Object.fromEntries(Object.keys(TRACKS).map(key => [key, 0])), buttonReveal: oldButtonProgress };
+        const storyMotion = { progress: 0, side: 0 };
+        let followStory;
+        let followSide;
+        let storyTarget = 0;
+        let sideTarget = 0;
+        let initializing = true;
+        const renderChipFrame = () => {
+          const side = storyComposition(storyMotion.progress, STORY_BENEFITS.length, reduced).side;
+          if (initializing || reduced || geometry.mobile) {
+            followSide?.tween.pause();
+            storyMotion.side = sideTarget = side;
+          } else if (sideTarget !== side) {
+            sideTarget = side;
+            followSide(side);
+          }
+          renderChip({ ...state, story: storyMotion.progress, storySide: storyMotion.side }, geometry, reduced);
+        };
         const checkerTop = positionGeometry.checkerTop;
         renderEntrance = () => checkerEntrance.render(state.outro, geometry, reduced, window.scrollY < checkerTop);
         let rendering = false;
@@ -158,12 +183,32 @@ export function useScrollScene(sceneRef, mediaRef, checkerRef) {
           // The pinned story is always in the viewport, so visibility cannot
           // tell us when to fetch its media. Prepare two scroll units early.
           if (timeline?.time() >= TRACKS.reveal[0] - 2) mediaRef.value?.prepare();
-          renderChip(state, geometry, reduced);
+          // Keep chip placement and its matching text on the same slower
+          // playhead. Other scene tracks retain their existing scroll response.
+          if (initializing || reduced) {
+            followStory?.tween.pause();
+            storyMotion.progress = storyTarget = state.story;
+          } else if (storyTarget !== state.story) {
+            storyTarget = state.story;
+            followStory(state.story);
+          }
+          renderChipFrame();
           renderEntrance();
           rendering = false;
         };
         renderScene = render;
         sceneContext = gsap.context(() => {
+          // The column changes occupy a small part of the story playhead.
+          // Smooth their actual distance too, so a fast scroll cannot squeeze
+          // the whole lateral movement into the first few animation frames.
+          if (!reduced && !mobile) followSide = gsap.quickTo(storyMotion, 'side', {
+            duration: 0.6, ease: 'power2.out',
+            onUpdate: () => { if (active && !initializing) renderChipFrame(); },
+          });
+          if (!reduced) followStory = gsap.quickTo(storyMotion, 'progress', {
+            duration: 0.75, ease: 'power2.out',
+            onUpdate: () => { if (active && !initializing) renderChipFrame(); },
+          });
           timeline = gsap.timeline({ paused: true, onUpdate: render, data: state });
           const units = Math.max((scene.offsetHeight - geometry.height) / scrollUnit, 1);
           timeline.to({ hold: 0 }, { hold: 1, duration: units, ease: 'none' }, 0);
@@ -177,7 +222,7 @@ export function useScrollScene(sceneRef, mediaRef, checkerRef) {
           trigger = ScrollTrigger.create({
             trigger: scene, animation: timeline, start: 'top top',
             end: () => `+=${Math.max(scene.offsetHeight - geometry.height, 1)}`,
-            scrub: reduced ? true : 0.24, invalidateOnRefresh: true,
+            scrub: reduced ? true : (mobile || !fine ? 0.42 : 0.24), invalidateOnRefresh: true,
             onRefreshInit: () => {
               // Some touch browsers also refresh ScrollTrigger as their bars
               // collapse. Preserve the lagging visual playhead in that case.
@@ -200,6 +245,7 @@ export function useScrollScene(sceneRef, mediaRef, checkerRef) {
           // Initialize deterministically at restored browser scroll positions.
           timeline.totalProgress(trigger.progress, false);
           render();
+          initializing = false;
         }, scene);
         lenis?.resize();
         ScrollTrigger.refresh();
@@ -234,6 +280,13 @@ export function useScrollScene(sceneRef, mediaRef, checkerRef) {
         if (signature === `${window.innerWidth}:${window.innerHeight}`) {
           position = captureScenePosition(window.scrollY, positionGeometry);
         }
+      };
+      positionViewport = top => {
+        // Keep wheel smoothing and native scrolling at the same position when
+        // an accordion changes layout during a programmatic scroll.
+        if (lenis) lenis.scrollTo(top, { immediate: true, force: true });
+        else window.scrollTo({ top, behavior: 'instant' });
+        ScrollTrigger.update();
       };
       window.addEventListener('scroll', scroll, { passive: true });
       window.addEventListener('orientationchange', resize, { passive: true });
@@ -309,6 +362,7 @@ export function useScrollScene(sceneRef, mediaRef, checkerRef) {
         lenis?.destroy();
         navigate = () => {};
         anchorResult = async () => {};
+        positionViewport = top => window.scrollTo({ top, behavior: 'instant' });
         restorePosition = () => {};
       };
     });
@@ -323,5 +377,5 @@ export function useScrollScene(sceneRef, mediaRef, checkerRef) {
     };
   });
   onScopeDispose(() => { disposed = true; cleanup(); });
-  return { goToChecker: () => navigate(), prepareCheckerResult: () => anchorResult() };
+  return { goToChecker: () => navigate(), prepareCheckerResult: () => anchorResult(), setScrollPosition: top => positionViewport(top) };
 }

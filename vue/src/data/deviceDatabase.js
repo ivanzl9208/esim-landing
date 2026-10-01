@@ -4,6 +4,10 @@ export const DEVICE_CATEGORIES = {
   WEARABLE: "wearable",
 };
 
+const supportedPhones = (brand, models) => models.map(model => ({
+  brand, model, category: DEVICE_CATEGORIES.SMARTPHONE, supportsEsim: true,
+}));
+
 export const DEVICE_DATABASE = [
   { brand: "Apple", model: "iPhone 17 Pro Max", category: DEVICE_CATEGORIES.SMARTPHONE, supportsEsim: true },
   { brand: "Samsung", model: "Galaxy S26 Ultra", category: DEVICE_CATEGORIES.SMARTPHONE, supportsEsim: true },
@@ -33,6 +37,30 @@ export const DEVICE_DATABASE = [
   { brand: "Apple", model: "Watch Ultra 2", category: DEVICE_CATEGORIES.WEARABLE, supportsEsim: true },
   { brand: "Huawei", model: "Watch 4 Pro", category: DEVICE_CATEGORIES.WEARABLE, supportsEsim: true },
   { brand: "Huawei", model: "MatePad Pro 13.2", category: DEVICE_CATEGORIES.TABLET, supportsEsim: false },
+  // Model support: https://support.apple.com/en-us/118669
+  // Regional versions can differ; the checker retains its region/EID hints.
+  ...supportedPhones("Apple", [
+    "iPhone XS", "iPhone XS Max", "iPhone XR",
+    "iPhone 11", "iPhone 11 Pro", "iPhone 11 Pro Max",
+    "iPhone 12", "iPhone 12 mini", "iPhone 12 Pro", "iPhone 12 Pro Max",
+    "iPhone 13", "iPhone 13 Pro", "iPhone 13 Pro Max",
+    "iPhone 14 Plus", "iPhone 14 Pro", "iPhone 14 Pro Max",
+    "iPhone 15", "iPhone 15 Plus", "iPhone 15 Pro",
+    "iPhone 16", "iPhone 16 Plus", "iPhone 16e",
+    "iPhone 17", "iPhone 17 Pro", "iPhone Air",
+  ]),
+  // https://www.samsung.com/de/support/mobile-devices/galaxy-esim-und-untersttzte-netzbetreiber/
+  ...supportedPhones("Samsung", [
+    "Galaxy S20", "Galaxy S20+", "Galaxy S20 Ultra",
+    "Galaxy S21", "Galaxy S21+", "Galaxy S21 Ultra",
+    "Galaxy S22", "Galaxy S22+",
+    "Galaxy S23 FE",
+    "Galaxy S24", "Galaxy S24+", "Galaxy S24 Ultra", "Galaxy S24 FE",
+    "Galaxy S25", "Galaxy S25+", "Galaxy S25 Ultra", "Galaxy S25 Edge", "Galaxy S25 FE",
+    "Galaxy S26", "Galaxy S26+",
+    "Galaxy Z Fold 3", "Galaxy Z Fold 4", "Galaxy Z Fold 5", "Galaxy Z Fold 6",
+    "Galaxy Z Flip 3", "Galaxy Z Flip 4", "Galaxy Z Flip 5", "Galaxy Z Flip 6", "Galaxy Z Flip 7",
+  ]),
 ];
 
 export const POPULAR_DEVICE_NAMES = [

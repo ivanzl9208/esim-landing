@@ -1,5 +1,5 @@
 <script setup>
-import { nextTick, ref, useId } from 'vue';
+import { inject, nextTick, onBeforeUnmount, ref, useId } from 'vue';
 import { faqCategories } from '../data/faq.js';
 import FaqAccordionItem from './FaqAccordionItem.vue';
 import { typograph } from '../utils/typography.js';
@@ -8,8 +8,12 @@ const active = ref(faqCategories[0].id);
 const openQuestions = ref({ general: 'general-what' });
 const tabStrip = ref(null);
 const tabs = ref([]);
+const setScrollPosition = inject('setScrollPosition', top => window.scrollTo({ top, behavior: 'instant' }));
+let cancelQuestionScroll = () => {};
+onBeforeUnmount(() => cancelQuestionScroll());
 const select = async (item, focus = false) => {
   if (item.disabled) return;
+  cancelQuestionScroll();
   active.value = item.id;
   await nextTick();
   const button = tabs.value.find(tab => tab?.id === `${uid}-tab-${item.id}`);
@@ -20,6 +24,49 @@ const select = async (item, focus = false) => {
   const left = button.offsetLeft;
   if (left < strip.scrollLeft) strip.scrollTo({ left, behavior: 'auto' });
   else if (left + button.offsetWidth > strip.scrollLeft + strip.clientWidth) strip.scrollTo({ left: left + button.offsetWidth - strip.clientWidth, behavior: 'auto' });
+};
+const toggleQuestion = async (categoryId, questionId, event) => {
+  const button = event.currentTarget;
+  const previous = openQuestions.value[categoryId];
+  const opening = previous !== questionId;
+  cancelQuestionScroll();
+  openQuestions.value[categoryId] = opening ? questionId : null;
+  if (!opening) return;
+  await nextTick();
+  const targetTop = () => Math.max(0, window.scrollY + button.getBoundingClientRect().top - (window.visualViewport?.offsetTop ?? 0) - 16);
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    setScrollPosition(targetTop());
+    return;
+  }
+  const startTop = window.scrollY;
+  const startTime = performance.now();
+  let frame;
+  const cancel = () => {
+    cancelAnimationFrame(frame);
+    window.removeEventListener('wheel', cancel, true);
+    window.removeEventListener('touchstart', cancel, true);
+    window.removeEventListener('keydown', interrupt, true);
+    cancelQuestionScroll = () => {};
+  };
+  const interrupt = event => {
+    if (['ArrowUp', 'ArrowDown', 'PageUp', 'PageDown', 'Home', 'End', ' ', 'Escape'].includes(event.key)) cancel();
+  };
+  const step = now => {
+    if (!button.isConnected) { cancel(); return; }
+    const progress = Math.min(1, (now - startTime) / 300);
+    const eased = (1 - Math.cos(Math.PI * progress)) / 2;
+    // Start alongside the accordion transition. Its target moves while the
+    // previous answer closes, so read its live position instead of jumping
+    // again after the transition has finished.
+    setScrollPosition(startTop + (targetTop() - startTop) * eased);
+    if (progress < 1) frame = requestAnimationFrame(step);
+    else cancel();
+  };
+  cancelQuestionScroll = cancel;
+  window.addEventListener('wheel', cancel, { passive: true, capture: true });
+  window.addEventListener('touchstart', cancel, { passive: true, capture: true });
+  window.addEventListener('keydown', interrupt, true);
+  frame = requestAnimationFrame(step);
 };
 const keydown = (event, index) => {
   const available = faqCategories.filter(item => !item.disabled);
@@ -46,7 +93,7 @@ const keydown = (event, index) => {
     </div>
     <div v-for="item in faqCategories" :id="`${uid}-panel-${item.id}`" :key="item.id" role="tabpanel" :aria-labelledby="`${uid}-tab-${item.id}`" :hidden="active !== item.id" tabindex="0" class="faq-panel">
       <FaqAccordionItem v-for="question in item.questions" :id="`${uid}-${question.id}`" :key="question.id" :item="question" :open="openQuestions[item.id] === question.id"
-        @toggle="openQuestions[item.id] = openQuestions[item.id] === question.id ? null : question.id" />
+        @toggle="toggleQuestion(item.id, question.id, $event)" />
     </div>
   </section>
 </template>

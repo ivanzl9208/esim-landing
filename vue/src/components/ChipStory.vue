@@ -6,7 +6,8 @@ import { CHIP_FEATURES, STORY_BENEFITS, SAFETY_COPY } from '../data/story.js';
 import { asset } from '../utils/assets.js';
 import { typograph } from '../utils/typography.js';
 const media = ref(null);
-defineExpose({ prepare: () => media.value?.prepare(), setPlayback: (progress, turns) => media.value?.setPlayback(progress, turns) });
+defineExpose({ prepare: () => media.value?.prepare(), setPlayback: (progress, turns) => media.value?.setPlayback(progress, turns),
+  prepareStill: () => media.value?.prepareStill(), setStillActive: active => media.value?.setStillActive(active) });
 </script>
 <template>
   <div class="chip-reveal-layer" aria-hidden="true">
@@ -15,7 +16,7 @@ defineExpose({ prepare: () => media.value?.prepare(), setPlayback: (progress, tu
       <div class="advantages-marquee">Преимущества&nbsp;eSIM</div>
       <div class="esim-definition-marquee">eSIM&nbsp;— это...</div>
       <div class="story-benefits-copy">
-        <p v-for="(text, index) in STORY_BENEFITS" :key="text" :class="`story-benefit story-benefit-${index + 1}`">{{ typograph(text) }}</p>
+        <p v-for="(text, index) in STORY_BENEFITS" :key="text" :class="`story-benefit story-benefit-${index + 1}`"><SoftBlurText :text="text" /></p>
       </div>
       <p class="safety-copy"><template v-for="(character, index) in Array.from(typograph(SAFETY_COPY))" :key="index"><br v-if="character === '\n'" class="safety-mobile-break" /><span v-else class="safety-character">{{ character }}</span></template></p>
       <ChipMedia ref="media" />

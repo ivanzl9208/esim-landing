@@ -3,6 +3,12 @@ const SHORT = 'в|к|с|у|о|и|а|но|на|по|за|из|от|до|во|со
 const shortPhrase = new RegExp(`(^|[^\\p{L}\\p{N}])((?:${SHORT})[ \\t]+(?:(?:${SHORT})[ \\t]+)?)([\\p{L}\\p{N}*][\\p{L}\\p{N}*#%-]*)`, 'giu');
 const particle = /(\p{L}[\p{L}-]*)[ \t]+(?=(?:бы|же|ли)(?!\p{L}))/giu;
 
+/** Keep a model's generation number with its preceding word in display copy. */
+export function typographModelName(text) {
+  if (typeof text !== 'string') return text;
+  return text.replace(/(\S+)[ \t]+(?=\d+(?:[.,]\d+)?(?:\s|$))/gu, `$1${NBSP}`);
+}
+
 /** Pure display-text formatting: run during Vue render, never over the DOM,
  * attributes, search data or user input. Explicit design NBSP/newlines survive.
  * `enabled: false` is an escape hatch for a deliberately composed phrase. */

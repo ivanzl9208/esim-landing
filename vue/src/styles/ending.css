@@ -10,6 +10,9 @@
   --ending-radius: 60px;
   position: relative;
   z-index: 60;
+  /* Answers change the banner's position too. Exclude the whole ending from
+     native scroll anchoring so it cannot override the FAQ's short scroll. */
+  overflow-anchor: none;
   /* Extend the checker's orange surface behind the FAQ's rounded top corners.
      The card stays in document flow, so its overlap adds no scroll range. */
   background: linear-gradient(to bottom, #e44f03 0 var(--ending-radius), #e9ebeb var(--ending-radius) 100%);

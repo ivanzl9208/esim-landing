@@ -21,7 +21,7 @@ import { typograph } from '../utils/typography.js';
         <div class="footer-utilities">
           <div class="footer-app">
             <p class="footer-app-title">Скачать приложение<br />СберМобайл</p>
-            <div class="footer-qr"><img draggable="false" :src="asset('ending/footer-qr.png')" width="146" height="146" alt="QR-код для скачивания приложения СберМобайл" loading="lazy" /></div>
+            <div class="footer-qr"><img draggable="false" :src="asset('ending/footer-qr.webp')" width="146" height="146" alt="QR-код для скачивания приложения СберМобайл" loading="lazy" /></div>
             <div class="footer-stores"><span v-for="store in appStores" :key="store.name"><img draggable="false" :src="asset(store.icon)" width="32" height="32" alt="" loading="lazy" /><span>{{ store.verb }}<strong>{{ store.name }}</strong></span></span></div>
           </div>
           <div class="footer-service"><strong>Оплата связи</strong><span>{{ typograph('Пополните баланс рублями или бонусами Спасибо') }}</span><img draggable="false" :src="asset('ending/footer-chevron.svg')" width="16" height="16" alt="" /></div>

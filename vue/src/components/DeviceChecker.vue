@@ -1,16 +1,18 @@
 <script setup>
-import { onScopeDispose, ref, useId, watch } from 'vue';
+import { onMounted, onScopeDispose, ref, useId, watch } from 'vue';
 import { POPULAR_DEVICE_NAMES } from '../data/deviceDatabase.js';
 import { findPopularDevice, getFullName } from '../utils/deviceSearch.js';
 import { asset } from '../utils/assets.js';
 import { useDeviceChecker } from '../composables/useDeviceChecker.js';
 import { useKeyboardViewport } from '../composables/useKeyboardViewport.js';
 import PopularModels from './PopularModels.vue';
-import { typograph } from '../utils/typography.js';
+import { typograph, typographModelName } from '../utils/typography.js';
 
 const props = defineProps({ prepareResult: Function });
 const section = ref(null);
 const input = ref(null);
+const suggestionsScroll = ref(null);
+const moreSuggestions = ref(false);
 const resultHeading = ref(null);
 const changingView = ref(false);
 let viewTimer;
@@ -21,12 +23,54 @@ const hintId = `${uid}-eid`;
 const hint = typograph('Или наберите *#06# на устройстве и нажмите кнопку вызова. eSIM доступна, если в списке есть строка EID');
 const optionId = index => `${uid}-option-${index}`;
 const popular = POPULAR_DEVICE_NAMES.map(label => ({ label, device: findPopularDevice(label) }));
+const resultImage = supportsEsim => asset(supportsEsim ? 'esim-check-success.webp' : 'esim-check-fail.webp');
+let resultImages;
+let resultImageObserver;
+const preloadResultImages = () => {
+  if (resultImages) return;
+  resultImageObserver?.disconnect();
+  // Retain the decoded images for both outcomes across result/reset cycles.
+  resultImages = [true, false].map(supported => {
+    const image = new Image();
+    image.decoding = 'async';
+    image.src = resultImage(supported);
+    image.decode().catch(() => {});
+    return image;
+  });
+};
+onMounted(() => {
+  resultImageObserver = new IntersectionObserver(entries => {
+    if (entries.some(entry => entry.isIntersecting)) preloadResultImages();
+  }, { rootMargin: '200% 0px' });
+  resultImageObserver.observe(section.value);
+});
+onScopeDispose(() => resultImageObserver?.disconnect());
 const { waitForKeyboardClose } = useKeyboardViewport(section);
 const prepareResult = async () => {
+  preloadResultImages();
   await waitForKeyboardClose();
   await props.prepareResult?.();
 };
 const { query, state, busy, focused, selection, toastVisible, toastMessage, invalidQuery, activeIndex, statusMessage, suggestions, expanded, hideToast, runCheck, reset, choose, changeQuery, clearQuery, keydown, focusInput, blurInput, optionPointerDown, optionPointerUp, optionClick } = useDeviceChecker(input, resultHeading, prepareResult);
+watch(focused, value => { if (value) preloadResultImages(); });
+const updateSuggestionOverflow = () => {
+  const list = suggestionsScroll.value;
+  moreSuggestions.value = Boolean(expanded.value && list && list.scrollHeight - list.clientHeight - list.scrollTop > 1);
+};
+let suggestionResizeObserver;
+watch(suggestionsScroll, list => {
+  suggestionResizeObserver?.disconnect();
+  if (list) {
+    suggestionResizeObserver ??= new ResizeObserver(updateSuggestionOverflow);
+    suggestionResizeObserver.observe(list);
+  }
+  updateSuggestionOverflow();
+}, { flush: 'post' });
+watch([suggestions, expanded], () => {
+  if (suggestionsScroll.value) suggestionsScroll.value.scrollTop = 0;
+  updateSuggestionOverflow();
+}, { flush: 'post' });
+onScopeDispose(() => suggestionResizeObserver?.disconnect());
 // On a short screen the form may have been scrolled internally. Start the
 // result at its heading without moving the surrounding document flow.
 watch(state, (value, previous) => {
@@ -49,10 +93,10 @@ defineExpose({ focusInput, section });
       <div v-if="state === 'result' && selection" class="checker-result">
         <div class="checker-result-card">
           <div class="checker-result-summary">
-            <img draggable="false" class="checker-result-image" :src="asset(selection.supportsEsim ? 'esim-check-success.png' : 'esim-check-fail.png')" alt="" />
+            <img draggable="false" class="checker-result-image" :src="resultImage(selection.supportsEsim)" width="480" height="480" decoding="async" alt="" />
             <div class="checker-result-copy">
               <h2 ref="resultHeading" tabindex="-1">
-                <span class="checker-result-model">{{ getFullName(selection) }}</span>
+                <span class="checker-result-model">{{ typographModelName(getFullName(selection)) }}</span>
                 <span>{{ typograph(selection.supportsEsim ? 'поддерживает eSIM' : 'не поддерживает eSIM') }}</span>
               </h2>
               <p>{{ typograph(selection.supportsEsim ? 'Кроме версии для китайского рынка с двумя сим-картами' : 'Это не помешает подключиться — закажите пластиковую сим-карту с бесплатной доставкой и скидкой 30% на 3 месяца') }}</p>
@@ -63,7 +107,6 @@ defineExpose({ focusInput, section });
             <button class="checker-result-secondary" type="button" @click="reset">{{ typograph('У меня другое устройство') }}</button>
           </div>
         </div>
-        <p :id="hintId" class="checker-eid-hint">{{ hint }}</p>
       </div>
       <div v-else class="checker-form-view" :aria-busy="busy">
         <h2 class="checker-heading"><span>{{ typograph('Ваше устройство готово к eSIM?') }}</span></h2>
@@ -73,10 +116,12 @@ defineExpose({ focusInput, section });
         </div>
         <div class="checker-search-dock">
           <form class="checker-search-area" @submit.prevent="runCheck()">
-            <div :id="listId" :class="['checker-suggestions', { 'is-visible': expanded }]" role="listbox" aria-label="Модели устройств" data-lenis-prevent @pointermove="$event.pointerType === 'mouse' && (activeIndex = -1)">
-              <div v-for="(device, index) in suggestions" :id="optionId(index)" :key="getFullName(device)"
-                :class="['checker-option', { 'is-active': index === activeIndex }]" role="option" :aria-selected="index === activeIndex"
-                @pointerdown="optionPointerDown($event, device)" @pointerup="optionPointerUp" @click="optionClick($event, device)">{{ getFullName(device) }}</div>
+            <div :id="listId" :class="['checker-suggestions', { 'is-visible': expanded, 'has-more': moreSuggestions }]" role="listbox" aria-label="Модели устройств" data-lenis-prevent @pointermove="$event.pointerType === 'mouse' && (activeIndex = -1)">
+              <div ref="suggestionsScroll" class="checker-suggestions-scroll" @scroll.passive="updateSuggestionOverflow">
+                <div v-for="(device, index) in suggestions" :id="optionId(index)" :key="getFullName(device)"
+                  :class="['checker-option', { 'is-active': index === activeIndex }]" role="option" :aria-selected="index === activeIndex"
+                  @pointerdown="optionPointerDown($event, device)" @pointerup="optionPointerUp" @click="optionClick($event, device)">{{ getFullName(device) }}</div>
+              </div>
             </div>
             <div class="checker-input-shell">
               <label class="sr-only" :for="inputId">Модель устройства</label>
