@@ -1,6 +1,9 @@
 <script setup>
 import { asset } from '../utils/assets.js';
 import { typograph } from '../utils/typography.js';
+import mobileLogo from '../assets/site-chrome/logo-mobile.svg?raw';
+import mobileMenu from '../assets/site-chrome/menu.svg?raw';
+import mobileBonus from '../assets/site-chrome/spasibo.svg?raw';
 
 const navigation = ['Связь', 'Услуги и сервисы', 'Оплата', 'Помощь', 'Компания', 'Кабинет абонента'];
 </script>
@@ -14,6 +17,7 @@ const navigation = ['Связь', 'Услуги и сервисы', 'Оплат�
             <source media="(max-width: 1279px)" :srcset="asset('site-chrome/logo-mobile.svg')" />
             <img draggable="false" :src="asset('site-chrome/logo.svg')" width="115" height="54" alt="СберМобайл — выгоднее с Прайм" />
           </picture>
+          <span class="phone-header-art phone-brand-art" role="img" aria-label="СберМобайл — выгоднее с Прайм" v-html="mobileLogo" />
         </span>
         <span class="location">
           <img draggable="false" :src="asset('location-pin.svg')" width="12" height="12" alt="" /><span>Москва</span>
@@ -24,11 +28,12 @@ const navigation = ['Связь', 'Услуги и сервисы', 'Оплат�
           <span v-for="item in navigation" :key="item">{{ typograph(item) }}</span>
         </div>
         <div class="header-account">
-          <span class="header-bonus">Бонусы<img :src="asset('site-chrome/spasibo.svg')" draggable="false" width="16" height="16" alt="" /></span>
+          <span class="header-bonus">Бонусы<img :src="asset('site-chrome/spasibo.svg')" draggable="false" width="16" height="16" alt="" /><span class="phone-header-art phone-bonus-art" aria-hidden="true" v-html="mobileBonus" /></span>
           <span class="header-login">Войти</span>
         </div>
         <span class="mobile-menu" aria-label="Меню">
           <img draggable="false" :src="asset('site-chrome/menu.svg')" width="32" height="32" alt="" />
+          <span class="phone-header-art phone-menu-art" aria-hidden="true" v-html="mobileMenu" />
         </span>
       </div>
     </div>
@@ -52,6 +57,7 @@ const navigation = ['Связь', 'Услуги и сервисы', 'Оплат�
 .header-login { display: flex; align-items: center; height: 36px; padding: 0 16px; border-radius: 48px; background: #fff; color: #fa5f05; font: 600 14px/16px "SB Sans Text", Arial, sans-serif; letter-spacing: -.42px; }
 .mobile-menu { display: none; width: 32px; height: 32px; }
 .mobile-menu img { display: block; width: 100%; height: 100%; }
+.phone-header-art { display: none; }
 @media (max-width: 1279px) {
   .site-header-container { height: calc(67px + env(safe-area-inset-top)); padding: env(safe-area-inset-top) max(16px,env(safe-area-inset-right)) 0 max(16px,env(safe-area-inset-left)); }
   .brand-logo { flex-basis: 95px; width: 95px; height: 43px; }
@@ -61,6 +67,16 @@ const navigation = ['Связь', 'Услуги и сервисы', 'Оплат�
   .header-bonus img { width: 14px; height: 14px; }
   .header-login { height: 32px; padding-inline: 12px; font-size: 12px; }
   .mobile-menu { display: block; }
+}
+@media (max-width: 700px) {
+  /* Local trusted SVGs ship with the page, so the phone header doesn't wait
+     for separate image requests. Tablet and desktop keep their existing art. */
+  .brand-logo picture, .mobile-menu > img, .header-bonus > img { display: none; }
+  .phone-header-art { display: block; flex: none; }
+  .phone-header-art :deep(svg) { display: block; width: 100%; height: 100%; }
+  .phone-brand-art { width: 95px; height: 43px; }
+  .phone-menu-art { width: 32px; height: 32px; }
+  .phone-bonus-art { width: 14px; height: 14px; }
 }
 @media (max-width: 359px) {
   .site-header-container, .site-header-actions { gap: 6px; }

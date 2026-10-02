@@ -83,18 +83,25 @@ export function createRouletteRenderer(scene) {
               opacity: 0.2,
             },
             {
+              at: 6.8,
+              top: viewportHeight / 2 - 57 * layoutScale,
+              fontSize: 55.2 * layoutScale,
+              lineHeight: 55.2 * layoutScale,
+              opacity: 1,
+            },
+            {
               at: 7,
               top: viewportHeight / 2 - 89 * layoutScale,
               fontSize: 56 * layoutScale,
               lineHeight: 56 * layoutScale,
-              opacity: 0.35,
+              opacity: 1,
             },
             {
               at: 8,
               top: viewportHeight / 2 - 249 * layoutScale,
               fontSize: 64 * layoutScale,
               lineHeight: 64 * layoutScale,
-              opacity: 0.5,
+              opacity: 1,
             },
             {
               at: 9,

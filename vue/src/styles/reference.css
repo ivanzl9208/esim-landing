@@ -639,13 +639,17 @@ a {
   }
 
   .hero-video {
-    top: 33.5svh;
-    bottom: auto;
+    top: auto;
+    bottom: 0;
     left: 0;
     width: 100vw;
     height: 66.5svh;
     min-height: 0;
     object-position: center bottom;
+    /* Safari expands the stage when its toolbar retracts. Anchor both video
+       and poster to that live bottom and soften the source's cropped edge. */
+    -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 48px * var(--layout-scale)), transparent 100%);
+    mask-image: linear-gradient(to bottom, #000 calc(100% - 48px * var(--layout-scale)), transparent 100%);
   }
 
   .hero-content {
