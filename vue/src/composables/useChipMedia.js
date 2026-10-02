@@ -17,7 +17,7 @@ export function useChipMedia(videoRef, frameRef, stillRef) {
   const stillOpacity = ref(0);
   const stillFilter = ref('none');
   const reduced = useMotionPreference();
-  const { staticMedia, markSlow } = useMediaConnection();
+  const { staticMedia, avoidVideo, markSlow } = useMediaConnection();
   let video;
   let mounted = false;
   let disposed = false;
@@ -28,6 +28,7 @@ export function useChipMedia(videoRef, frameRef, stillRef) {
   let pendingTime = 0;
   let frameIndex = 0;
   let mediaRequested = false;
+  let videoFailed = false;
   let fetchController;
   let blobUrl;
   let loadDeadline;
@@ -47,7 +48,9 @@ export function useChipMedia(videoRef, frameRef, stillRef) {
     if (stillUrl) { URL.revokeObjectURL(stillUrl); stillUrl = undefined; }
   };
   const frameUrl = index => asset(`chip-frames/frame-${String(index + 1).padStart(3, '0')}.webp`);
-  const isStatic = () => reduced.value || staticMedia.value;
+  // Only Reduce Motion freezes rotation. Video failures or an explicit data
+  // preference use the bounded frame loader; network estimates don't stop video.
+  const isStatic = () => reduced.value;
   const updateStill = () => {
     if (!mounted || disposed) return;
     const useVideo = videoReady.value && !frameMode.value && !isStatic();
@@ -162,6 +165,7 @@ export function useChipMedia(videoRef, frameRef, stillRef) {
   };
   const fallback = () => {
     if (disposed || isStatic()) return;
+    videoFailed = true;
     releaseVideo();
     frameMode.value = true;
     prepareFrames();
@@ -173,7 +177,7 @@ export function useChipMedia(videoRef, frameRef, stillRef) {
     if (fetchController || blobUrl) return;
     const controller = new AbortController();
     fetchController = controller;
-    loadDeadline = setTimeout(markSlow, MEDIA_LOAD_DEADLINE);
+    loadDeadline = setTimeout(() => { markSlow(); fallback(); }, MEDIA_LOAD_DEADLINE);
     try {
       // A complete local Blob eliminates seeks into unbuffered HTTP ranges.
       // Keep the front image visible until decoding can actually present video.
@@ -241,12 +245,16 @@ export function useChipMedia(videoRef, frameRef, stillRef) {
   const visibility = () => {
     if (!document.hidden) draw(requestedTurns);
   };
-  watch([reduced, staticMedia], () => {
+  watch([reduced, avoidVideo], () => {
     if (!mounted) return;
     if (isStatic()) {
       loader?.dispose(); loader = undefined;
       releaseVideo(); showFront();
     } else {
+      const needsFrames = getMediaPlayback(navigator).chipFrames || avoidVideo.value || videoFailed;
+      if (needsFrames && !frameMode.value) releaseVideo();
+      frameMode.value = needsFrames;
+      if (!needsFrames) { loader?.dispose(); loader = undefined; }
       if (mediaRequested) loadMedia();
       draw(requestedTurns);
     }
@@ -255,7 +263,7 @@ export function useChipMedia(videoRef, frameRef, stillRef) {
   onMounted(() => {
     mounted = true;
     video = videoRef.value;
-    frameMode.value = getMediaPlayback(navigator).chipFrames;
+    frameMode.value = getMediaPlayback(navigator).chipFrames || avoidVideo.value;
     video.defaultMuted = true; video.muted = true;
     video.addEventListener('loadedmetadata', metadata);
     video.addEventListener('loadeddata', decoded);

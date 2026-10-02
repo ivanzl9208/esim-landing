@@ -11,7 +11,7 @@ const source = ref('');
 const presented = ref(false);
 const playbackError = ref('');
 const reduced = useMotionPreference();
-const { staticMedia, markSlow } = useMediaConnection();
+const { avoidVideo, markSlow } = useMediaConnection();
 let disposed = false;
 let mounted = false;
 let frameCallback;
@@ -40,7 +40,7 @@ const markPresented = () => {
   if (!element || disposed) return;
   const ready = () => {
     frameCallback = undefined;
-    if (!disposed && source.value && !reduced.value && !staticMedia.value) {
+    if (!disposed && source.value && !reduced.value && !avoidVideo.value) {
       clearTimeout(loadDeadline);
       presented.value = true; playbackError.value = '';
     }
@@ -58,7 +58,7 @@ const markPresented = () => {
 const syncPlayback = () => {
   const element = video.value;
   if (!element || disposed) return;
-  if (failed || reduced.value || staticMedia.value || document.hidden) {
+  if (failed || reduced.value || avoidVideo.value || document.hidden) {
     element.pause();
     cancelPresentation();
     source.value = '';
@@ -66,7 +66,10 @@ const syncPlayback = () => {
   } else {
     if (!source.value) {
       source.value = asset(getMediaPlayback(navigator).heroSource);
-      loadDeadline = setTimeout(markSlow, MEDIA_LOAD_DEADLINE);
+      loadDeadline = setTimeout(() => {
+        markSlow();
+        reportError(new Error('Video load deadline exceeded'));
+      }, MEDIA_LOAD_DEADLINE);
     }
     element.play()?.catch(reportError);
   }
@@ -75,7 +78,7 @@ const syncSource = () => {
   if (!mounted) return;
   syncPlayback();
 };
-watch([reduced, staticMedia], syncSource, { flush: 'post' });
+watch([reduced, avoidVideo], syncSource, { flush: 'post' });
 onMounted(() => {
   mounted = true;
   video.value.defaultMuted = true;
@@ -100,9 +103,9 @@ onScopeDispose(() => {
 
 <template>
   <video ref="video" class="hero-video" :src="source || undefined"
-    :data-playback-error="playbackError || undefined" :autoplay="!reduced && !staticMedia" loop muted playsinline
-    :preload="reduced || staticMedia ? 'none' : 'auto'" aria-hidden="true" @canplay="syncPlayback" @playing="markPresented"
+    :data-playback-error="playbackError || undefined" :autoplay="!reduced && !avoidVideo" loop muted playsinline
+    :preload="reduced || avoidVideo ? 'none' : 'auto'" aria-hidden="true" @canplay="syncPlayback" @playing="markPresented"
     @error="reportError($event.target.error)" />
-  <img v-show="reduced || staticMedia || !presented" class="hero-video hero-video-fallback" :src="asset('hero-poster.webp')"
+  <img v-show="reduced || avoidVideo || !presented" class="hero-video hero-video-fallback" :src="asset('hero-poster.webp')"
     width="930" height="1030" alt="" aria-hidden="true" draggable="false" fetchpriority="high" />
 </template>

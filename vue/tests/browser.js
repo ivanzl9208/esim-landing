@@ -30,6 +30,11 @@ window.matchMedia = query => {
   return result;
 };
 const browserProfile = params.get('browser') ?? (params.has('safari') ? 'safari-ios' : null);
+// Reproduce a shared slow-media hint without altering the user's connection.
+if (params.has('slow-media') || params.has('save-data')) {
+  Object.defineProperty(navigator, 'connection', { configurable: true,
+    value: Object.assign(new EventTarget(), { effectiveType: '3g', downlink: .8, rtt: 600, saveData: params.has('save-data') }) });
+}
 if (browserProfile && MEDIA_BROWSERS[browserProfile]) {
   for (const key of ['userAgent', 'vendor', 'platform', 'maxTouchPoints']) {
     Object.defineProperty(navigator, key, { configurable: true, value: MEDIA_BROWSERS[browserProfile][key] });
@@ -39,6 +44,30 @@ const fixtureLoadedAt = Date.now();
 const resizeEvents = [];
 window.addEventListener('resize', () => resizeEvents.push({ width: innerWidth, height: innerHeight, y: scrollY }));
 let app;
+let motionTrace = [];
+let traceFrame;
+document.getElementById('trace').onclick = () => {
+  cancelAnimationFrame(traceFrame);
+  motionTrace = [];
+  const started = performance.now();
+  const sample = now => {
+    const transform = document.querySelector('.chip-media-wrapper')?.style.transform ?? '';
+    const parts = transform.match(/calc\(-50% ([+-]) ([\d.-]+)px\), calc\(-50% ([+-]) ([\d.-]+)px\).*scale\(([\d.]+)\)/);
+    const safety = document.querySelector('.safety-copy');
+    const heading = document.querySelector('.checker-heading');
+    const panel = document.querySelector('.checker-panel');
+    if (parts) motionTrace.push({ time: now - started, scroll: scrollY,
+      x: Number(parts[2]) * (parts[1] === '-' ? -1 : 1),
+      y: Number(parts[4]) * (parts[3] === '-' ? -1 : 1), scale: Number(parts[5]),
+      safetyVisible: safety?.style.visibility === 'visible', safetyBottom: safety?.getBoundingClientRect().bottom,
+      checkerVisible: panel?.style.visibility === 'visible', checkerTop: heading?.getBoundingClientRect().top,
+      checkerOpacity: Number(panel?.style.opacity),
+    });
+    if (now - started < 2500) traceFrame = requestAnimationFrame(sample);
+    else inspect();
+  };
+  traceFrame = requestAnimationFrame(sample);
+};
 const originalViewport = window.visualViewport;
 let keyboardOpen = false;
 const simulatedViewport = new EventTarget();
@@ -54,17 +83,23 @@ const inspect = () => {
   const video = document.querySelector('.hero-video');
   const fallback = document.querySelector('.hero-video-fallback');
   const frame = document.querySelector('.chip-scroll-frame');
-  report.textContent = JSON.stringify({ fixtureLoadedAt, resizeEvents, mounted: Boolean(app), triggers: ScrollTrigger.getAll().length,
+  report.textContent = JSON.stringify({ fixtureLoadedAt, resizeEvents, motionTrace, mounted: Boolean(app), triggers: ScrollTrigger.getAll().length,
     progress: ScrollTrigger.getAll()[0]?.progress, renderedChecker: document.querySelector('.device-checker')?.getAttribute('data-in-view'), curtain: document.querySelector('.white-curtain')?.style.getPropertyValue('--curtain-y'),
     ownedTickerCallbacks: ticks.size,
     activeTweens: gsap.globalTimeline.getChildren(true, true, true).filter(tween => tween.isActive()).length,
     ownedAnimations: gsap.globalTimeline.getChildren(true, true, true).filter(tween => !baselineAnimations.has(tween)).length,
     lenis: document.documentElement.classList.contains('lenis'), reduceMotion: reducedMedia.matches,
+    connection: navigator.connection ? { effectiveType: navigator.connection.effectiveType,
+      downlink: navigator.connection.downlink, rtt: navigator.connection.rtt, saveData: navigator.connection.saveData } : null,
     browserProfile, heroSource: video?.getAttribute('src'), heroPaused: video?.paused,
+    heroTime: video?.currentTime,
     heroReady: video?.readyState, heroError: video?.getAttribute('data-playback-error'),
     heroFallback: Boolean(fallback && getComputedStyle(fallback).display !== 'none'),
     heroRequests: performance.getEntriesByType('resource').filter(r => /hero.*\.(mov|webm)/.test(r.name)).map(r => r.name),
     chipVideoSource: document.querySelector('.chip-scroll-video')?.getAttribute('src'),
+    chipFormat: document.querySelector('.chip-scroll-video')?.getAttribute('data-video-format'),
+    chipVideoTime: document.querySelector('.chip-scroll-video')?.currentTime,
+    chipStillOpacity: document.querySelector('.chip-scroll-still')?.style.opacity,
     frame: frame?.getAttribute('src'), frameOpacity: frame ? getComputedStyle(frame).opacity : null,
     frameLoaded: Boolean(frame?.complete && frame?.naturalWidth),
     keyboardSimulated: keyboardOpen, keyboardOffset: document.querySelector('.device-checker')?.style.getPropertyValue('--checker-keyboard-offset'),
@@ -74,7 +109,7 @@ const inspect = () => {
   }, null, 2);
 };
 document.getElementById('mount').onclick = () => { if (!app) { app = createApp(App); app.mount('#test-app'); } inspect(); };
-document.getElementById('unmount').onclick = () => { app?.unmount(); app = undefined; inspect(); };
+document.getElementById('unmount').onclick = () => { cancelAnimationFrame(traceFrame); app?.unmount(); app = undefined; inspect(); };
 document.getElementById('inspect').onclick = inspect;
 document.getElementById('refresh').onclick = () => { ScrollTrigger.refresh(); inspect(); };
 document.getElementById('motion').onclick = () => { reducedMedia.matches = !reducedMedia.matches; reducedMedia.dispatchEvent(new Event('change')); inspect(); };

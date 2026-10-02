@@ -1,5 +1,5 @@
 import { curtainTrack } from './curtain.js';
-import { ROULETTE_TRACK } from './heroReveal.js';
+import { ROULETTE_TRACK, ROULETTE_READING_HOLD, ROULETTE_EXIT_EXTENSION } from './heroReveal.js';
 import { FEATURE_READING_EXTENSION } from './featureReading.js';
 
 // All positions are viewport-height multiples measured from the scene top.
@@ -32,13 +32,15 @@ const BASE_TRACKS = {
   returnGradient: [37.16 + STORY_EXTENSION + CENTERED_CHIP_HOLD + FEATURE_READING_EXTENSION, 39.41 + STORY_EXTENSION + CENTERED_CHIP_HOLD + FEATURE_READING_EXTENSION, 1, 'smooth'],
   outro: [37.4 + STORY_EXTENSION + CENTERED_CHIP_HOLD + FEATURE_READING_EXTENSION, 39.68 + STORY_EXTENSION + CENTERED_CHIP_HOLD + FEATURE_READING_EXTENSION, 1, 'smooth'], // Original checker entrance and floating CTA exit.
 };
-// Shorten only the idle gap after the chip reveal. Move the following tracks
-// together so their durations, reading holds and overlaps stay the same.
+// Insert reading space before the chip reveal and shorten its later idle gap.
+// Shift following tracks together, preserving their durations and overlaps.
 export const TRACKS = Object.fromEntries(Object.entries(BASE_TRACKS).map(([key, track]) => {
   const [start, end, value, ease] = track;
-  if (start < BASE_TRACKS.marquee[0]) return [key, track];
+  if (start < BASE_TRACKS.reveal[0]) return [key, track];
+  const introReduction = start >= BASE_TRACKS.marquee[0] ? CHIP_INTRO_PAUSE_REDUCTION : 0;
   const centreExtension = start > BASE_TRACKS.story[1] ? CHIP_CENTER_RETURN_EXTENSION : 0;
-  return [key, [Number((start - CHIP_INTRO_PAUSE_REDUCTION + centreExtension).toFixed(4)), Number((end - CHIP_INTRO_PAUSE_REDUCTION + centreExtension).toFixed(4)), value, ease]];
+  const shift = ROULETTE_READING_HOLD + ROULETTE_EXIT_EXTENSION - introReduction + centreExtension;
+  return [key, [Number((start + shift).toFixed(4)), Number((end + shift).toFixed(4)), value, ease]];
 }));
 TRACKS.storyCenter = [
   TRACKS.story[1] - .525,

@@ -2,6 +2,13 @@
 // same static fallback there; unknown connection speed alone isn't a failure.
 export const MEDIA_LOAD_DEADLINE = 4000;
 
+// A connection estimate can describe a previous host rather than the current
+// media transfer. Only an explicit data-saving preference or offline state
+// prevents the small autoplay hero from attempting a bounded download.
+export function avoidsVideo({ connection, onLine } = {}) {
+  return onLine === false || Boolean(connection?.saveData);
+}
+
 export function prefersStaticMedia({ connection, onLine } = {}) {
   if (onLine === false) return true;
   if (!connection) return false;

@@ -1,12 +1,11 @@
 import { mix, smoothstep, sampleKeyframes } from './math.js';
 import { curtainOffset } from './curtain.js';
-import { heroRevealFrame } from './heroReveal.js';
+import { heroRevealFrame, rouletteProgressAt } from './heroReveal.js';
 import { TRACKS } from './timing.js';
 
 // Finish the text exit exactly where the next curtain starts, on the
 // same scroll playhead. Reverse scrolling closes the curtain before text returns.
-const finaleExitAt = TRACKS.roulette[2] * (TRACKS.reveal[0] - TRACKS.roulette[0]) /
-  (TRACKS.roulette[1] - TRACKS.roulette[0]);
+const finaleExitPhases = [false, true].map(mobile => rouletteProgressAt(TRACKS.reveal[0], mobile));
 
 // Preserve the entrance keyframes; GSAP owns timing and scrub.
 export function createRouletteRenderer(scene) {
@@ -19,6 +18,7 @@ export function createRouletteRenderer(scene) {
     const { curtain: currentCurtain, roulette: currentTimeline, rouletteReveal: currentReveal } = state;
       const offset = curtainOffset(currentCurtain);
       const isMobile = geometry.mobile;
+      const finaleExitAt = finaleExitPhases[Number(isMobile)];
       const layoutScale = geometry.scale;
       const viewportHeight = geometry.height;
       // Desktop glyphs extend beyond the 180px line boxes at a 220px font size.

@@ -1,11 +1,13 @@
 import { onMounted, onScopeDispose } from 'vue';
 import { TRACKS, SCENE_SCROLL_END, getLayout } from '../animation/timing.js';
 import { createRouletteRenderer } from '../animation/roulette.js';
+import { rouletteSegments } from '../animation/heroReveal.js';
 import { createChipStoryRenderer } from '../animation/chipStory.js';
 import { createCheckerEntrance } from '../animation/checkerEntrance.js';
 import { smoothstep } from '../animation/math.js';
 import { captureScenePosition, restoreScenePosition } from '../animation/scenePosition.js';
 import { storyComposition } from '../animation/storyComposition.js';
+import { storyMotionFrame, advanceStoryMotion } from '../animation/storyMotion.js';
 import { STORY_BENEFITS } from '../data/story.js';
 
 /** One native sticky stage. ScrollTrigger supplies progress; Lenis only smooths desktop wheel input. */
@@ -66,8 +68,10 @@ export function useScrollScene(sceneRef, mediaRef, checkerRef) {
       let positionGeometry;
       let renderEntrance = () => {};
       let renderScene = () => {};
+      let advanceMotion = () => {};
       const checkerEntrance = createCheckerEntrance(checkerRef.value.section);
-      const tick = time => lenis?.raf(time * 1000);
+      const tick = (time, delta) => { lenis?.raf(time * 1000); advanceMotion(delta / 1000); };
+      if (!reduced) gsap.ticker.add(tick);
       if (!reduced && fine && !mobile) {
         import('lenis').then(({ default: Lenis }) => {
           if (!active || disposed) return;
@@ -80,7 +84,6 @@ export function useScrollScene(sceneRef, mediaRef, checkerRef) {
             },
           });
           lenis.on('scroll', ScrollTrigger.update);
-          gsap.ticker.add(tick);
           lenis.resize();
         });
       }
@@ -145,25 +148,27 @@ export function useScrollScene(sceneRef, mediaRef, checkerRef) {
         const renderRoulette = createRouletteRenderer(scene);
         const renderChip = createChipStoryRenderer(scene, mediaRef.value);
         const state = { ...Object.fromEntries(Object.keys(TRACKS).map(key => [key, 0])), buttonReveal: oldButtonProgress };
-        const storyMotion = { progress: 0, side: 0 };
+        const storyMotion = { time: 0 };
+        let displayedStoryTime = 0;
         let followStory;
-        let followSide;
         let storyTarget = 0;
-        let sideTarget = 0;
         let initializing = true;
-        const renderChipFrame = () => {
-          const side = storyComposition(storyMotion.progress, STORY_BENEFITS.length, reduced, state.storyCenter).side;
-          if (initializing || reduced || geometry.mobile) {
-            followSide?.tween.pause();
-            storyMotion.side = sideTarget = side;
-          } else if (sideTarget !== side) {
-            sideTarget = side;
-            followSide(side);
-          }
-          renderChip({ ...state, story: storyMotion.progress, storySide: storyMotion.side }, geometry, reduced);
-        };
+        const motionFrame = () => storyMotionFrame(mobile || reduced ? storyMotion.time : displayedStoryTime);
         const checkerTop = positionGeometry.checkerTop;
-        renderEntrance = () => checkerEntrance.render(state.outro, geometry, reduced, window.scrollY < checkerTop);
+        renderEntrance = () => checkerEntrance.render(motionFrame().outro, geometry, reduced, window.scrollY < checkerTop);
+        const renderChipFrame = () => {
+          const motion = motionFrame();
+          const side = storyComposition(motion.story, STORY_BENEFITS.length, reduced, motion.storyCenter).side;
+          renderChip({ ...state, ...motion, storySide: side }, geometry, reduced);
+          renderEntrance();
+        };
+        advanceMotion = seconds => {
+          if (!active || initializing || reduced || mobile) return;
+          const next = advanceStoryMotion(displayedStoryTime, storyMotion.time, seconds);
+          if (Math.abs(next - displayedStoryTime) < 1e-9) return;
+          displayedStoryTime = next;
+          renderChipFrame();
+        };
         let rendering = false;
         const render = () => {
           if (!active || rendering) return;
@@ -183,29 +188,23 @@ export function useScrollScene(sceneRef, mediaRef, checkerRef) {
           // The pinned story is always in the viewport, so visibility cannot
           // tell us when to fetch its media. Prepare two scroll units early.
           if (timeline?.time() >= TRACKS.reveal[0] - 2) mediaRef.value?.prepare();
-          // Keep chip placement and its matching text on the same slower
-          // playhead. Other scene tracks retain their existing scroll response.
+          // Lateral return and subsequent zoom/copy share one follower, so
+          // growth cannot start while a separate horizontal tween lags behind.
+          const storyTime = timeline?.time() ?? 0;
           if (initializing || reduced) {
             followStory?.tween.pause();
-            storyMotion.progress = storyTarget = state.story;
-          } else if (storyTarget !== state.story) {
-            storyTarget = state.story;
-            followStory(state.story);
+            storyMotion.time = storyTarget = storyTime;
+            displayedStoryTime = storyTime;
+          } else if (storyTarget !== storyTime) {
+            storyTarget = storyTime;
+            followStory(storyTime);
           }
           renderChipFrame();
-          renderEntrance();
           rendering = false;
         };
         renderScene = render;
         sceneContext = gsap.context(() => {
-          // The column changes occupy a small part of the story playhead.
-          // Smooth their actual distance too, so a fast scroll cannot squeeze
-          // the whole lateral movement into the first few animation frames.
-          if (!reduced && !mobile) followSide = gsap.quickTo(storyMotion, 'side', {
-            duration: 0.6, ease: 'power2.out',
-            onUpdate: () => { if (active && !initializing) renderChipFrame(); },
-          });
-          if (!reduced) followStory = gsap.quickTo(storyMotion, 'progress', {
+          if (!reduced) followStory = gsap.quickTo(storyMotion, 'time', {
             duration: 0.75, ease: 'power2.out',
             onUpdate: () => { if (active && !initializing) renderChipFrame(); },
           });
@@ -213,6 +212,15 @@ export function useScrollScene(sceneRef, mediaRef, checkerRef) {
           const units = Math.max((scene.offsetHeight - geometry.height) / scrollUnit, 1);
           timeline.to({ hold: 0 }, { hold: 1, duration: units, ease: 'none' }, 0);
           for (const [key, [start, end, value, ease]] of Object.entries(TRACKS)) {
+            if (key === 'roulette') {
+              for (const segment of rouletteSegments(geometry.mobile)) {
+                timeline.fromTo(state, { roulette: segment.from }, {
+                  roulette: segment.to, duration: segment.end - segment.start,
+                  ease: segment.ease === 'smooth' ? t => smoothstep(0, 1, t) : 'none', immediateRender: false,
+                }, segment.start);
+              }
+              continue;
+            }
             timeline.fromTo(state, { [key]: 0 }, {
               [key]: value, duration: end - start, ease: ease === 'smooth' ? t => smoothstep(0, 1, t) : 'none', immediateRender: false,
             }, start);

@@ -1,6 +1,16 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { prefersStaticMedia } from '../src/utils/mediaConnection.js';
+import { avoidsVideo, prefersStaticMedia } from '../src/utils/mediaConnection.js';
+
+test('Hero attempts playback on estimated slow connections; explicit data saving and offline still stop downloads', () => {
+  for (const connection of [undefined, {}, { effectiveType: '3g', downlink: .8, rtt: 600 },
+    { effectiveType: '2g' }, { effectiveType: '4g', downlink: 10 }]) {
+    assert.equal(avoidsVideo({ connection, onLine: true }), false);
+  }
+  assert.equal(avoidsVideo({ connection: { saveData: true } }), true);
+  assert.equal(avoidsVideo({ onLine: false }), true);
+  assert.equal(avoidsVideo({}), false);
+});
 
 test('Poor connectivity and data saving choose pictures, including a changing connection', () => {
   for (const connection of [{ saveData: true }, { effectiveType: 'slow-2g' }, { effectiveType: '2g' },
