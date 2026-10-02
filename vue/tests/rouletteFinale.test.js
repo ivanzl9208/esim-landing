@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createRouletteRenderer } from '../src/animation/roulette.js';
+import { TRACKS } from '../src/animation/timing.js';
 
 const fixture = geometry => {
   const nodes = new Map();
@@ -33,6 +34,26 @@ test('Phone finale becomes fully legible near the viewport centre in either scro
     }
     assert.deepEqual(render(6), entrance);
     assert.equal(Number(render(7, true).opacity), 1);
+  }
+});
+
+test('Phone text fully leaves before the next curtain opens, without returning at the final frames', () => {
+  for (const [width, height, scale] of [[320, 568, .88], [375, 667, 1.04], [440, 900, 1.22], [700, 320, .88]]) {
+    const render = fixture({ mobile: true, width, height, scale });
+    const progressAt = scroll => (scroll - TRACKS.roulette[0]) /
+      (TRACKS.roulette[1] - TRACKS.roulette[0]) * TRACKS.roulette[2];
+    const exit = render(progressAt(TRACKS.reveal[0]));
+    assert.ok(parseFloat(exit.top) + 192 * scale < 0);
+    assert.equal(Number(exit.opacity), 1);
+    for (const scroll of [TRACKS.reveal[0], 4.3, 4.35, 4.3, TRACKS.reveal[0]]) {
+      assert.deepEqual(render(progressAt(scroll)), exit);
+    }
+    let previousTop = Number.POSITIVE_INFINITY;
+    for (let progress = 8; progress <= 10; progress += .01) {
+      const top = parseFloat(render(progress).top);
+      assert.ok(top <= previousTop + .001, 'Text must never move back down during its exit');
+      previousTop = top;
+    }
   }
 });
 

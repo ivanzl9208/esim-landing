@@ -1,6 +1,12 @@
 import { mix, smoothstep, sampleKeyframes } from './math.js';
 import { curtainOffset } from './curtain.js';
 import { heroRevealFrame } from './heroReveal.js';
+import { TRACKS } from './timing.js';
+
+// Finish the phone text exit exactly where the next curtain starts, on the
+// same scroll playhead. Reverse scrolling closes the curtain before text returns.
+const phoneExitAt = TRACKS.roulette[2] * (TRACKS.reveal[0] - TRACKS.roulette[0]) /
+  (TRACKS.roulette[1] - TRACKS.roulette[0]);
 
 // The reference keyframe positions are preserved; GSAP owns timing and scrub.
 export function createRouletteRenderer(scene) {
@@ -15,6 +21,7 @@ export function createRouletteRenderer(scene) {
       const isMobile = geometry.mobile;
       const layoutScale = geometry.scale;
       const viewportHeight = geometry.height;
+      const phoneExitTop = -(192 + 16) * layoutScale;
       const lineStep = (isMobile ? 160 : 280) * layoutScale;
       const centerTop = isMobile
         ? viewportHeight / 2 - 89 * layoutScale
@@ -105,21 +112,21 @@ export function createRouletteRenderer(scene) {
             },
             {
               at: 9,
-              top: viewportHeight / 2 - 409 * layoutScale,
+              top: Math.max(viewportHeight / 2 - 409 * layoutScale, phoneExitTop),
               fontSize: 64 * layoutScale,
               lineHeight: 64 * layoutScale,
               opacity: 1,
             },
             {
-              at: 9.8,
-              top: -105 * layoutScale,
+              at: phoneExitAt,
+              top: phoneExitTop,
               fontSize: 64 * layoutScale,
               lineHeight: 64 * layoutScale,
               opacity: 1,
             },
             {
               at: 10,
-              top: -120 * layoutScale,
+              top: phoneExitTop,
               fontSize: 64 * layoutScale,
               lineHeight: 64 * layoutScale,
               opacity: 1,
