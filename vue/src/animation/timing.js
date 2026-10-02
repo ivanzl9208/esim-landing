@@ -7,7 +7,7 @@ import { FEATURE_READING_EXTENSION } from './featureReading.js';
 // Four theses use 3.15 viewports each, with twice the previous reading hold.
 // Later tracks shift without being compressed.
 const STORY_EXTENSION = 5.4;
-// Scroll space for the first centred zoom before the safety copy enters.
+// Scroll space for the first zoom and the simultaneous safety-copy entrance.
 export const CENTERED_CHIP_HOLD = 2;
 const CHIP_INTRO_PAUSE_REDUCTION = .4;
 const BASE_TRACKS = {

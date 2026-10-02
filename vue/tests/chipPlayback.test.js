@@ -56,7 +56,7 @@ test('Chip continues turning until the definition leaves, including reverse scro
   }
 });
 
-test('Centred chip grows without safety copy or theses before the safety entrance, in both directions', () => {
+test('Chip lifts and grows while safety copy enters on the first zoom, in both directions', () => {
   for (const mobile of [false, true]) {
     const media = fixture();
     const state = { ...Object.fromEntries(Object.keys(TRACKS).map(key => [key, 1])), story: 0, chipZoom: 0, safety: 0, outro: 0, returnGradient: 0, buttonReveal: 1 };
@@ -71,6 +71,7 @@ test('Centred chip grows without safety copy or theses before the safety entranc
       return {
         chip: media.node('.chip-scroll-video').style.transform,
         safety: media.node('.safety-copy').style.visibility,
+        copy: media.node('.safety-copy').style.transform,
         theses: media.benefits.map(element => element.style.opacity),
       };
     };
@@ -79,13 +80,15 @@ test('Centred chip grows without safety copy or theses before the safety entranc
       const holdEnd = TRACKS.safety[0];
       const holdSamples = [.02, .28, .55, .8, .96].map(progress => holdStart + (holdEnd - holdStart) * progress);
       const samples = holdSamples.map(sample);
-      for (const frame of samples) {
+      for (const [index, frame] of samples.entries()) {
         assert.match(frame.chip, /calc\(-50% \+ 0.00px\)/);
-        assert.equal(frame.safety, 'hidden');
+        assert.equal(frame.safety, holdSamples[index] > TRACKS.chipZoom[0] ? 'visible' : 'hidden');
         assert.deepEqual(frame.theses, Array(4).fill('0.0000'));
       }
       const scales = samples.map(frame => Number(frame.chip.match(/scale\(([\d.]+)\)/u)[1]));
       for (let index = 1; index < scales.length; index++) assert.ok(scales[index] > scales[index - 1]);
+      const offsets = samples.map(frame => Number(frame.copy.match(/, ([\d.-]+)px/u)[1]));
+      for (let index = 1; index < offsets.length; index++) assert.ok(offsets[index] < offsets[index - 1]);
       assert.equal(sample(holdEnd + 0.22).safety, 'visible');
       assert.deepEqual([...holdSamples].reverse().map(sample), [...samples].reverse());
     } finally {

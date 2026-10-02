@@ -8,8 +8,8 @@ test('The chip grows through the desktop and mobile storyboard without a boundar
   for (const mobile of [false, true]) {
     const base = mobile ? 280 : 470;
     for (const [zoom, safety, size, y] of mobile
-      ? [[0, 0, 280, 47], [1, 0, 339, -24.5], [1, .18, 586, -192], [1, .42, 721, -444.5]]
-      : [[0, 0, 470, 0], [1, 0, 575, -52.5], [1, .18, 910, -261], [1, .42, 1182, -650]]) {
+      ? [[0, 0, 280, 47], [1, 0, 339, -104.5], [1, .18, 586, -272], [1, .42, 721, -524.5]]
+      : [[0, 0, 470, 0], [1, 0, 575, -172.5], [1, .18, 910, -381], [1, .42, 1182, -770]]) {
       const frame = chipZoomFrame(zoom, safety, mobile);
       assert.ok(Math.abs(frame.scale * base - size) < 1e-8);
       assert.ok(Math.abs(frame.y - y) < 1e-8);
@@ -21,7 +21,10 @@ test('The chip grows through the desktop and mobile storyboard without a boundar
       assert.ok(Math.abs(left.y - right.y) < .005);
     }
     const frames = Array.from({ length: 100 }, (_, index) => chipZoomFrame(index / 99, 0, mobile));
-    for (let index = 1; index < frames.length; index++) assert.ok(frames[index].scale > frames[index - 1].scale);
+    for (let index = 1; index < frames.length; index++) {
+      assert.ok(frames[index].scale > frames[index - 1].scale);
+      assert.ok(frames[index].y < frames[index - 1].y);
+    }
     const reverse = Array.from({ length: 100 }, (_, index) => chipZoomFrame((99 - index) / 99, 0, mobile));
     assert.deepEqual(reverse.reverse(), frames);
   }
@@ -46,26 +49,27 @@ test('Safety copy enters from below the viewport, stays below the chip, and all 
     const renderer = createChipStoryRenderer({ dataset: {}, querySelector: node, querySelectorAll: () => [] }, {
       setPlayback() {}, prepareStill() {}, setStillActive(value) { activeStill = value; },
     });
-    const state = { ...Object.fromEntries(Object.keys(TRACKS).map(key => [key, 0])), reveal: 1, chip: 1, story: 1, chipZoom: 1, buttonReveal: 1 };
+    const state = { ...Object.fromEntries(Object.keys(TRACKS).map(key => [key, 0])), reveal: 1, chip: 1, story: 1, chipZoom: 0, buttonReveal: 1 };
     const layout = { mobile, width, height, scale };
     const copyTop = () => node('.safety-copy').offsetTop +
       Number(node('.safety-copy').style.transform.match(/, ([\d.-]+)px/u)[1]);
     renderer(state, layout, false);
     assert.equal(node('.safety-copy').style.visibility, 'hidden');
     assert.ok(Math.abs(copyTop() - height) < .01);
-    state.safety = .0002;
+    state.chipZoom = .0002;
     renderer(state, layout, false);
     assert.equal(node('.safety-copy').style.visibility, 'visible');
     assert.ok(Math.abs(copyTop() - height) < .01, 'First visible frame starts at the lower edge');
     let previousTop = copyTop();
-    for (let progress = .001; progress <= .18; progress += .001) {
-      state.safety = progress;
+    for (let progress = .005; progress <= 1; progress += .005) {
+      state.chipZoom = progress;
       renderer(state, layout, false);
       assert.ok(copyTop() <= previousTop + .01, 'Entrance must move upwards continuously');
       assert.ok(previousTop - copyTop() < 5 * scale, 'Slow scroll must not jump');
       previousTop = copyTop();
     }
-    for (const [safety, top] of [[.18, height / 2 + (mobile ? 161 : 295) * scale], [.42, height / 2 + (mobile ? -24 : 42) * scale]]) {
+    state.chipZoom = 1;
+    for (const [safety, top] of [[0, height / 2 + (mobile ? 125 : 216) * scale], [.18, height / 2 + (mobile ? 81 : 175) * scale], [.42, height / 2 + (mobile ? -104 : -78) * scale]]) {
       state.safety = safety;
       renderer(state, layout, false);
       const transform = node('.chip-scroll-video').style.transform;
