@@ -231,6 +231,11 @@ export function createChipStoryRenderer(scene, media) {
         chipRenderedHeight / 2 +
         safetyGap -
         measurements.safetyTop;
+      // Visibility switches on at the track's start. Keep the copy below the
+      // viewport then bring it to the chip's existing gap during its entrance.
+      const safetyEntranceOffset = reduced ? 0 :
+        Math.max(0, geometry.height - measurements.safetyTop - safetyStartOffset) *
+        (1 - smoothstep(0, .18, safetyTextProgress));
       const safetyTravel =
         measurements.safetyTop +
         safetyStartOffset +
@@ -317,7 +322,7 @@ export function createChipStoryRenderer(scene, media) {
           ? "visible"
           : "hidden";
       safetyCopy.style.transform =
-        `translate3d(-50%, ${(safetyStartOffset - safetyTravel * safetyExitProgress).toFixed(2)}px, 0)`;
+        `translate3d(-50%, ${(safetyStartOffset + safetyEntranceOffset - safetyTravel * safetyExitProgress).toFixed(2)}px, 0)`;
       const safetyCharacterCount = Math.max(safetyCharacters.length - 1, 1);
       safetyCharacters.forEach((character, index) => {
         const threshold = index / safetyCharacterCount;

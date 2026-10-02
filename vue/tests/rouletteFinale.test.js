@@ -57,11 +57,14 @@ test('Phone text fully leaves before the next curtain opens, without returning a
   }
 });
 
-test('Desktop finale keeps its existing opacity and position', () => {
+test('Desktop finale stays fully legible during its exit and keeps its existing position', () => {
   const render = fixture({ mobile: false, width: 1440, height: 720, scale: 1 });
-  for (const [progress, top, opacity] of [[6, 592, .2], [7, 312, .35], [8, 196, .5], [9, 90, 1], [9.8, -410, .08], [10, -470, 0]]) {
+  for (const [progress, top, opacity] of [[6, 592, .2], [7, 312, .35], [8, 196, .5], [9, 90, 1], [9.8, -410, 1], [10, -470, 1]]) {
     const frame = render(progress);
     assert.equal(parseFloat(frame.top), top);
     assert.equal(Number(frame.opacity), opacity);
+  }
+  for (const progress of [9, 9.2, 9.5, 9.8, 9.9, 10, 9.9, 9.5, 9.2, 9]) {
+    assert.equal(Number(render(progress).opacity), 1);
   }
 });

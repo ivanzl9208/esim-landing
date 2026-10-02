@@ -173,14 +173,14 @@ export function createRouletteRenderer(scene) {
               top: -410 * layoutScale,
               fontSize: 220 * layoutScale,
               lineHeight: 180 * layoutScale,
-              opacity: 0.08,
+              opacity: 1,
             },
             {
               at: 10,
               top: -470 * layoutScale,
               fontSize: 220 * layoutScale,
               lineHeight: 180 * layoutScale,
-              opacity: 0,
+              opacity: 1,
             },
           ];
       const finaleFrame = sampleKeyframes(

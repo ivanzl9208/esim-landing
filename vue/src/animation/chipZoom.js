@@ -4,7 +4,7 @@ import { clamp, mix } from './math.js';
 // Coordinates are offsets from the viewport centre at layout scale 1.
 export function chipZoomFrame(zoom, safety, mobile) {
   const frames = mobile
-    ? [[260, 47], [339, -24.5], [586, -192], [721, -444.5]]
+    ? [[280, 47], [339, -24.5], [586, -192], [721, -444.5]]
     : [[470, 0], [575, -52.5], [910, -261], [1182, -650]];
   let from = frames[0], to = frames[1], progress = clamp(zoom);
   if (safety > 0 && safety <= .18) {

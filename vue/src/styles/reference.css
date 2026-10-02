@@ -791,14 +791,11 @@ a {
     display: none;
   }
 
-  .chip-scroll-video {
-    width: min(calc(260px * var(--layout-scale)), calc(100vw - 64px * var(--layout-scale)));
-    max-width: none;
-    transform: translate3d(-50%, calc(-50% + 66vh), 0) scale(0.84);
-  }
-
-  .chip-scroll-frame, .chip-scroll-still {
-    width: min(calc(260px * var(--layout-scale)), calc(100vw - 64px * var(--layout-scale)));
+  .chip-scroll-video, .chip-scroll-frame, .chip-scroll-still {
+    /* Figma 250:1419: 280px on a 360px canvas. The centre stays at
+       50% + 47px * layout scale; leave space above for the feature copy
+       and below for the CTA when the viewport is short. */
+    width: min(77.77778vw, max(0px, calc(100svh - 306px * var(--layout-scale))));
     max-width: none;
     transform: translate3d(-50%, calc(-50% + 66vh), 0) scale(0.84);
   }
