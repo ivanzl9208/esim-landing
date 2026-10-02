@@ -3,8 +3,7 @@ import { TRACKS, SCENE_SCROLL_END, getLayout } from '../animation/timing.js';
 import { createRouletteRenderer } from '../animation/roulette.js';
 import { createChipStoryRenderer } from '../animation/chipStory.js';
 import { createCheckerEntrance } from '../animation/checkerEntrance.js';
-import { clamp, smoothstep } from '../animation/math.js';
-import { storySequenceFrame } from '../animation/storySequence.js';
+import { smoothstep } from '../animation/math.js';
 import { captureScenePosition, restoreScenePosition } from '../animation/scenePosition.js';
 import { storyComposition } from '../animation/storyComposition.js';
 import { STORY_BENEFITS } from '../data/story.js';
@@ -93,7 +92,7 @@ export function useScrollScene(sceneRef, mediaRef, checkerRef) {
       const updateGeometry = () => {
         // Keep typography and the scroll unit stable while mobile browser
         // chrome changes the live stage height. Width changes reset scrollUnit.
-        geometry = { ...getLayout(window.innerWidth, (mobile || !fine) ? scrollUnit : window.innerHeight), height: window.innerHeight };
+        geometry = { ...getLayout(window.innerWidth, (mobile || !fine) ? scrollUnit : window.innerHeight), height: window.innerHeight, dpr: window.devicePixelRatio || 1 };
         scene.style.height = `${Math.ceil(SCENE_SCROLL_END * scrollUnit) + geometry.height}px`;
         scene.style.marginBottom = `-${geometry.height}px`;
         scene.style.setProperty('--layout-scale', geometry.scale.toFixed(5));
@@ -146,31 +145,25 @@ export function useScrollScene(sceneRef, mediaRef, checkerRef) {
         const renderRoulette = createRouletteRenderer(scene);
         const renderChip = createChipStoryRenderer(scene, mediaRef.value);
         const state = { ...Object.fromEntries(Object.keys(TRACKS).map(key => [key, 0])), buttonReveal: oldButtonProgress };
-        const storyMotion = { time: TRACKS.story[0], side: 0 };
+        const storyMotion = { progress: 0, side: 0 };
         let followStory;
         let followSide;
-        let storyTarget = TRACKS.story[0];
+        let storyTarget = 0;
         let sideTarget = 0;
         let initializing = true;
         const renderChipFrame = () => {
-          const sequence = storySequenceFrame(storyMotion.time);
-          const side = storyComposition(sequence.story, STORY_BENEFITS.length, reduced).side;
-          // The final return follows the shared playhead exactly, so it ends
-          // before the centred hold and zoom. Keep earlier column smoothing.
-          const finalReturn = sequence.story >= (STORY_BENEFITS.length - 1 / 6) / STORY_BENEFITS.length;
-          if (initializing || reduced || geometry.mobile || finalReturn) {
+          const side = storyComposition(storyMotion.progress, STORY_BENEFITS.length, reduced, state.storyCenter).side;
+          if (initializing || reduced || geometry.mobile) {
             followSide?.tween.pause();
             storyMotion.side = sideTarget = side;
           } else if (sideTarget !== side) {
             sideTarget = side;
             followSide(side);
           }
-          renderChip({ ...state, ...sequence, storySide: storyMotion.side }, geometry, reduced);
-          renderEntrance(sequence.outro);
+          renderChip({ ...state, story: storyMotion.progress, storySide: storyMotion.side }, geometry, reduced);
         };
         const checkerTop = positionGeometry.checkerTop;
-        renderEntrance = (progress = storySequenceFrame(storyMotion.time).outro) =>
-          checkerEntrance.render(progress, geometry, reduced, window.scrollY < checkerTop);
+        renderEntrance = () => checkerEntrance.render(state.outro, geometry, reduced, window.scrollY < checkerTop);
         let rendering = false;
         const render = () => {
           if (!active || rendering) return;
@@ -190,16 +183,17 @@ export function useScrollScene(sceneRef, mediaRef, checkerRef) {
           // The pinned story is always in the viewport, so visibility cannot
           // tell us when to fetch its media. Prepare two scroll units early.
           if (timeline?.time() >= TRACKS.reveal[0] - 2) mediaRef.value?.prepare();
-          // Share one playhead across all stages of the final composition.
-          const nextStoryTime = clamp(timeline?.time() ?? TRACKS.story[0], TRACKS.story[0], TRACKS.outro[1]);
+          // Keep chip placement and its matching text on the same slower
+          // playhead. Other scene tracks retain their existing scroll response.
           if (initializing || reduced) {
             followStory?.tween.pause();
-            storyMotion.time = storyTarget = nextStoryTime;
-          } else if (storyTarget !== nextStoryTime) {
-            storyTarget = nextStoryTime;
-            followStory(nextStoryTime);
+            storyMotion.progress = storyTarget = state.story;
+          } else if (storyTarget !== state.story) {
+            storyTarget = state.story;
+            followStory(state.story);
           }
           renderChipFrame();
+          renderEntrance();
           rendering = false;
         };
         renderScene = render;
@@ -211,7 +205,7 @@ export function useScrollScene(sceneRef, mediaRef, checkerRef) {
             duration: 0.6, ease: 'power2.out',
             onUpdate: () => { if (active && !initializing) renderChipFrame(); },
           });
-          if (!reduced) followStory = gsap.quickTo(storyMotion, 'time', {
+          if (!reduced) followStory = gsap.quickTo(storyMotion, 'progress', {
             duration: 0.75, ease: 'power2.out',
             onUpdate: () => { if (active && !initializing) renderChipFrame(); },
           });

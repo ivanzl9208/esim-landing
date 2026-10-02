@@ -7,7 +7,7 @@ import { asset } from '../utils/assets.js';
 import { typograph } from '../utils/typography.js';
 const media = ref(null);
 defineExpose({ prepare: () => media.value?.prepare(), setPlayback: (progress, turns) => media.value?.setPlayback(progress, turns),
-  prepareStill: () => media.value?.prepareStill(), setStillActive: active => media.value?.setStillActive(active) });
+  prepareStill: () => media.value?.prepareStill(), setZoomQuality: quality => media.value?.setZoomQuality(quality) });
 </script>
 <template>
   <div class="chip-reveal-layer" aria-hidden="true">

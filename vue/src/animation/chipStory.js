@@ -4,7 +4,6 @@ import { storyComposition, STORY_ENTER_END, STORY_EXIT_START } from './storyComp
 import { featureReadingProgress, featureWindow } from './featureReading.js';
 import { TRACKS } from './timing.js';
 import { chipZoomFrame } from './chipZoom.js';
-import { safetyEntryProgress } from './storySequence.js';
 
 export function createChipStoryRenderer(scene, media) {
   const select = selector => scene.querySelector(selector);
@@ -12,7 +11,7 @@ export function createChipStoryRenderer(scene, media) {
   const backgroundTransition = select('.chip-background-transition');
   const marquee = select('.advantages-marquee'), definitionMarquee = select('.esim-definition-marquee');
   const video = select('.chip-scroll-video'), frame = select('.chip-scroll-frame');
-  const still = select('.chip-scroll-still');
+  const mediaWrapper = select('.chip-media-wrapper');
   const button = select('.roulette-button'), buttonLabel = select('.roulette-button-label');
   const bottomFade = select('.roulette-bottom-fade'), safetyCopy = select('.safety-copy');
   const heroSurface = select('.hero-surface');
@@ -20,6 +19,10 @@ export function createChipStoryRenderer(scene, media) {
   const storyElements = [...scene.querySelectorAll('.story-benefit')];
   const safetyCharacters = [...scene.querySelectorAll('.safety-character')];
   const safetyText = safetyCharacters.map(character => character.textContent).join('');
+  // Start grey below the viewport; fill half the first line during its entrance.
+  const safetyEntranceFillStart = .5;
+  const safetyEntranceFillEnd = .065;
+  const safetyFillEnd = .9;
   const lostPhraseEnd = safetyText.indexOf('потерять') + 'потерять'.length - 1;
   const buttonExitStart = 0.9 * (lostPhraseEnd / Math.max(safetyCharacters.length - 1, 1) + 0.025);
   const textMotionCache = new Map(featureElements.map(element => [element, {
@@ -186,6 +189,7 @@ export function createChipStoryRenderer(scene, media) {
       // after hundreds of per-frame style writes forced layout on iOS Safari.
       measurements = {
         chipHeight: Math.max(video.offsetHeight, frame.offsetHeight),
+        chipWidth: mediaWrapper.offsetWidth,
         safetyTop: safetyCopy.offsetTop,
         safetyHeight: safetyCopy.offsetHeight,
         marqueeWidth: marquee.offsetWidth,
@@ -215,12 +219,11 @@ export function createChipStoryRenderer(scene, media) {
       const zoomFrame = reduced ? { scale: 1, y: isMobile ? 47 : 0 } : chipZoomFrame(zoomProgress, currentSafety, isMobile);
       const displayedScale = chipScale * zoomFrame.scale;
       const displayedY = chipY + (zoomFrame.y - (isMobile ? 47 : 0)) * layoutScale;
-      const composition = storyComposition(currentStory, STORY_BENEFITS.length, reduced);
+      const composition = storyComposition(currentStory, STORY_BENEFITS.length, reduced, state.storyCenter);
       const storyX = isMobile ? 0 : geometry.width * .20 * (state.storySide ?? composition.side);
       gradient.style.setProperty('--chip-story-presence', composition.presence.toFixed(4));
       gradient.dataset.storyActive = String(composition.presence > 0 && !reduced);
       const safetyTextProgress = clamp(currentSafety);
-      const safetyEntranceProgress = safetyEntryProgress(zoomProgress);
       const safetyGap = (isMobile ? 60 : 101) * layoutScale;
       const safetyExitMargin = (isMobile ? 24 : 40) * layoutScale;
       const chipRenderedHeight = measurements.chipHeight * displayedScale;
@@ -237,7 +240,7 @@ export function createChipStoryRenderer(scene, media) {
       // Its gap continues following the chip during the later safety track.
       const safetyEntranceOffset = reduced ? 0 :
         Math.max(0, geometry.height - measurements.safetyTop - safetyStartOffset) *
-        (1 - smoothstep(0, 1, safetyEntranceProgress));
+        (1 - smoothstep(0, 1, zoomProgress));
       const safetyTravel =
         measurements.safetyTop +
         safetyStartOffset +
@@ -281,11 +284,9 @@ export function createChipStoryRenderer(scene, media) {
       gradient.style.webkitClipPath = gradient.style.clipPath;
       backgroundTransition.style.opacity =
         grayStageOpacity.toFixed(4);
-      video.style.transform =
+      mediaWrapper.style.transform =
         `translate3d(calc(-50% + ${storyX.toFixed(2)}px), calc(-50% + ${(displayedY + safetyChipExit).toFixed(2)}px), 0) ` +
         `scale(${displayedScale.toFixed(5)})`;
-      frame.style.transform = video.style.transform;
-      if (still) still.style.transform = video.style.transform;
       marquee.style.setProperty(
         "--advantages-text-x",
         `${marqueeOffset.toFixed(2)}px`,
@@ -318,11 +319,12 @@ export function createChipStoryRenderer(scene, media) {
         element.style.opacity = storyTimeline > index && storyTimeline < index + 1 ? '1.0000' : '0.0000';
       });
 
-      const safetyReveal = reduced ? clamp(safetyTextProgress / .9)
-        : safetyTextProgress > 0 ? mix(.22, 1.025, clamp(safetyTextProgress / .42))
-        : .22 * safetyEntranceProgress;
+      const entranceReveal = mix(-.025, safetyEntranceFillEnd,
+        clamp((zoomProgress - safetyEntranceFillStart) / (1 - safetyEntranceFillStart)));
+      const safetyReveal = reduced ? clamp(safetyTextProgress / safetyFillEnd)
+        : mix(entranceReveal, 1, clamp(safetyTextProgress / safetyFillEnd));
       safetyCopy.style.visibility =
-        (safetyEntranceProgress > 0.0001 || safetyTextProgress > 0.0001) && safetyTextProgress < 0.9999
+        (zoomProgress > 0.0001 || safetyTextProgress > 0.0001) && safetyTextProgress < 0.9999
           ? "visible"
           : "hidden";
       safetyCopy.style.transform =
@@ -330,7 +332,7 @@ export function createChipStoryRenderer(scene, media) {
       const safetyCharacterCount = Math.max(safetyCharacters.length - 1, 1);
       safetyCharacters.forEach((character, index) => {
         const threshold = index / safetyCharacterCount;
-        const active = !reduced && safetyEntranceProgress === 0 && safetyTextProgress === 0 ? 0 : smoothstep(
+        const active = smoothstep(
           threshold - 0.025,
           threshold + 0.025,
           safetyReveal,
@@ -342,7 +344,8 @@ export function createChipStoryRenderer(scene, media) {
 
       media.setPlayback(currentPlayback + currentDefinitionTurn, playbackEndTurns);
       if (currentDefinition >= .9 || currentStory > 0) media.prepareStill?.();
-      media.setStillActive?.(!reduced && (currentStory > 0 || zoomProgress > 0 || currentSafety > 0));
+      media.setZoomQuality?.({ width: measurements.chipWidth * displayedScale,
+        scale: displayedScale, dpr: geometry.dpr ?? 1, zoom: zoomProgress, safety: safetyTextProgress });
 
       featureElements.forEach((element, index) => {
         const { start, end } = featureWindow(index, isMobile);

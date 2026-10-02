@@ -7,6 +7,8 @@ import { FEATURE_READING_EXTENSION } from './featureReading.js';
 // Four theses use 3.15 viewports each, with twice the previous reading hold.
 // Later tracks shift without being compressed.
 const STORY_EXTENSION = 5.4;
+// Double only the last lateral return, adding half a viewport before zoom.
+export const CHIP_CENTER_RETURN_EXTENSION = .525;
 // Scroll space for the first zoom and the simultaneous safety-copy entrance.
 export const CENTERED_CHIP_HOLD = 2;
 const CHIP_INTRO_PAUSE_REDUCTION = .4;
@@ -36,8 +38,14 @@ const BASE_TRACKS = {
 export const TRACKS = Object.fromEntries(Object.entries(BASE_TRACKS).map(([key, track]) => {
   const [start, end, value, ease] = track;
   if (start < BASE_TRACKS.marquee[0]) return [key, track];
-  return [key, [Number((start - CHIP_INTRO_PAUSE_REDUCTION).toFixed(4)), Number((end - CHIP_INTRO_PAUSE_REDUCTION).toFixed(4)), value, ease]];
+  const centreExtension = start > BASE_TRACKS.story[1] ? CHIP_CENTER_RETURN_EXTENSION : 0;
+  return [key, [Number((start - CHIP_INTRO_PAUSE_REDUCTION + centreExtension).toFixed(4)), Number((end - CHIP_INTRO_PAUSE_REDUCTION + centreExtension).toFixed(4)), value, ease]];
 }));
+TRACKS.storyCenter = [
+  TRACKS.story[1] - .525,
+  TRACKS.story[1] + CHIP_CENTER_RETURN_EXTENSION,
+  1, 'none',
+];
 // Briefly hold the fully revealed checker before handing it to document flow.
 // This extends the existing stage, without stretching any entrance tracks.
 export const CHECKER_HOLD = 1;

@@ -345,55 +345,41 @@ a {
   will-change: opacity;
 }
 
-.chip-scroll-video {
+.chip-media-wrapper {
   position: absolute;
-  z-index: 5;
+  z-index: 7;
   top: 50%;
   left: 50%;
-  display: block;
   width: calc(470px * var(--layout-scale));
   max-width: 58vw;
   aspect-ratio: 1;
-  height: auto;
-  opacity: 1;
-  background: transparent;
   transform: translate3d(-50%, calc(-50% + 72vh), 0) scale(0.88);
   transform-origin: center;
   pointer-events: none;
-  will-change: transform, opacity;
-}
-
-.chip-scroll-frame, .chip-scroll-still {
-  position: absolute;
-  z-index: 6;
-  top: 50%;
-  left: 50%;
-  display: block;
-  width: calc(470px * var(--layout-scale));
-  max-width: 58vw;
-  aspect-ratio: 1;
-  height: auto;
-  opacity: 0;
-  transform: translate3d(-50%, calc(-50% + 72vh), 0) scale(0.88);
-  transform-origin: center;
-  pointer-events: none;
-  will-change: transform, opacity;
-}
-
-.chip-scroll-still { z-index: 7; }
-/* The still is a pixel-matched snapshot. An opacity crossfade would composite
-   two alpha edges and make the chip briefly translucent at the handoff. */
-.chip-scroll-video, .chip-scroll-frame, .chip-scroll-still { transition: none; }
-
-/* Independent transform properties keep the gentle idle motion separate from
-   the scroll-driven placement shared by the video and Safari frame fallback. */
-.chip-scroll-video, .chip-scroll-frame, .chip-scroll-still {
+  isolation: isolate;
+  will-change: transform;
   animation: chip-story-float 6s ease-in-out infinite;
   animation-play-state: paused;
 }
-.chip-gradient[data-story-active="true"] .chip-scroll-video,
-.chip-gradient[data-story-active="true"] .chip-scroll-frame,
-.chip-gradient[data-story-active="true"] .chip-scroll-still { animation-play-state: running; }
+.chip-scroll-video, .chip-scroll-frame, .chip-scroll-still {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  background: transparent;
+  pointer-events: none;
+  transition: none;
+  will-change: opacity;
+  /* Sum the two weighted alpha layers inside an isolated group: ordinary
+     source-over would thin translucent contacts/edges halfway through. */
+  mix-blend-mode: plus-lighter;
+}
+.chip-scroll-video { z-index: 0; }
+.chip-scroll-frame { z-index: 1; }
+.chip-scroll-still { z-index: 2; opacity: 0; }
+.chip-gradient[data-story-active="true"] .chip-media-wrapper { animation-play-state: running; }
 @keyframes chip-story-float {
   0%, 100% { translate: 0 0; rotate: 0deg; }
   25% { translate: 0 calc(-8px * var(--layout-scale) * var(--chip-story-presence, 0)); rotate: calc(-1.5deg * var(--chip-story-presence, 0)); }
@@ -791,7 +777,7 @@ a {
     display: none;
   }
 
-  .chip-scroll-video, .chip-scroll-frame, .chip-scroll-still {
+  .chip-media-wrapper {
     /* Figma 250:1419: 280px on a 360px canvas. The centre stays at
        50% + 47px * layout scale; leave space above for the feature copy
        and below for the CTA when the viewport is short. */
@@ -1714,7 +1700,7 @@ button.checker-input-action:active {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .chip-scroll-video, .chip-scroll-frame, .chip-scroll-still { animation: none; }
+  .chip-media-wrapper { animation: none; }
   .checker-input-submit::before { transition: none; transform: none; opacity: 1; }
   .checker-input-submit .checker-search-icon > * { transition: none; stroke-dashoffset: 0; opacity: 1; }
   .checker-search-leave-active { visibility: hidden; }

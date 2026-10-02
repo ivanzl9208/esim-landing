@@ -1,10 +1,12 @@
-import { computed, onMounted, onScopeDispose, ref, watch } from 'vue';
+import { onMounted, onScopeDispose, ref, watch } from 'vue';
 import { asset } from '../utils/assets.js';
 import { getMediaPlayback } from '../utils/mediaPlayback.js';
 import { CHIP_FRAME_COUNT, createChipFrameLoader } from '../utils/chipFrameLoader.js';
 import { MEDIA_LOAD_DEADLINE } from '../utils/mediaConnection.js';
 import { useMediaConnection } from './useMediaConnection.js';
 import { useMotionPreference } from './useMotionPreference.js';
+import { chipStillBlend } from '../animation/chipStillBlend.js';
+import { createChipStillLoader } from '../utils/chipStillLoader.js';
 
 export { CHIP_FRAME_COUNT };
 
@@ -12,8 +14,8 @@ export function useChipMedia(videoRef, frameRef, stillRef) {
   const frameMode = ref(false);
   const videoReady = ref(false);
   const stillReady = ref(false);
-  const stillActive = ref(false);
-  const stillVisible = computed(() => stillReady.value && stillActive.value);
+  const stillOpacity = ref(0);
+  const stillFilter = ref('none');
   const reduced = useMotionPreference();
   const { staticMedia, markSlow } = useMediaConnection();
   let video;
@@ -31,58 +33,82 @@ export function useChipMedia(videoRef, frameRef, stillRef) {
   let loadDeadline;
   let seekDeadline;
   let loader;
-  let stillRequested = false;
-  let stillWanted = false;
   let stillUrl;
-  let stillGeneration = 0;
+  let zoomQuality = { width: 0, zoom: 0, scale: 1, dpr: 1 };
+  let revealFrame;
+  let revealEnvelope = 1;
+  let revealSharpen = 1;
+  let wasRenderable = false;
   const releaseStill = () => {
-    stillGeneration++;
     stillReady.value = false;
+    stillOpacity.value = 0;
+    cancelAnimationFrame(revealFrame);
     stillRef?.value?.removeAttribute('src');
     if (stillUrl) { URL.revokeObjectURL(stillUrl); stillUrl = undefined; }
   };
   const frameUrl = index => asset(`chip-frames/frame-${String(index + 1).padStart(3, '0')}.webp`);
   const isStatic = () => reduced.value || staticMedia.value;
-  const captureStill = async () => {
-    if (!mounted || disposed || !stillWanted || stillRequested || reduced.value || !stillRef?.value) return;
-    if (Math.abs(requestedTurns - endTurns) >= .0005) return;
-    const useVideo = videoReady.value && !frameMode.value && !staticMedia.value;
-    const source = useVideo ? video : frameRef.value;
-    if (useVideo) {
-      // Snapshot only the displayed final frame, never an outstanding seek.
-      if (video.seeking || video.readyState < 2 || Math.abs(video.currentTime - pendingTime) > .012) return;
-    } else if (!source?.complete || !source.naturalWidth || (!isStatic() && frameIndex !== CHIP_FRAME_COUNT - 1)) return;
-    stillRequested = true;
-    const generation = stillGeneration;
-    try {
-      // Preserve the decoder's exact pose, colour and detail. A separate render
-      // changed those pixels even though both layers shared the same transform.
-      const canvas = document.createElement('canvas');
-      canvas.width = useVideo ? video.videoWidth : source.naturalWidth;
-      canvas.height = useVideo ? video.videoHeight : source.naturalHeight;
-      const context = canvas.getContext('2d');
-      if (!context) throw new Error('Chip snapshot context unavailable');
-      context.drawImage(source, 0, 0);
-      const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
-      if (disposed || reduced.value || generation !== stillGeneration) return;
-      if (!blob) throw new Error('Chip snapshot encoding failed');
-      stillUrl = URL.createObjectURL(blob);
-      stillRef.value.src = stillUrl;
-      await stillRef.value.decode();
-      if (disposed || reduced.value || generation !== stillGeneration) return;
-      stillReady.value = true;
-    } catch {
-      if (!disposed && generation === stillGeneration) releaseStill();
-      // The decoded video/front frame remains visible and uses the same zoom.
+  const updateStill = () => {
+    if (!mounted || disposed) return;
+    const useVideo = videoReady.value && !frameMode.value && !isStatic();
+    const frontReady = Math.abs(requestedTurns - endTurns) < .0005 && !isStatic() &&
+      (useVideo ? !video.seeking && video.readyState >= 2 && Math.abs(video.currentTime - pendingTime) <= .012
+        : frameIndex === CHIP_FRAME_COUNT - 1 && frameRef.value.complete && frameRef.value.naturalWidth > 0);
+    const renderable = stillReady.value && frontReady;
+    if (renderable && !wasRenderable) {
+      // A fast jump can outrun preload/seek. Fade a late decode in rather than
+      // presenting the completed scroll state in one frame.
+      cancelAnimationFrame(revealFrame);
+      revealEnvelope = zoomQuality.zoom > .04 ? 0 : 1;
+      revealSharpen = revealEnvelope;
+      if (!revealEnvelope) {
+        let previousTime;
+        let elapsed = 0;
+        const step = now => {
+          if (disposed) return;
+          // Hidden tabs pause rAF. Resume the visible fade rather than counting
+          // that background time and instantly jumping to full detail.
+          if (previousTime !== undefined) elapsed += Math.min(now - previousTime, 50);
+          previousTime = now;
+          revealEnvelope = Math.min(elapsed / 300, 1);
+          revealSharpen = Math.max(0, Math.min((elapsed - 300) / 200, 1));
+          updateStill();
+          if (revealSharpen < 1) revealFrame = requestAnimationFrame(step);
+        };
+        revealFrame = requestAnimationFrame(step);
+      }
     }
+    wasRenderable = renderable;
+    const blend = chipStillBlend({ ...zoomQuality, sourceWidth: useVideo ? video.videoWidth : frameRef.value.naturalWidth || 640,
+      ready: stillReady.value, frontReady });
+    stillOpacity.value = Number((blend.fade * revealEnvelope).toFixed(4));
+    const lateBlur = (.8 + (.28 - .8) * revealEnvelope) * (1 - revealSharpen) / Math.max(zoomQuality.scale, .001);
+    const blur = Math.max(blend.blur, lateBlur);
+    stillFilter.value = blend.fade > 0 && blur > .0001 ? `blur(${blur.toFixed(4)}px)` : 'none';
   };
+  const stillLoader = createChipStillLoader({
+    load: async signal => {
+      const response = await fetch(asset('chip-zoom-still.webp'), { signal });
+      if (!response.ok) throw new Error(`Chip still HTTP ${response.status}`);
+      const blob = await response.blob();
+      if (signal.aborted || disposed) throw new DOMException('Aborted', 'AbortError');
+      const url = URL.createObjectURL(blob);
+      const release = () => URL.revokeObjectURL(url);
+      try {
+        stillRef.value.src = url;
+        await stillRef.value.decode();
+        if (signal.aborted || disposed) throw new DOMException('Aborted', 'AbortError');
+        return { url, release };
+      } catch (error) { release(); throw error; }
+    },
+    present: result => { stillUrl = result.url; stillReady.value = true; updateStill(); },
+  });
   const prepareStill = () => {
-    stillWanted = true;
-    captureStill();
+    if (mounted && !disposed && !isStatic()) stillLoader.prepare();
   };
-  const setStillActive = active => {
-    stillActive.value = active;
-    if (active) prepareStill();
+  const setZoomQuality = quality => {
+    zoomQuality = quality;
+    updateStill();
   };
   const showFront = () => {
     videoReady.value = false;
@@ -129,6 +155,7 @@ export function useChipMedia(videoRef, frameRef, stillRef) {
         if (disposed || isStatic()) return;
         frameRef.value.src = image.src;
         frameIndex = index;
+        updateStill();
       },
       failed: () => markSlow(),
     });
@@ -179,7 +206,7 @@ export function useChipMedia(videoRef, frameRef, stillRef) {
   const draw = turns => {
     displayedTurns = turns;
     if (!mounted || disposed) return;
-    if (isStatic()) { showFront(); return; }
+    if (isStatic()) { showFront(); updateStill(); return; }
     if (document.hidden) return;
     const phase = Math.abs(turns - endTurns) < .0005 ? 1 : ((turns % 1) + 1) % 1;
     const index = Math.min(Math.round(phase * (CHIP_FRAME_COUNT - 1)), CHIP_FRAME_COUNT - 1);
@@ -189,6 +216,7 @@ export function useChipMedia(videoRef, frameRef, stillRef) {
       pendingTime = index / (CHIP_FRAME_COUNT - 1) * Math.max(duration - .04, .001);
       flush();
     }
+    updateStill();
   };
   const setPlayback = (progress, turns = 1) => {
     requestedTurns = Math.max(0, Math.min(progress, turns));
@@ -208,7 +236,7 @@ export function useChipMedia(videoRef, frameRef, stillRef) {
     clearTimeout(loadDeadline); clearTimeout(seekDeadline);
     videoReady.value = true;
     flush();
-    captureStill();
+    updateStill();
   };
   const visibility = () => {
     if (!document.hidden) draw(requestedTurns);
@@ -216,14 +244,13 @@ export function useChipMedia(videoRef, frameRef, stillRef) {
   watch([reduced, staticMedia], () => {
     if (!mounted) return;
     if (isStatic()) {
-      if (!stillReady.value) releaseStill();
-      if (reduced.value) { releaseStill(); stillRequested = false; }
       loader?.dispose(); loader = undefined;
       releaseVideo(); showFront();
     } else {
       if (mediaRequested) loadMedia();
       draw(requestedTurns);
     }
+    updateStill();
   });
   onMounted(() => {
     mounted = true;
@@ -234,7 +261,7 @@ export function useChipMedia(videoRef, frameRef, stillRef) {
     video.addEventListener('loadeddata', decoded);
     video.addEventListener('seeked', decoded);
     video.addEventListener('error', fallback);
-    frameRef.value.addEventListener('load', captureStill);
+    frameRef.value.addEventListener('load', updateStill);
     document.addEventListener('visibilitychange', visibility);
     visibility();
     if (mediaRequested) loadMedia();
@@ -242,15 +269,15 @@ export function useChipMedia(videoRef, frameRef, stillRef) {
   });
   onScopeDispose(() => {
     disposed = true;
-    loader?.dispose(); releaseVideo(); releaseStill();
+    loader?.dispose(); stillLoader.dispose(); releaseVideo(); releaseStill();
     if (video) {
       video.removeEventListener('loadedmetadata', metadata);
       video.removeEventListener('loadeddata', decoded);
       video.removeEventListener('seeked', decoded);
       video.removeEventListener('error', fallback);
     }
-    frameRef.value?.removeEventListener('load', captureStill);
+    frameRef.value?.removeEventListener('load', updateStill);
     if (typeof document !== 'undefined') document.removeEventListener('visibilitychange', visibility);
   });
-  return { frameMode, videoReady, reduced, staticMedia, stillVisible, prepare, setPlayback, prepareStill, setStillActive };
+  return { frameMode, videoReady, reduced, staticMedia, stillOpacity, stillFilter, prepare, setPlayback, prepareStill, setZoomQuality };
 }

@@ -7,9 +7,14 @@ export const STORY_EXIT_START = 5 / 6;
 
 // Change columns only while the adjacent theses are fading out / coming in.
 // The object returns to the centre before the existing safety scene begins.
-export function storyComposition(progress, count, reduced = false) {
+export function storyComposition(progress, count, reduced = false, centreReturn) {
   const time = clamp(progress) * count;
-  if (time === 0 || time === count) return { side: 0, presence: 0 };
+  const lastSide = (count - 1) % 2 ? 1 : -1;
+  if (time === 0) return { side: 0, presence: 0 };
+  if (time === count) return {
+    side: centreReturn === undefined || reduced ? 0 : lastSide * (1 - smoothstep(0, 1, centreReturn)),
+    presence: 0,
+  };
   const presence = Math.min(smoothstep(0, STORY_ENTER_END, time), 1 - smoothstep(count - (1 - STORY_EXIT_START), count, time));
   let side = Math.floor(time) % 2 ? 1 : -1;
   for (let boundary = 1; boundary < count; boundary += 1) {
@@ -23,5 +28,10 @@ export function storyComposition(progress, count, reduced = false) {
     const index = time % 1 < .85 ? Math.floor(time) : Math.ceil(time);
     return { side: index % 2 ? 1 : -1, presence: 0 };
   }
-  return { side: side * presence, presence };
+  // The final return gets its own scroll distance; earlier column changes
+  // and text/background fades keep their existing timing.
+  if (centreReturn !== undefined && time >= count - (1 - STORY_EXIT_START)) {
+    side = lastSide * (1 - smoothstep(0, 1, centreReturn));
+  } else side *= presence;
+  return { side, presence };
 }
