@@ -63,7 +63,7 @@ test('Chip continues turning until the definition leaves, including reverse scro
   const media = fixture();
   const state = { ...Object.fromEntries(Object.keys(TRACKS).map(key => [key, 0])), reveal: 1, buttonReveal: 1 };
   const timeline = gsap.timeline({ paused: true });
-  for (const key of ['playback', 'definitionTurn', 'definition']) {
+  for (const key of ['playback', 'definition']) {
     const [start, end, value] = TRACKS[key];
     timeline.fromTo(state, { [key]: 0 }, { [key]: value, duration: end - start, ease: 'none', immediateRender: false }, start);
   }
@@ -74,21 +74,50 @@ test('Chip continues turning until the definition leaves, including reverse scro
   };
   try {
     const playbackMiddle = (TRACKS.playback[0] + TRACKS.playback[1]) / 2;
-    assert.equal(sample(playbackMiddle).progress, 1.5);
-    assert.equal(sample(TRACKS.playback[1]).progress, 3);
-    const definitionMiddle = (TRACKS.definitionTurn[0] + TRACKS.definitionTurn[1]) / 2;
+    assert.equal(sample(playbackMiddle).progress, 2);
+    assert.equal(sample(TRACKS.playback[1]).progress, 4);
+    const definitionMiddle = (TRACKS.definition[0] + TRACKS.definition[1]) / 2;
     const middle = sample(definitionMiddle);
-    assert.equal(middle.progress, 3.5);
+    assert.ok(middle.progress > 3 && middle.progress < 4);
     assert.ok(middle.definition < 1);
     const end = sample(TRACKS.definition[1]);
     assert.equal(end.progress, 4);
     assert.equal(end.turns, 4);
     assert.equal(end.definition, 1);
     assert.deepEqual(sample(definitionMiddle), middle);
-    assert.equal(sample(TRACKS.playback[1]).progress, 3);
-    assert.equal(sample(playbackMiddle).progress, 1.5);
+    assert.equal(sample(TRACKS.playback[1]).progress, 4);
+    assert.equal(sample(playbackMiddle).progress, 2);
   } finally {
     timeline.kill();
+  }
+});
+
+test('Equal scroll distances rotate the chip equally across features, reading holds and the former definition boundary', () => {
+  for (const mobile of [false, true]) {
+    const media = fixture();
+    const state = { ...Object.fromEntries(Object.keys(TRACKS).map(key => [key, 0])), reveal: 1, chip: 1, buttonReveal: 1 };
+    const timeline = gsap.timeline({ paused: true });
+    const [start, end, turns, ease] = TRACKS.playback;
+    timeline.fromTo(state, { playback: 0 }, { playback: turns, duration: end - start, ease, immediateRender: false }, start);
+    const sample = time => {
+      timeline.seek(time);
+      media.render(state, { mobile, width: mobile ? 375 : 1762, height: 900, scale: 1 }, false);
+      return media.playback.progress;
+    };
+    try {
+      const times = Array.from({ length: 1001 }, (_, index) => start + (end - start) * index / 1000);
+      const values = times.map(sample);
+      for (let index = 1; index < values.length; index++) {
+        assert.ok(Math.abs(values[index] - values[index - 1] - turns / 1000) < 2e-6);
+      }
+      // This was where the independent last turn accelerated by 2.36x.
+      const previousBoundary = 28.55;
+      assert.ok(Math.abs((sample(previousBoundary + .05) - sample(previousBoundary)) -
+        (sample(previousBoundary) - sample(previousBoundary - .05))) < 2e-6);
+      assert.deepEqual([...times].reverse().map(sample), [...values].reverse());
+      assert.equal(sample(end + 1), 4);
+      assert.equal(media.playback.turns, 4, 'The high-res still still matches the complete final turn');
+    } finally { timeline.kill(); }
   }
 });
 

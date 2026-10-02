@@ -20,10 +20,9 @@ const BASE_TRACKS = {
   chip: [4.3868, 6.0956, 1, 'smooth'],
   marquee: [6.95, 12.45, 1, 'none'],
   features: [12.45, 20.45 + FEATURE_READING_EXTENSION, 1, 'none'],
-  playback: [6.95, 22.95 + FEATURE_READING_EXTENSION, 3, 'none'],
-  // The extra reading distance gets another turn; keep turning until the
-  // definition marquee has fully left, finishing at a front-facing frame.
-  definitionTurn: [22.95 + FEATURE_READING_EXTENSION, 26.05 + FEATURE_READING_EXTENSION, 1, 'none'],
+  // One linear track gives equal rotation for equal scroll distances through
+  // the features and definition. Four complete turns retain the final pose.
+  playback: [6.95, 26.05 + FEATURE_READING_EXTENSION, 4, 'none'],
   definition: [20.55 + FEATURE_READING_EXTENSION, 26.05 + FEATURE_READING_EXTENSION, 1, 'none'],
   definitionVisibility: [20.55 + FEATURE_READING_EXTENSION, 20.73 + FEATURE_READING_EXTENSION, 1, 'smooth'],
   background: [20.3 + FEATURE_READING_EXTENSION, 22.4 + FEATURE_READING_EXTENSION, 1, 'smooth'],

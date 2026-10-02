@@ -181,7 +181,7 @@ export function createChipStoryRenderer(scene, media) {
 
   return (state, layout, reduceMotion) => {
     geometry = layout; reduced = reduceMotion;
-    const { reveal: currentReveal, chip: currentChip, marquee: currentMarquee, features: currentVideo, playback: currentPlayback, definitionTurn: currentDefinitionTurn = 0, definition: currentDefinition, definitionVisibility: currentDefinitionVisibility, background: currentBackground, story: currentStory, safety: currentSafety, returnGradient: currentReturnGradient, outro: currentOutro } = state;
+    const { reveal: currentReveal, chip: currentChip, marquee: currentMarquee, features: currentVideo, playback: currentPlayback, definition: currentDefinition, definitionVisibility: currentDefinitionVisibility, background: currentBackground, story: currentStory, safety: currentSafety, returnGradient: currentReturnGradient, outro: currentOutro } = state;
     const layoutKey = `${geometry.width}:${geometry.height}:${geometry.scale}:${reduced}`;
     const prelude = currentReveal === 0 && currentOutro === 0;
     if (!measurements || measuredLayout !== layoutKey) {
@@ -203,7 +203,7 @@ export function createChipStoryRenderer(scene, media) {
     // every frame of the opening scroll. Re-entering the prelude resets it.
     if (prelude && preludeLayout === layoutKey) return;
     preludeLayout = prelude ? layoutKey : undefined;
-    const playbackEndTurns = TRACKS.playback[2] + TRACKS.definitionTurn[2];
+    const playbackEndTurns = TRACKS.playback[2];
       const isMobile = geometry.mobile;
       const layoutScale = geometry.scale;
       const shutterInset = (1 - currentReveal) * 50;
@@ -342,7 +342,7 @@ export function createChipStoryRenderer(scene, media) {
           `rgba(11, 12, 13, ${opacity.toFixed(4)})`;
       });
 
-      media.setPlayback(currentPlayback + currentDefinitionTurn, playbackEndTurns);
+      media.setPlayback(currentPlayback, playbackEndTurns);
       if (currentDefinition >= .9 || currentStory > 0) media.prepareStill?.();
       media.setZoomQuality?.({ width: measurements.chipWidth * displayedScale,
         scale: displayedScale, dpr: geometry.dpr ?? 1, zoom: zoomProgress, safety: safetyTextProgress });

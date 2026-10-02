@@ -18,6 +18,8 @@ test('Checker holds for one viewport after its entrance without stretching earli
   assert.ok(Math.abs(TRACKS.playback[0] - TRACKS.reveal[1] - .401) < 1e-10);
   assert.deepEqual(TRACKS.features, [12.05, 26.05, 1, 'none']);
   assert.deepEqual(TRACKS.definition, [26.15, 31.65, 1, 'none']);
+  assert.deepEqual(TRACKS.playback, [6.55, 31.65, 4, 'none']);
+  assert.equal('definitionTurn' in TRACKS, false);
   assert.equal(CHECKER_HOLD, 1);
   assert.ok(Math.abs(TRACKS.story[0] - 31.83) < 1e-10);
   assert.deepEqual(TRACKS.story.slice(1), [44.43, 1, 'none']);
