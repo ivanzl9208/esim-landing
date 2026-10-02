@@ -115,14 +115,14 @@ export function createRouletteRenderer(scene) {
               top: -105 * layoutScale,
               fontSize: 64 * layoutScale,
               lineHeight: 64 * layoutScale,
-              opacity: 0.08,
+              opacity: 1,
             },
             {
               at: 10,
               top: -120 * layoutScale,
               fontSize: 64 * layoutScale,
               lineHeight: 64 * layoutScale,
-              opacity: 0,
+              opacity: 1,
             },
           ]
         : [

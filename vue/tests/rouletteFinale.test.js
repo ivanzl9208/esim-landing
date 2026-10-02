@@ -28,19 +28,17 @@ test('Phone finale becomes fully legible near the viewport centre in either scro
     const centre = parseFloat(centred.top) + 3 * 56 * scale / 2;
     assert.ok(Math.abs(centre - height / 2) < 10 * scale);
     assert.equal(Number(centred.opacity), 1);
-    for (const progress of [6.8, 7, 8, 9, 8, 7, 6.8]) {
+    for (const progress of [6.8, 7, 8, 9, 9.5, 9.8, 9.9, 10, 9.9, 9.5, 9, 8, 7, 6.8]) {
       assert.equal(Number(render(progress).opacity), 1);
     }
     assert.deepEqual(render(6), entrance);
-    assert.ok(Number(render(9.9).opacity) < .1);
-    assert.equal(Number(render(10).opacity), 0);
     assert.equal(Number(render(7, true).opacity), 1);
   }
 });
 
 test('Desktop finale keeps its existing opacity and position', () => {
   const render = fixture({ mobile: false, width: 1440, height: 720, scale: 1 });
-  for (const [progress, top, opacity] of [[6, 592, .2], [7, 312, .35], [8, 196, .5], [9, 90, 1]]) {
+  for (const [progress, top, opacity] of [[6, 592, .2], [7, 312, .35], [8, 196, .5], [9, 90, 1], [9.8, -410, .08], [10, -470, 0]]) {
     const frame = render(progress);
     assert.equal(parseFloat(frame.top), top);
     assert.equal(Number(frame.opacity), opacity);
