@@ -23,7 +23,9 @@ test('The chip grows through the desktop and mobile storyboard without a boundar
     const frames = Array.from({ length: 100 }, (_, index) => chipZoomFrame(index / 99, 0, mobile));
     for (let index = 1; index < frames.length; index++) {
       assert.ok(frames[index].scale > frames[index - 1].scale);
-      assert.ok(frames[index].y < frames[index - 1].y);
+      assert.ok(frames[index].y <= frames[index - 1].y);
+      if (index / 99 <= .2) assert.equal(frames[index].y, mobile ? 47 : 0);
+      else assert.ok(frames[index].y < frames[index - 1].y);
     }
     const reverse = Array.from({ length: 100 }, (_, index) => chipZoomFrame((99 - index) / 99, 0, mobile));
     assert.deepEqual(reverse.reverse(), frames);
@@ -56,12 +58,15 @@ test('Safety copy enters from below the viewport, stays below the chip, and all 
     renderer(state, layout, false);
     assert.equal(node('.safety-copy').style.visibility, 'hidden');
     assert.ok(Math.abs(copyTop() - height) < .01);
-    state.chipZoom = .0002;
+    state.chipZoom = .2;
+    renderer(state, layout, false);
+    assert.equal(node('.safety-copy').style.visibility, 'hidden');
+    state.chipZoom = .2002;
     renderer(state, layout, false);
     assert.equal(node('.safety-copy').style.visibility, 'visible');
     assert.ok(Math.abs(copyTop() - height) < .01, 'First visible frame starts at the lower edge');
     let previousTop = copyTop();
-    for (let progress = .005; progress <= 1; progress += .005) {
+    for (let progress = .205; progress <= 1; progress += .005) {
       state.chipZoom = progress;
       renderer(state, layout, false);
       assert.ok(copyTop() <= previousTop + .01, 'Entrance must move upwards continuously');

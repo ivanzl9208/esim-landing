@@ -17,10 +17,12 @@ function fixture() {
   };
   let playback;
   const benefits = Array.from({ length: 4 }, (_, index) => node(`benefit-${index}`));
-  const render = createChipStoryRenderer({ dataset: {}, querySelector: node, querySelectorAll: selector => selector === '.story-benefit' ? benefits : [] }, {
+  const characters = [...'А ещё eSIM безопасна — её нельзя потерять или вытащить'].map(textContent => ({ textContent, style: {} }));
+  const render = createChipStoryRenderer({ dataset: {}, querySelector: node, querySelectorAll: selector =>
+    selector === '.story-benefit' ? benefits : selector === '.safety-character' ? characters : [] }, {
     setPlayback(progress, turns) { playback = { progress, turns }; },
   });
-  return { node, benefits, render, get playback() { return playback; } };
+  return { node, benefits, characters, render, get playback() { return playback; } };
 }
 
 test('Chip continues turning until the definition leaves, including reverse scroll', () => {
@@ -56,6 +58,24 @@ test('Chip continues turning until the definition leaves, including reverse scro
   }
 });
 
+test('Safety characters begin filling during their entrance, then finish before the composition exits', () => {
+  const media = fixture();
+  const state = { ...Object.fromEntries(Object.keys(TRACKS).map(key => [key, 0])), reveal: 1, chip: 1, story: 1, buttonReveal: 1 };
+  const filled = (zoom, safety = 0) => {
+    media.render({ ...state, chipZoom: zoom, safety }, { mobile: false, width: 1440, height: 720, scale: 1 }, false);
+    return media.characters.map(character => character.style.color);
+  };
+  const before = filled(.2);
+  assert.ok(before.every(color => color.endsWith('0.1000)')));
+  const entering = filled(.6);
+  assert.ok(entering[0].endsWith('0.8600)'));
+  assert.ok(entering.at(-1).endsWith('0.1000)'));
+  assert.ok(filled(1).filter(color => color.endsWith('0.8600)')).length > entering.filter(color => color.endsWith('0.8600)')).length);
+  assert.ok(filled(1, .42).every(color => color.endsWith('0.8600)')));
+  assert.deepEqual(filled(.6), entering);
+  assert.deepEqual(filled(.2), before);
+});
+
 test('Chip lifts and grows while safety copy enters on the first zoom, in both directions', () => {
   for (const mobile of [false, true]) {
     const media = fixture();
@@ -82,13 +102,16 @@ test('Chip lifts and grows while safety copy enters on the first zoom, in both d
       const samples = holdSamples.map(sample);
       for (const [index, frame] of samples.entries()) {
         assert.match(frame.chip, /calc\(-50% \+ 0.00px\)/);
-        assert.equal(frame.safety, holdSamples[index] > TRACKS.chipZoom[0] ? 'visible' : 'hidden');
+        assert.equal(frame.safety, holdSamples[index] > TRACKS.chipZoom[0] + .4 ? 'visible' : 'hidden');
         assert.deepEqual(frame.theses, Array(4).fill('0.0000'));
       }
       const scales = samples.map(frame => Number(frame.chip.match(/scale\(([\d.]+)\)/u)[1]));
       for (let index = 1; index < scales.length; index++) assert.ok(scales[index] > scales[index - 1]);
       const offsets = samples.map(frame => Number(frame.copy.match(/, ([\d.-]+)px/u)[1]));
-      for (let index = 1; index < offsets.length; index++) assert.ok(offsets[index] < offsets[index - 1]);
+      for (let index = 1; index < offsets.length; index++) {
+        assert.ok(offsets[index] <= offsets[index - 1]);
+        if (samples[index].safety === 'visible') assert.ok(offsets[index] < offsets[index - 1]);
+      }
       assert.equal(sample(holdEnd + 0.22).safety, 'visible');
       assert.deepEqual([...holdSamples].reverse().map(sample), [...samples].reverse());
     } finally {

@@ -1,4 +1,5 @@
 import { clamp, mix } from './math.js';
+import { safetyEntryProgress } from './storySequence.js';
 
 // Figma 238:1473: the same square image grows and travels upwards.
 // Coordinates are offsets from the viewport centre at layout scale 1.
@@ -14,6 +15,6 @@ export function chipZoomFrame(zoom, safety, mobile) {
   }
   return {
     scale: mix(from[0], to[0], progress) / frames[0][0],
-    y: mix(from[1], to[1], progress),
+    y: mix(from[1], to[1], safety > 0 ? progress : safetyEntryProgress(zoom)),
   };
 }

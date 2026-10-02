@@ -4,6 +4,7 @@ import { storyComposition, STORY_ENTER_END, STORY_EXIT_START } from './storyComp
 import { featureReadingProgress, featureWindow } from './featureReading.js';
 import { TRACKS } from './timing.js';
 import { chipZoomFrame } from './chipZoom.js';
+import { safetyEntryProgress } from './storySequence.js';
 
 export function createChipStoryRenderer(scene, media) {
   const select = selector => scene.querySelector(selector);
@@ -219,6 +220,7 @@ export function createChipStoryRenderer(scene, media) {
       gradient.style.setProperty('--chip-story-presence', composition.presence.toFixed(4));
       gradient.dataset.storyActive = String(composition.presence > 0 && !reduced);
       const safetyTextProgress = clamp(currentSafety);
+      const safetyEntranceProgress = safetyEntryProgress(zoomProgress);
       const safetyGap = (isMobile ? 60 : 101) * layoutScale;
       const safetyExitMargin = (isMobile ? 24 : 40) * layoutScale;
       const chipRenderedHeight = measurements.chipHeight * displayedScale;
@@ -235,7 +237,7 @@ export function createChipStoryRenderer(scene, media) {
       // Its gap continues following the chip during the later safety track.
       const safetyEntranceOffset = reduced ? 0 :
         Math.max(0, geometry.height - measurements.safetyTop - safetyStartOffset) *
-        (1 - smoothstep(0, 1, zoomProgress));
+        (1 - smoothstep(0, 1, safetyEntranceProgress));
       const safetyTravel =
         measurements.safetyTop +
         safetyStartOffset +
@@ -316,9 +318,11 @@ export function createChipStoryRenderer(scene, media) {
         element.style.opacity = storyTimeline > index && storyTimeline < index + 1 ? '1.0000' : '0.0000';
       });
 
-      const safetyReveal = reduced ? clamp(safetyTextProgress / .9) : clamp((safetyTextProgress - .42) / .48);
+      const safetyReveal = reduced ? clamp(safetyTextProgress / .9)
+        : safetyTextProgress > 0 ? mix(.22, 1.025, clamp(safetyTextProgress / .42))
+        : .22 * safetyEntranceProgress;
       safetyCopy.style.visibility =
-        (zoomProgress > 0.0001 || safetyTextProgress > 0.0001) && safetyTextProgress < 0.9999
+        (safetyEntranceProgress > 0.0001 || safetyTextProgress > 0.0001) && safetyTextProgress < 0.9999
           ? "visible"
           : "hidden";
       safetyCopy.style.transform =
@@ -326,7 +330,7 @@ export function createChipStoryRenderer(scene, media) {
       const safetyCharacterCount = Math.max(safetyCharacters.length - 1, 1);
       safetyCharacters.forEach((character, index) => {
         const threshold = index / safetyCharacterCount;
-        const active = !reduced && safetyTextProgress < .42 ? 0 : smoothstep(
+        const active = !reduced && safetyEntranceProgress === 0 && safetyTextProgress === 0 ? 0 : smoothstep(
           threshold - 0.025,
           threshold + 0.025,
           safetyReveal,
