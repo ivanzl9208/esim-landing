@@ -16,13 +16,13 @@ Dev: http://127.0.0.1:5174. Production: `npm run build`, затем `npm run pre
 
 ## Публикация и хостинг
 
-С 05.10.2026 `esim-landing-vue.ivanzlobin.com` обслуживается финским VPS `31.76.74.213`; Cloudflare A-запись работает в режиме DNS only. Портфолио `ivanzlobin.com` остаётся на отдельном сервере `135.106.228.161`. Независимое зеркало — https://ivanzl9208.github.io/esim-landing/.
+С 05.10.2026 основной адрес — https://esim-landing.ivanzlobin.com/, обслуживается финским VPS `31.76.74.213`; Cloudflare A-запись работает в режиме DNS only. Прежний `esim-landing-vue.ivanzlobin.com` остаётся на том же сервере и перенаправляет на новый адрес с сохранением пути и query. Портфолио `ivanzlobin.com` остаётся на отдельном сервере `135.106.228.161`. Независимое зеркало — https://ivanzl9208.github.io/esim-landing/.
 
 Перед публикацией выполнить `npm test` и `npm run build` в `vue/`, затем из корня репозитория `bash scripts/deploy-host.sh`. Скрипт загружает сборку в `/var/www/esim-landing-vue/releases/` и атомарно переключает `current`, сохраняя предыдущую сборку. Для GitHub Pages отправить относящиеся к проекту изменения в `origin/main` и дождаться успешного workflow `Deploy to GitHub Pages`.
 
-На финском VPS существующий nginx stream принимает TCP 443 и направляет SNI `esim-landing-vue.ivanzlobin.com` в HTTPS virtual host `127.0.0.1:9447` с PROXY protocol. Конфигурация сайта — `/etc/nginx/conf.d/esim-landing-vue.conf`, маршрут — `/etc/nginx/stream-enabled/stream.conf`. Остальные маршруты и VPN-службы сохраняются. Let's Encrypt продлевается через HTTP webroot; отдельный deploy hook перезагружает nginx только после продления сертификата eSIM.
+На финском VPS существующий nginx stream принимает TCP 443 и направляет SNI обоих поддоменов eSIM в HTTPS virtual hosts `127.0.0.1:9447` с PROXY protocol. Конфигурация сайта — `/etc/nginx/conf.d/esim-landing-vue.conf`, маршрут — `/etc/nginx/stream-enabled/stream.conf`. Остальные маршруты и VPN-службы сохраняются. Отдельные сертификаты Let's Encrypt для нового и прежнего имени продлеваются через HTTP webroot. Hook из `deploy/reload-esim-nginx` установлен в `/etc/letsencrypt/renewal-hooks/deploy/reload-esim-nginx` и перезагружает nginx только после продления одного из двух сертификатов eSIM.
 
-Прежний VPS `212.118.56.141` и его релиз сохранены для отката: при необходимости вернуть только A-запись поддомена на прежний IP. Резервная копия исходного nginx нового VPS — `/root/esim-migration-20261005/nginx-before.tar.gz`. После публикации проверить полную загрузку JS/CSS, шрифтов, изображений и видео с внешнего подключения, соответствие сборке и HTTP Range 206. Пароли и закрытые ключи в репозитории не хранить.
+Прежний VPS `212.118.56.141` и его релиз сохранены для отката. Он настроен на прежнее имя: перед возвратом нового адреса на этот IP нужно подготовить соответствующий virtual host и сертификат. Резервная копия исходного nginx финского VPS — `/root/esim-migration-20261005/nginx-before.tar.gz`, конфигурации до смены имени — `/root/esim-domain-20261005/`. После публикации проверить полную загрузку JS/CSS, шрифтов, изображений и видео с внешнего подключения, соответствие сборке и HTTP Range 206. Пароли и закрытые ключи в репозитории не хранить.
 
 ## Зависимости
 
@@ -205,7 +205,7 @@ React wheel-handler, spring scroll и собственные RAF-циклы не
 
 По запросу «Опубликуй» обновляются оба адреса одной Vue-версией:
 
-- Основной сайт: https://esim-landing-vue.ivanzlobin.com/
+- Основной сайт: https://esim-landing.ivanzlobin.com/ (прежний адрес перенаправляет сюда).
 - GitHub Pages: https://ivanzl9208.github.io/esim-landing/
 
 В `vue/` выполнить `npm test` и `npm run build`. Из корня репозитория запустить `bash scripts/deploy-host.sh`: он загружает только `vue/dist`, создаёт новый выпуск в `/var/www/esim-landing-vue/releases` и атомарно переключает `current`. Старые выпуски сохранены для отката; старые хешированные бандлы остаются доступны уже открытым страницам. SSH использует существующий доступ к `root@31.76.74.213`; пароли и ключи в репозитории не хранятся.
