@@ -6,20 +6,49 @@ import { TRACKS } from '../src/animation/timing.js';
 
 const fixture = geometry => {
   const nodes = new Map();
+  const lines = Array.from({ length: 6 }, () => ({ style: {} }));
   const node = selector => {
     if (!nodes.has(selector)) nodes.set(selector, {
       style: { setProperty(key, value) { this[key] = value; } },
       querySelector: node,
-      querySelectorAll: () => [],
+      querySelectorAll: selector => selector === '.roulette-line' ? lines : [],
     });
     return nodes.get(selector);
   };
   const render = createRouletteRenderer({ querySelector: node });
-  return (progress, reduced = false) => {
+  const sample = (progress, reduced = false) => {
     render({ curtain: 1, roulette: progress, rouletteReveal: 1 }, geometry, reduced);
     return { ...node('.roulette-finale').style };
   };
+  sample.lines = lines;
+  return sample;
 };
+
+test('Mobile reading pause shows only the finale, with a continuous reversible handoff from the preceding text', () => {
+  for (const [width, height, scale] of [[320, 568, .88], [390, 844, 390 / 360], [430, 932, 430 / 360], [430, 760, 430 / 360]]) {
+    const render = fixture({ mobile: true, width, height, scale });
+    render(6);
+    assert.equal(Number(render.lines.at(-1).style.opacity), 1, 'Keep the previous phrase legible before the handoff');
+    const samples = Array.from({ length: 81 }, (_, index) => {
+      const progress = 6 + .8 * index / 80;
+      render(progress);
+      return render.lines.map(line => ({ ...line.style }));
+    });
+    assert.ok(samples.slice(1).every((frame, index) => Number(frame.at(-1).opacity) <= Number(samples[index].at(-1).opacity)));
+    for (let index = 80; index >= 0; index--) {
+      render(6 + .8 * index / 80);
+      assert.deepEqual(render.lines.map(line => ({ ...line.style })), samples[index]);
+    }
+    const [entrance] = rouletteSegments(true);
+    for (const fraction of [0, .5, 1, .5, 0]) {
+      const frame = render(progressAt(entrance.end + fraction * ROULETTE_READING_HOLD, true));
+      assert.equal(Number(frame.opacity), 1);
+      assert.ok(render.lines.every(line => Number(line.style.opacity) === 0), 'Previous phrases must not linger above the centred finale');
+    }
+    render(6.8);
+    assert.ok(render.lines.every(line => Number(line.style.opacity) === 0), 'Clear previous phrases as soon as the finale is fully legible');
+  }
+});
 
 test('Phone finale becomes fully legible near the viewport centre in either scroll direction', () => {
   for (const [width, height, scale] of [[320, 568, .88], [375, 667, 1.04], [440, 900, 1.22]]) {

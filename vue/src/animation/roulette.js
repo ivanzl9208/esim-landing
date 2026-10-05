@@ -28,6 +28,9 @@ export function createRouletteRenderer(scene) {
         ? viewportHeight / 2 - 89 * layoutScale
         : viewportHeight / 2 - 48 * layoutScale;
       const linePosition = currentTimeline - 1;
+      // The phone pauses while the preceding line is still inside tall viewports.
+      // Finish its fade as the finale becomes legible, using the same reversible phase.
+      const precedingOpacity = isMobile ? 1 - smoothstep(6, 6.8, currentTimeline) : 1;
 
       // This value belongs to the moving leaf, not the whole story subtree.
       curtain.style.setProperty("--curtain-y", `${offset}%`);
@@ -70,7 +73,7 @@ export function createRouletteRenderer(scene) {
         }
 
         const scale = 1 - Math.min(centerDistance, 1.5) * 0.018;
-        line.style.opacity = opacity.toFixed(4);
+        line.style.opacity = (opacity * precedingOpacity).toFixed(4);
         line.style.transform = `translate3d(-50%, ${y}px, 0) scale(${scale.toFixed(4)})`;
       });
 
