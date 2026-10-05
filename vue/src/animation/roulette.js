@@ -28,7 +28,7 @@ export function createRouletteRenderer(scene) {
         ? viewportHeight / 2 - 89 * layoutScale
         : viewportHeight / 2 - 48 * layoutScale;
       const linePosition = currentTimeline - 1;
-      // The phone pauses while the preceding line is still inside tall viewports.
+      // The preceding line remains inside tall phone viewports at the finale.
       // Finish its fade as the finale becomes legible, using the same reversible phase.
       const precedingOpacity = isMobile ? 1 - smoothstep(6, 6.8, currentTimeline) : 1;
 

@@ -24,7 +24,7 @@ const fixture = geometry => {
   return sample;
 };
 
-test('Mobile reading pause shows only the finale, with a continuous reversible handoff from the preceding text', () => {
+test('Mobile finale shows only the main phrase, with a continuous reversible handoff from the preceding text', () => {
   for (const [width, height, scale] of [[320, 568, .88], [390, 844, 390 / 360], [430, 932, 430 / 360], [430, 760, 430 / 360]]) {
     const render = fixture({ mobile: true, width, height, scale });
     render(6);
@@ -132,24 +132,31 @@ test('Reduced motion hides the finale before the next curtain opens on desktop a
   }
 });
 
-test('Fully legible finale retains its reading hold and entrance speed before a longer eased exit', () => {
+test('Only desktop retains the reading hold; mobile moves through the centre without shifting later scenes', () => {
   for (const mobile of [false, true]) {
     const render = fixture({ mobile, width: mobile ? 375 : 1625, height: mobile ? 667 : 984, scale: mobile ? 1.04 : 1625 / 1440 });
     const [entrance, exit] = rouletteSegments(mobile);
-    assert.ok(Math.abs(exit.start - entrance.end - ROULETTE_READING_HOLD) < 1e-10);
+    const hold = mobile ? 0 : ROULETTE_READING_HOLD;
+    assert.ok(Math.abs(exit.start - entrance.end - hold) < 1e-10);
     assert.ok(Math.abs(entrance.to / (entrance.end - entrance.start) - 10 / 3.07) < 1e-10);
-    assert.ok(Math.abs(exit.end - exit.start - (10 - entrance.to) * 3.07 / 10 - ROULETTE_EXIT_EXTENSION) < 1e-10);
+    assert.ok(Math.abs(exit.end - exit.start - (10 - entrance.to) * 3.07 / 10 - ROULETTE_EXIT_EXTENSION - (mobile ? ROULETTE_READING_HOLD : 0)) < 1e-10);
     const held = render(entrance.to);
     assert.equal(Number(held.opacity), 1);
     for (const fraction of [0, .25, .5, .75, 1, .75, .5, .25, 0]) {
-      assert.deepEqual(render(progressAt(entrance.end + fraction * ROULETTE_READING_HOLD, mobile)), held);
+      assert.deepEqual(render(progressAt(entrance.end + fraction * hold, mobile)), held);
     }
     assert.ok(parseFloat(render(progressAt(exit.start + .05, mobile)).top) < parseFloat(held.top));
+    if (mobile) {
+      const scrolls = Array.from({ length: 51 }, (_, i) => entrance.end + ROULETTE_READING_HOLD * i / 50);
+      const frames = scrolls.map(scroll => render(progressAt(scroll, true)));
+      assert.ok(frames.slice(1).every((frame, i) => parseFloat(frame.top) < parseFloat(frames[i].top)), 'Every mobile scroll increment must move the phrase up through the former hold');
+      for (let i = frames.length - 1; i >= 0; i--) assert.deepEqual(render(progressAt(scrolls[i], true)), frames[i]);
+    }
   }
 });
 
 
-test('Finale eases out of the reading pause, leaves upwards continuously, and clears before the curtain', () => {
+test('Finale leaves upwards continuously and clears before the curtain, with easing only on desktop', () => {
   for (const geometry of [
     { mobile: false, width: 1762, height: 1194, scale: 1762 / 1440 },
     { mobile: true, width: 375, height: 667, scale: 375 / 360 },
@@ -160,8 +167,9 @@ test('Finale eases out of the reading pause, leaves upwards continuously, and cl
     const tops = frames.map(frame => parseFloat(frame.top));
     const steps = tops.slice(1).map((top, i) => tops[i] - top);
     assert.ok(steps.every(step => step >= -.001));
-    assert.ok(steps[0] < steps[40] / 10, 'Exit starts gently from the stationary reading frame');
-    assert.ok(steps.at(-1) < Math.max(...steps) / 4, 'Exit slows as the final line clears the viewport');
+    if (!geometry.mobile) assert.ok(steps[0] < steps[40] / 10, 'Desktop exit starts gently from the stationary reading frame');
+    else assert.ok(steps[0] > 0, 'Mobile exit must immediately move upwards');
+    if (!geometry.mobile) assert.ok(steps.at(-1) < Math.max(...steps) / 4, 'Desktop exit slows as the final line clears the viewport');
     assert.ok(Math.max(...steps) < 25 * geometry.scale, 'Small scroll increments must not jump to an offscreen frame');
     assert.ok(tops.at(-1) + (geometry.mobile ? 208 : 596) * geometry.scale <= .001);
     for (const frame of frames) assert.equal(frame.opacity, '1.0000');

@@ -1,7 +1,7 @@
 import { clamp, mix, smoothstep } from './math.js';
 
-// Keep the entrance speed, then hold the legible finale and ease its exit.
-// Desktop reaches its final size at 9; phone is centred at 7.
+// Desktop holds the legible finale and eases its exit. Mobile keeps moving
+// through the centre; its former hold extends the exit without shifting later scenes.
 export const ROULETTE_READING_HOLD = .75;
 export const ROULETTE_EXIT_EXTENSION = .9;
 export const ROULETTE_MOTION_DURATION = 3.07;
@@ -14,7 +14,7 @@ export function rouletteSegments(mobile) {
   const holdStart = ROULETTE_TRACK[0] + ROULETTE_MOTION_DURATION * anchor / 10;
   return [
     { start: ROULETTE_TRACK[0], end: holdStart, from: 0, to: anchor, ease: 'none' },
-    { start: holdStart + ROULETTE_READING_HOLD, end: ROULETTE_TRACK[1], from: anchor, to: 10, ease: 'smooth' },
+    { start: holdStart + (mobile ? 0 : ROULETTE_READING_HOLD), end: ROULETTE_TRACK[1], from: anchor, to: 10, ease: mobile ? 'none' : 'smooth' },
   ];
 }
 
@@ -25,7 +25,8 @@ export function rouletteProgressAt(scroll, mobile) {
   if (scroll <= entrance.end) return mix(entrance.from, entrance.to,
     clamp((scroll - entrance.start) / (entrance.end - entrance.start)));
   if (scroll < exit.start) return entrance.to;
-  return mix(exit.from, exit.to, smoothstep(exit.start, exit.end, scroll));
+  const progress = clamp((scroll - exit.start) / (exit.end - exit.start));
+  return mix(exit.from, exit.to, exit.ease === 'smooth' ? smoothstep(0, 1, progress) : progress);
 }
 
 // Translation follows scroll linearly; only opacity uses smoothstep.
