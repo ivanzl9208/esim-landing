@@ -3,7 +3,7 @@ set -euo pipefail
 
 project_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 build_dir="$project_root/vue/dist"
-deploy_target="${ESIM_SSH_TARGET:-root@212.118.56.141}"
+deploy_target="${ESIM_SSH_TARGET:-root@31.76.74.213}"
 deploy_base="/var/www/esim-landing-vue"
 release_name="$(date -u +%Y%m%dT%H%M%SZ)-$(git -C "$project_root" rev-parse --short HEAD)"
 ssh_options=(-o ControlPath=/tmp/esim-publish-ssh-%C)
