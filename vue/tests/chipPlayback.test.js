@@ -52,10 +52,36 @@ test('Safety copy enters grey, fills its first phrase early and reverses continu
     assert.ok(firstLine.colors.at(-1).endsWith('0.1000)'));
     const filling = sample(1, .66);
     assert.ok(filling.colors[0].endsWith('0.8600)'));
-    assert.ok(filling.colors.at(-1).endsWith('0.1000)'));
+    assert.ok(!filling.colors.at(-1).endsWith('0.8600)'));
+    const filled = sample(1, .72);
+    assert.ok(filled.colors.every(color => color.endsWith('0.8600)')),
+      'The whole final word is dark while the last line is still on screen');
+    assert.deepEqual(sample(1, .85), filled);
+    assert.deepEqual(sample(1, .66), filling);
     assert.deepEqual(sample(1, .2), firstLine);
     assert.deepEqual(sample(1, 0), entering);
     assert.deepEqual(sample(.5, 0), entrance);
+  }
+});
+
+test('Every safety character completes its fill before the final exit, including reduced motion', () => {
+  for (const mobile of [false, true]) for (const reduced of [false, true]) {
+    const media = fixture();
+    const state = { ...Object.fromEntries(Object.keys(TRACKS).map(key => [key, 0])),
+      reveal: 1, chip: 1, story: 1, chipZoom: 1, buttonReveal: 1 };
+    const sample = safety => {
+      media.render({ ...state, safety }, { mobile, width: mobile ? 375 : 1440, height: 720, scale: 1 }, reduced);
+      return media.characters.map(character => Number(character.style.color.match(/, ([\d.]+)\)$/u)[1]));
+    };
+    const progress = [.5, .6, .65, .68, .7, .72, .8, .9, 1];
+    const colors = progress.map(sample);
+    for (let frame = 1; frame < colors.length; frame++) {
+      assert.ok(colors[frame].every((alpha, index) => alpha >= colors[frame - 1][index]));
+    }
+    for (const safety of [.72, .8, .9, 1]) {
+      assert.ok(sample(safety).every(alpha => alpha === .86), `Full fill at safety ${safety}`);
+    }
+    assert.deepEqual([...progress].reverse().map(sample), [...colors].reverse());
   }
 });
 

@@ -22,7 +22,10 @@ export function createChipStoryRenderer(scene, media) {
   // Start grey below the viewport; fill half the first line during its entrance.
   const safetyEntranceFillStart = .5;
   const safetyEntranceFillEnd = .065;
-  const safetyFillEnd = .9;
+  // Finish while the final line is still near the middle of the viewport,
+  // leaving reading time before its existing upward exit completes.
+  const safetyFillEnd = .72;
+  const safetyFillFeather = .025;
   const lostPhraseEnd = safetyText.indexOf('потерять') + 'потерять'.length - 1;
   const buttonExitStart = 0.9 * (lostPhraseEnd / Math.max(safetyCharacters.length - 1, 1) + 0.025);
   const textMotionCache = new Map(featureElements.map(element => [element, {
@@ -321,8 +324,10 @@ export function createChipStoryRenderer(scene, media) {
 
       const entranceReveal = mix(-.025, safetyEntranceFillEnd,
         clamp((zoomProgress - safetyEntranceFillStart) / (1 - safetyEntranceFillStart)));
-      const safetyReveal = reduced ? clamp(safetyTextProgress / safetyFillEnd)
-        : mix(entranceReveal, 1, clamp(safetyTextProgress / safetyFillEnd));
+      // Move the fill front past the final character's feathered edge.
+      // Stopping at 1 only filled that character halfway.
+      const safetyReveal = reduced ? (1 + safetyFillFeather) * clamp(safetyTextProgress / safetyFillEnd)
+        : mix(entranceReveal, 1 + safetyFillFeather, clamp(safetyTextProgress / safetyFillEnd));
       safetyCopy.style.visibility =
         (zoomProgress > 0.0001 || safetyTextProgress > 0.0001) && safetyTextProgress < 0.9999
           ? "visible"
@@ -333,8 +338,8 @@ export function createChipStoryRenderer(scene, media) {
       safetyCharacters.forEach((character, index) => {
         const threshold = index / safetyCharacterCount;
         const active = smoothstep(
-          threshold - 0.025,
-          threshold + 0.025,
+          threshold - safetyFillFeather,
+          threshold + safetyFillFeather,
           safetyReveal,
         );
         const opacity = mix(0.1, 0.86, active);
