@@ -14,20 +14,6 @@ npm run dev
 
 Dev: http://127.0.0.1:5174. Production: `npm run build`, затем `npm run preview` — http://127.0.0.1:4174. Проверки: `npm test`.
 
-## Публикация и хостинг
-
-С 05.10.2026 основной адрес — https://www.esim-landing.ivanzlobin.com/, обслуживается российским VPS `135.106.175.20`; Cloudflare A-запись работает в режиме DNS only. Прежние `esim-landing.ivanzlobin.com` и `esim-landing-vue.ivanzlobin.com` указывают на тот же RU-сервер и перенаправляют на основной адрес с сохранением пути и query. При аудите FI адрес с `www` отсутствовал в DNS; он добавлен в рамках миграции по запросу пользователя. Портфолио `ivanzlobin.com` остаётся на отдельном сервере `135.106.228.161`. Независимое зеркало — https://ivanzl9208.github.io/esim-landing/.
-
-Перед публикацией выполнить `npm test` и `npm run build` в `vue/`, затем из корня репозитория `bash scripts/deploy-host.sh`. Скрипт по умолчанию использует RU `135.106.175.20`, загружает сборку в `/var/www/esim-landing-vue/releases/` и атомарно переключает `current`, сохраняя предыдущую сборку. Для обычной публикации на GitHub Pages отправить относящиеся к проекту изменения в `origin/main` и дождаться успешного workflow `Deploy to GitHub Pages`. При миграции серверов исходный код приложения не менялся, commit/push и публикация GitHub Pages не выполнялись.
-
-На RU установлены Nginx и Certbot; Nginx непосредственно принимает HTTP 80 и HTTPS 443. Конфигурация из `deploy/nginx.conf` установлена в `/etc/nginx/conf.d/esim-landing-vue.conf`, сохранены SPA fallback, gzip и правила кеширования assets. Один новый сертификат Let's Encrypt `www.esim-landing.ivanzlobin.com` покрывает все три eSIM-имени. После первоначального DNS-01 подтверждения Certbot перенастроен на автоматическое HTTP webroot-продление через `/var/www/esim-landing-vue/current`; `certbot.timer` активен. Hook из `deploy/reload-esim-nginx` установлен в `/etc/letsencrypt/renewal-hooks/deploy/reload-esim-nginx` и выполняет validation/reload Nginx только для этого сертификата. Пробное продление с hook прошло; временные ACME TXT-записи удалены. Закрытые ключи FI и VPN на RU не копировались.
-
-Финский VPS `31.76.74.213` очищен от eSIM только после успешного RU production smoke-test: удалены три релиза, каталог `/var/www/esim-landing-vue`, отдельный Nginx virtual host, два eSIM SNI-маршрута и upstream `9447`, два eSIM-сертификата с заданиями продления, eSIM renewal-hook, отдельные журналы и каталоги `/root/esim-migration-20261005` и `/root/esim-domain-20261005`. Nginx stream для VPN сохранён и получил только validation/reload. Hysteria, Xray, AmneziaWG, Docker, DNS, firewall/NAT/routing, сертификаты VPN и общие Certbot/systemd-компоненты сохранены. FI больше не является готовой целью отката. Общая shell history, системные журналы и DNS-снимок в резервной копии другого проекта намеренно сохранены.
-
-Прежний VPS `212.118.56.141` очищен от лендинга 05.10.2026 по предыдущему запросу пользователя: удалены все 14 релизов, каталог `/var/www/esim-landing-vue`, отдельный Nginx virtual host и локальный сертификат прежнего имени с ключом и заданием продления. Он больше не является готовой целью отката. Общие Nginx, Docker, Certbot, firewall, системные конфиги, журналы и ACME-аккаунт сохранены; `cloudflared`, отдельные службы и контейнеры лендинга не обнаружены.
-
-Миграция проверена: 94 теста и production build; все 199 файлов совпадают с FI production, полностью скачаны с RU-origin до DNS cutover и через публичный URL после cutover и очистки FI; три видео отвечают Range 206. Публичный RU-origin подтверждён уникальным временным файлом и access log, файл удалён. Desktop 1280×720 и mobile viewport 390×844 проверены через браузер: шрифты, видео, scroll/обратный ход, high-res still, CTA, кириллический autocomplete, выбор модели, результат, FAQ/tabs и footer; критических console errors нет. HTTP 200 с RU IP подтверждён двумя внешними узлами Москвы и одним Германии. Физический iPhone/Safari и подключение отдельного VPN-клиента не проверялись; конфиги и процессы VPN FI, контейнер, интерфейсы, firewall/NAT/routing и HTTPS endpoints совпали с baseline. После публикации также проверять полную загрузку assets и HTTP Range с внешнего подключения. Пароли и закрытые ключи в репозитории не хранить.
-
 ## Зависимости
 
 | Пакет | Зафиксированная версия | Назначение |
@@ -204,23 +190,6 @@ React wheel-handler, spring scroll и собственные RAF-циклы не
 5. Если применится KeepAlive, добавить управление deactivated/activated: текущая очистка рассчитана на unmount.
 6. Изолировать глобальные reference CSS при встраивании в общий сайт. Проверить id и SSR hydration в конечном layout, а также перенести SEO/meta в Nuxt useHead.
 7. Оставить кадровый fallback изолированным; его memory/network оптимизация — отдельная работа после измерений на iOS.
-
-## Публикация на финский сервер и GitHub Pages
-
-По запросу «Опубликуй» обновляются оба адреса одной Vue-версией:
-
-- Основной сайт: https://esim-landing.ivanzlobin.com/ (прежний адрес перенаправляет сюда).
-- GitHub Pages: https://ivanzl9208.github.io/esim-landing/
-
-В `vue/` выполнить `npm test` и `npm run build`. Из корня репозитория запустить `bash scripts/deploy-host.sh`: он загружает только `vue/dist`, создаёт новый выпуск в `/var/www/esim-landing-vue/releases` и атомарно переключает `current`. Старые выпуски сохранены для отката; старые хешированные бандлы остаются доступны уже открытым страницам. SSH использует существующий доступ к `root@31.76.74.213`; пароли и ключи в репозитории не хранятся.
-
-Зафиксировать релевантные изменения и отправить в `origin/main`, затем дождаться успешного workflow `Deploy to GitHub Pages`. Он запускает тесты и сборку из `vue/`, публикует `vue/dist`. Относительные URL Vite (`base: './'`) позволяют использовать одну сборку в корне поддомена и по пути `/esim-landing/`.
-
-Поддомен в Cloudflare: A → `31.76.74.213`, DNS only. Посетители подключаются непосредственно к финскому серверу; Cloudflare используется для DNS. Конфигурация HTTP virtual host — `deploy/nginx.conf` в корне проекта; внешний TCP 443 остаётся у существующего nginx stream с отдельным SNI-маршрутом eSIM на `127.0.0.1:9447`. Сертификат сервера выпускается и обновляется Certbot через HTTP webroot; после обновления сертификата eSIM deploy-hook перезагружает конфигурацию Nginx. HTML и файлы без хеша перепроверяются по ETag, хешированные JS/CSS кешируются надолго. Видео поддерживает HTTP Range.
-
-Проверять доступность с внешнего подключения, включая полную загрузку JS/CSS, картинок результатов и видео, а также HTTP Range. Успешный HEAD или ответ изнутри VPS не подтверждает, что пользователи могут загрузить сайт. Доступность через Cloudflare может различаться между сетями; после смены режима нужно проверить и браузер, и полную загрузку файлов.
-
-Не добавлять поддомен в Custom domain GitHub Pages: это вызвало бы перенаправление вместо двух независимых адресов. Vercel больше не является целью публикации; автодеплои Git отключены через `git.deploymentEnabled: false` в корневом и Vue `vercel.json`, существующие проекты не удалены.
 
 ## Исправление Chrome на iOS
 

@@ -1,8 +1,0 @@
-#!/bin/sh
-set -eu
-case "${RENEWED_LINEAGE:-}" in
-    /etc/letsencrypt/live/www.esim-landing.ivanzlobin.com)
-        nginx -t
-        systemctl reload nginx
-        ;;
-esac
