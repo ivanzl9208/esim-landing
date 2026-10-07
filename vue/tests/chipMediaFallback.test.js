@@ -2,7 +2,7 @@ import test, { before, after } from 'node:test';
 import assert from 'node:assert/strict';
 import { createRenderer, h, nextTick, shallowRef } from 'vue';
 import { createServer } from 'vite';
-import { MEDIA_LOAD_DEADLINE } from '../src/utils/mediaConnection.js';
+import { MEDIA_LOAD_DEADLINE, CHIP_MOV_LOAD_DEADLINE } from '../src/utils/mediaConnection.js';
 
 let server, useChipMedia, provideMediaConnection;
 before(async () => {
@@ -31,7 +31,7 @@ function mountMedia(t, { slow = false, pendingVideo = false, iphone = false, una
   const requests = [];
   replace('fetch', (url, { signal } = {}) => {
     requests.push(url);
-    if (pendingVideo && url.includes('chip-scroll.webm')) return new Promise((resolve, reject) => {
+    if (pendingVideo && /chip-scroll(?:-alpha)?\.(webm|mov)/.test(url)) return new Promise((resolve, reject) => {
       signal.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError')), { once: true });
     });
     return Promise.resolve({ ok: true, blob: async () => new Blob(['media']) });
@@ -139,8 +139,11 @@ test('Both media ignore latched slow hints and follow Save-Data and online chang
 
 for (const event of ['online', 'pageshow', 'visibilitychange']) {
   test(`iPhone resumes the current chip orientation after transient frame failure and ${event}`, async t => {
-    const { media, frame, recoverFrames } = mountMedia(t, { iphone: true, unavailableFrames: true });
+    const { media, frame, recoverFrames } = mountMedia(t, { iphone: true, pendingVideo: true, unavailableFrames: true });
     media.setPlayback(.25, 4); await flush();
+    t.mock.timers.tick(MEDIA_LOAD_DEADLINE); await flush();
+    assert.equal(media.frameMode.value, false, 'The larger MOV can continue downloading beyond the WebM deadline');
+    t.mock.timers.tick(CHIP_MOV_LOAD_DEADLINE - MEDIA_LOAD_DEADLINE); await flush();
     assert.equal(media.frameMode.value, true);
     assert.match(frame.src, /frame-001.webp$/);
     recoverFrames();
@@ -152,3 +155,23 @@ for (const event of ['online', 'pageshow', 'visibilitychange']) {
     assert.match(frame.src, /frame-038.webp$/);
   });
 }
+
+test('iPhone uses the transparent MOV, seeks in both directions and blends the same final still', async t => {
+  const { media, video, requests } = mountMedia(t, { iphone: true });
+  media.setPlayback(.25, 4); await flush();
+  assert.equal(media.frameMode.value, false);
+  assert.equal(media.videoReady.value, true);
+  assert.equal(media.videoSource.value, 'chip-scroll-alpha.mov');
+  assert.ok(requests.some(url => url.endsWith('/chip-scroll-alpha.mov')));
+  assert.ok(!requests.some(url => /chip-frames|chip-scroll\.webm/.test(url)));
+  const quarter = video.currentTime;
+  media.setPlayback(.5, 4); await flush();
+  assert.ok(video.currentTime > quarter);
+  media.setPlayback(.25, 4); await flush();
+  assert.equal(video.currentTime, quarter);
+  media.prepareStill(); media.setPlayback(4, 4);
+  media.setZoomQuality({ width: 1400, scale: 2, dpr: 2, zoom: 1 }); await flush();
+  assert.equal(media.stillOpacity.value, 1);
+  media.setPlayback(.5, 4); await flush();
+  assert.equal(media.stillOpacity.value, 0);
+});

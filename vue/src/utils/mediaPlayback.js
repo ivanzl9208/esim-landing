@@ -11,6 +11,6 @@ export function getMediaPlayback({ userAgent = '', platform = '', maxTouchPoints
   const appleMedia = ios || safari;
   return {
     heroSource: appleMedia ? 'hero-alpha.mov' : 'hero.webm',
-    chipFrames: appleMedia,
+    chipSource: appleMedia ? 'chip-scroll-alpha.mov' : 'chip-scroll.webm',
   };
 }

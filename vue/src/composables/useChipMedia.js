@@ -2,7 +2,7 @@ import { onMounted, onScopeDispose, ref, watch } from 'vue';
 import { asset } from '../utils/assets.js';
 import { getMediaPlayback } from '../utils/mediaPlayback.js';
 import { CHIP_FRAME_COUNT, createChipFrameLoader } from '../utils/chipFrameLoader.js';
-import { MEDIA_LOAD_DEADLINE } from '../utils/mediaConnection.js';
+import { MEDIA_LOAD_DEADLINE, CHIP_MOV_LOAD_DEADLINE } from '../utils/mediaConnection.js';
 import { useMediaConnection } from './useMediaConnection.js';
 import { useMotionPreference } from './useMotionPreference.js';
 import { chipStillBlend } from '../animation/chipStillBlend.js';
@@ -12,6 +12,7 @@ export { CHIP_FRAME_COUNT };
 
 export function useChipMedia(videoRef, frameRef, stillRef) {
   const frameMode = ref(false);
+  const videoSource = ref('chip-scroll.webm');
   const videoReady = ref(false);
   const stillReady = ref(false);
   const stillOpacity = ref(0);
@@ -177,11 +178,12 @@ export function useChipMedia(videoRef, frameRef, stillRef) {
     if (fetchController || blobUrl) return;
     const controller = new AbortController();
     fetchController = controller;
-    loadDeadline = setTimeout(() => { markSlow(); fallback(); }, MEDIA_LOAD_DEADLINE);
+    const downloadDeadline = videoSource.value.endsWith('.mov') ? CHIP_MOV_LOAD_DEADLINE : MEDIA_LOAD_DEADLINE;
+    loadDeadline = setTimeout(() => { markSlow(); fallback(); }, downloadDeadline);
     try {
       // A complete local Blob eliminates seeks into unbuffered HTTP ranges.
       // Keep the front image visible until decoding can actually present video.
-      const response = await fetch(asset('chip-scroll.webm'), { signal: controller.signal });
+      const response = await fetch(asset(videoSource.value), { signal: controller.signal });
       if (!response.ok) throw new Error(`Chip video HTTP ${response.status}`);
       const blob = await response.blob();
       if (disposed || isStatic() || controller.signal.aborted) return;
@@ -254,7 +256,7 @@ export function useChipMedia(videoRef, frameRef, stillRef) {
       loader?.dispose(); loader = undefined;
       releaseVideo(); showFront();
     } else {
-      const needsFrames = getMediaPlayback(navigator).chipFrames || avoidVideo.value || videoFailed;
+      const needsFrames = avoidVideo.value || videoFailed;
       if (needsFrames && !frameMode.value) releaseVideo();
       frameMode.value = needsFrames;
       if (!needsFrames) { loader?.dispose(); loader = undefined; }
@@ -266,7 +268,8 @@ export function useChipMedia(videoRef, frameRef, stillRef) {
   onMounted(() => {
     mounted = true;
     video = videoRef.value;
-    frameMode.value = getMediaPlayback(navigator).chipFrames || avoidVideo.value;
+    videoSource.value = getMediaPlayback(navigator).chipSource;
+    frameMode.value = avoidVideo.value;
     video.defaultMuted = true; video.muted = true;
     video.addEventListener('loadedmetadata', metadata);
     video.addEventListener('loadeddata', decoded);
@@ -296,5 +299,5 @@ export function useChipMedia(videoRef, frameRef, stillRef) {
       window.removeEventListener('online', visibility);
     }
   });
-  return { frameMode, videoReady, reduced, staticMedia, stillOpacity, stillFilter, prepare, setPlayback, prepareStill, setZoomQuality };
+  return { frameMode, videoSource, videoReady, reduced, staticMedia, stillOpacity, stillFilter, prepare, setPlayback, prepareStill, setZoomQuality };
 }

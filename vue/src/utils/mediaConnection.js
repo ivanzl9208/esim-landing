@@ -1,6 +1,9 @@
 // Network Information is unavailable in Safari. A load deadline supplies the
 // same static fallback there; unknown connection speed alone isn't a failure.
 export const MEDIA_LOAD_DEADLINE = 4000;
+// The all-keyframe transparent MOV is larger than WebM. Give its complete
+// Blob download time on mobile before switching to the rotating frame fallback.
+export const CHIP_MOV_LOAD_DEADLINE = 15000;
 
 // A connection estimate can describe a previous host rather than the current
 // media transfer. Only an explicit data-saving preference or offline state
