@@ -31,7 +31,7 @@ const navigation = ['Связь', 'Услуги и сервисы', 'Оплат�
           <span class="header-bonus">Бонусы<img :src="asset('site-chrome/spasibo.svg')" draggable="false" width="16" height="16" alt="" /><span class="phone-header-art phone-bonus-art" aria-hidden="true" v-html="mobileBonus" /></span>
           <span class="header-login">Войти</span>
         </div>
-        <span class="mobile-menu" aria-label="Меню">
+        <span class="mobile-menu" role="img" aria-label="Меню">
           <img draggable="false" :src="asset('site-chrome/menu.svg')" width="32" height="32" alt="" />
           <span class="phone-header-art phone-menu-art" aria-hidden="true" v-html="mobileMenu" />
         </span>

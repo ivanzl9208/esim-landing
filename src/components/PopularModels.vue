@@ -10,7 +10,7 @@ const cycle = row => row.length === 2 ? [...row, ...row] : row;
 
 <template>
   <div class="checker-popular-list">
-    <button v-for="item in items" :key="item.label" type="button" :disabled="loading" @click="$emit('choose', item.device)">{{ item.label }}</button>
+    <button v-for="item in items" :key="item.label" type="button" :disabled="loading" :aria-label="`Проверить ${item.label}`" @click="$emit('choose', item.device)">{{ item.label }}</button>
   </div>
   <div class="checker-popular-marquee">
     <div v-for="(row, index) in rows" :key="index" class="checker-model-row" data-lenis-prevent>
@@ -18,7 +18,7 @@ const cycle = row => row.length === 2 ? [...row, ...row] : row;
         <div v-for="copy in 2" :key="copy" class="checker-model-group" :class="{ 'is-copy': copy === 2 }" :aria-hidden="copy === 2 ? true : undefined">
           <button v-for="(item, itemIndex) in cycle(row)" :key="`${itemIndex}-${item.label}`" type="button"
             :class="{ 'is-copy': itemIndex >= row.length }" :aria-hidden="itemIndex >= row.length ? true : undefined"
-            :tabindex="copy === 2 || itemIndex >= row.length ? -1 : undefined" :disabled="loading"
+            :tabindex="copy === 2 || itemIndex >= row.length ? -1 : undefined" :disabled="loading" :aria-label="`Проверить ${item.label}`"
             @pointerdown.prevent
             @click="$emit('choose', item.device)">{{ item.label }}</button>
         </div>

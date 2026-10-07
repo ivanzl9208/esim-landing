@@ -343,6 +343,12 @@ export function useScrollScene(sceneRef, mediaRef, checkerRef, progressRef) {
         const target = checkerRef.value.section.getBoundingClientRect().top + window.scrollY;
         focusDelay?.kill();
         const focus = () => {
+          // Finish the checker entrance before focusing it. With reduced
+          // motion the zero-delay focus can otherwise run while it is inert.
+          ScrollTrigger.update();
+          trigger.getTween()?.progress?.(1);
+          timeline.totalProgress(trigger.progress, false);
+          renderScene();
           focusDelay = gsap.delayedCall(reduced ? 0 : 0.35, () => { if (active) checkerRef.value?.focusInput(); });
         };
         if (lenis) lenis.scrollTo(target, { duration: 1.2, onComplete: focus });

@@ -44,6 +44,6 @@ button:disabled { opacity: 1; }
   .hero-stage { min-height: 100svh; }
 }
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { transition-duration: 0.01ms !important; }
+  *, *::before, *::after { transition-duration: 0s !important; }
   .chip-gradient { filter: none; }
 }

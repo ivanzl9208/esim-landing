@@ -23,5 +23,11 @@ test('Imports and server-renders the complete app without browser globals', asyn
     assert.match(html, /id="device-checker"[\s\S]*class="landing-ending"/);
     assert.doesNotMatch(html, /<video[^>]*src=".*(?:mov|webm)"/);
     assert.match(html, /class="hero-video hero-video-fallback"[^>]*hero-poster\.webp/);
+    // Invisible suggestions must not appear as a second, closed list of
+    // choices to a screen reader. Every image needs a deliberate alternative.
+    assert.match(html, /role="listbox"[^>]*aria-hidden="true"[^>]*inert/);
+    assert.match(html, /role="combobox"[^>]*aria-invalid="false"/);
+    assert.match(html, /aria-label="Проверить iPhone/);
+    for (const image of html.matchAll(/<img\b[^>]*>/g)) assert.match(image[0], /\balt="[^"]*"/);
   } finally { await server.close(); }
 });

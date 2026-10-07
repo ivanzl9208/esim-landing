@@ -20,6 +20,7 @@ const uid = useId();
 const inputId = `${uid}-model`;
 const listId = `${uid}-suggestions`;
 const hintId = `${uid}-eid`;
+const errorId = `${uid}-error`;
 const hint = typograph('Или наберите *#06# на устройстве и нажмите кнопку вызова. eSIM доступна, если в списке есть строка EID');
 const optionId = index => `${uid}-option-${index}`;
 const popular = POPULAR_DEVICE_NAMES.map(label => ({ label, device: findPopularDevice(label) }));
@@ -116,7 +117,7 @@ defineExpose({ focusInput, section });
         </div>
         <div class="checker-search-dock">
           <form class="checker-search-area" @submit.prevent="runCheck()">
-            <div :id="listId" :class="['checker-suggestions', { 'is-visible': expanded, 'has-more': moreSuggestions }]" role="listbox" aria-label="Модели устройств" data-lenis-prevent @pointermove="$event.pointerType === 'mouse' && (activeIndex = -1)">
+            <div :id="listId" :class="['checker-suggestions', { 'is-visible': expanded, 'has-more': moreSuggestions }]" role="listbox" aria-label="Модели устройств" :aria-hidden="!expanded" :inert="!expanded" data-lenis-prevent @pointermove="$event.pointerType === 'mouse' && (activeIndex = -1)">
               <div ref="suggestionsScroll" class="checker-suggestions-scroll" @scroll.passive="updateSuggestionOverflow">
                 <div v-for="(device, index) in suggestions" :id="optionId(index)" :key="getFullName(device)"
                   :class="['checker-option', { 'is-active': index === activeIndex }]" role="option" :aria-selected="index === activeIndex"
@@ -128,11 +129,12 @@ defineExpose({ focusInput, section });
               <input :id="inputId" ref="input" :value="query" type="search" role="combobox" enterkeyhint="search"
                 autocomplete="off" :spellcheck="false" placeholder="Введите модель устройства"
                 :aria-controls="listId" :aria-expanded="expanded" aria-autocomplete="list" aria-haspopup="listbox"
-                :aria-activedescendant="expanded && activeIndex >= 0 ? optionId(activeIndex) : undefined" :aria-describedby="hintId"
+                :aria-activedescendant="expanded && activeIndex >= 0 ? optionId(activeIndex) : undefined" :aria-describedby="invalidQuery ? `${hintId} ${errorId}` : hintId"
+                :aria-invalid="invalidQuery"
                 :disabled="busy" @focus="focused = true" @blur="blurInput"
                 @input="changeQuery($event.target.value)" @keydown="keydown" />
               <span v-if="state === 'loading'" class="checker-input-action checker-loader" aria-hidden="true" />
-              <button v-if="invalidQuery && query.trim() && state === 'form'" class="checker-input-action checker-input-clear" type="button" aria-label="Очистить поле" @click="clearQuery">
+              <button v-if="invalidQuery && query.trim() && state === 'form'" class="checker-input-action checker-input-clear" type="button" aria-label="Очистить модель устройства" @click="clearQuery">
                 <img draggable="false" :src="asset('esim-clear.svg')" width="24" height="24" alt="" />
               </button>
               <Transition name="checker-search" :duration="{ enter: 180, leave: state === 'loading' ? 0 : 400 }">
@@ -153,6 +155,7 @@ defineExpose({ focusInput, section });
         <button type="button" aria-label="Закрыть уведомление" @click="hideToast"><img draggable="false" :src="asset('esim-toast-close.svg')" alt="" /></button>
       </div>
       <p class="sr-only" role="status" aria-live="polite" aria-atomic="true">{{ toastVisible ? toastMessage : statusMessage }}</p>
+      <p v-if="invalidQuery" :id="errorId" class="sr-only">{{ toastMessage }}</p>
     </div>
   </section>
 </template>
