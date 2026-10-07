@@ -6,7 +6,7 @@ import { TRACKS, getLayout } from '../src/animation/timing.js';
 import { storyMotionFrame } from '../src/animation/storyMotion.js';
 
 test('Checker retains the original entrance duration and desktop/mobile displacement in both directions', () => {
-  assert.deepEqual(TRACKS.outro, [52.575, 54.855, 1, 'smooth']);
+  assert.deepEqual(TRACKS.outro, [51.875, 54.155, 1, 'smooth']);
   for (const [width, height, offsets] of [[1440, 720, [768, 648, 384, 120, 0]], [360, 600, [648, 546.75, 324, 101.25, 0]]]) {
     const geometry = getLayout(width, height);
     for (const index of [0, 1, 2, 3, 4, 3, 2, 1, 0]) {

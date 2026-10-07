@@ -1,4 +1,4 @@
-export const ROULETTE_LINES = [
+export const INTRO_LINES = [
   "eSIM\u00A0—",
   "виртуальная",
   "сим-карта:",

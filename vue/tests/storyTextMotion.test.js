@@ -15,7 +15,11 @@ const fixture = () => {
     });
     return nodes.get(selector);
   };
-  const words = inParagraph => Array.from({ length: 3 }, () => ({ style: {}, closest: () => inParagraph ? {} : null }));
+  let wordWrites = 0;
+  const words = inParagraph => Array.from({ length: 3 }, () => ({
+    style: new Proxy({}, { set(target, key, value) { wordWrites++; target[key] = value; return true; } }),
+    closest: () => inParagraph ? {} : null,
+  }));
   const featureWords = words(false);
   const feature = node('feature');
   feature.querySelectorAll = () => featureWords;
@@ -43,8 +47,21 @@ const fixture = () => {
     renderer(state, { mobile, width: mobile ? 390 : 1440, height: 900, scale: 1 }, reduced);
     return storyWords[index].map(unit => ({ ...unit.style }));
   };
-  return { render, featureWords, stories };
+  return { render, featureWords, stories, wordWrites: () => wordWrites };
 };
+
+test('Settled words do not receive repeated style writes; reverse and Reduce Motion invalidate their cached state', () => {
+  const { render, wordWrites } = fixture();
+  const settled = render(.5, .5, 0, true);
+  const writes = wordWrites();
+  for (let i = 0; i < 60; i++) assert.deepEqual(render(.5, .5, 0, true), settled);
+  assert.equal(wordWrites(), writes, 'Other scene animation must not rewrite unchanged words');
+  const reverse = render(.1, .1, 0, true);
+  assert.notDeepEqual(reverse, settled);
+  assert.deepEqual(render(.5, .5, 0, true), settled);
+  assert.equal(render(.1, .1, 0, true, true)[0].filter, 'blur(0.000px)');
+  assert.deepEqual(render(.1, .1, 0, true), reverse);
+});
 
 test('All four gray theses reuse the orange heading word effect and keep their reading hold', () => {
   for (const mobile of [false, true]) {

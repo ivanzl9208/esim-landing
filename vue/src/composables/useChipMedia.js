@@ -243,7 +243,10 @@ export function useChipMedia(videoRef, frameRef, stillRef) {
     updateStill();
   };
   const visibility = () => {
-    if (!document.hidden) draw(requestedTurns);
+    if (!document.hidden) {
+      loader?.retry();
+      draw(requestedTurns);
+    }
   };
   watch([reduced, avoidVideo], () => {
     if (!mounted) return;
@@ -271,6 +274,8 @@ export function useChipMedia(videoRef, frameRef, stillRef) {
     video.addEventListener('error', fallback);
     frameRef.value.addEventListener('load', updateStill);
     document.addEventListener('visibilitychange', visibility);
+    window.addEventListener('pageshow', visibility);
+    window.addEventListener('online', visibility);
     visibility();
     if (mediaRequested) loadMedia();
     draw(requestedTurns);
@@ -286,6 +291,10 @@ export function useChipMedia(videoRef, frameRef, stillRef) {
     }
     frameRef.value?.removeEventListener('load', updateStill);
     if (typeof document !== 'undefined') document.removeEventListener('visibilitychange', visibility);
+    if (typeof window !== 'undefined') {
+      window.removeEventListener('pageshow', visibility);
+      window.removeEventListener('online', visibility);
+    }
   });
   return { frameMode, videoReady, reduced, staticMedia, stillOpacity, stillFilter, prepare, setPlayback, prepareStill, setZoomQuality };
 }

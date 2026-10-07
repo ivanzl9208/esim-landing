@@ -1,7 +1,6 @@
 import { onMounted, onScopeDispose } from 'vue';
 import { TRACKS, SCENE_SCROLL_END, getLayout } from '../animation/timing.js';
-import { createRouletteRenderer } from '../animation/roulette.js';
-import { rouletteSegments } from '../animation/heroReveal.js';
+import { createIntroTextRenderer } from '../animation/introText.js';
 import { createChipStoryRenderer } from '../animation/chipStory.js';
 import { createCheckerEntrance } from '../animation/checkerEntrance.js';
 import { smoothstep } from '../animation/math.js';
@@ -11,7 +10,7 @@ import { storyMotionFrame, advanceStoryMotion } from '../animation/storyMotion.j
 import { STORY_BENEFITS } from '../data/story.js';
 
 /** One native sticky stage. ScrollTrigger supplies progress; Lenis only smooths desktop wheel input. */
-export function useScrollScene(sceneRef, mediaRef, checkerRef) {
+export function useScrollScene(sceneRef, mediaRef, checkerRef, progressRef) {
   let disposed = false;
   let cleanup = () => {};
   let navigate = () => {};
@@ -53,11 +52,13 @@ export function useScrollScene(sceneRef, mediaRef, checkerRef) {
 
     media.add({ always: 'all', reduced: '(prefers-reduced-motion: reduce)', fine: '(pointer: fine)', mobile: '(max-width: 700px)' }, context => {
       const { reduced, fine, mobile } = context.conditions;
+      const nativeTouch = mobile || !fine;
       let lenis;
       let sceneContext;
       let timeline;
       let trigger;
       let resizeTimer;
+      let resizeFrame;
       let revealDelay;
       let buttonTween;
       let focusDelay;
@@ -118,15 +119,10 @@ export function useScrollScene(sceneRef, mediaRef, checkerRef) {
           // destroying them here snapped the curtain to the latest scrollY.
           // Native scrolling continues during the resize debounce. A stale
           // checkpoint would rewind the gesture while the address bar moves.
-          const livePosition = captureScenePosition(window.scrollY, positionGeometry);
           updateGeometry();
-          if (livePosition.kind !== 'scene') {
-            const top = restoreScenePosition(livePosition, positionGeometry);
-            if (Math.abs(top - window.scrollY) > 0.5) {
-              window.scrollTo({ top, behavior: 'instant' });
-              ScrollTrigger.update();
-            }
-          }
+          // Safari already owns the native gesture and viewport anchoring.
+          // Rescaling a checker checkpoint here scrolled the form a second
+          // time as the toolbar expanded on the way back from FAQ.
           lenis?.resize();
           renderScene();
           position = captureScenePosition(window.scrollY, positionGeometry);
@@ -145,7 +141,7 @@ export function useScrollScene(sceneRef, mediaRef, checkerRef) {
         // Mobile browser chrome changes the visible height, not the already
         // traversed scroll distance. Keep the checker's document top stable.
         updateGeometry();
-        const renderRoulette = createRouletteRenderer(scene);
+        const renderIntroText = createIntroTextRenderer(scene);
         const renderChip = createChipStoryRenderer(scene, mediaRef.value);
         const state = { ...Object.fromEntries(Object.keys(TRACKS).map(key => [key, 0])), buttonReveal: oldButtonProgress };
         const storyMotion = { time: 0 };
@@ -153,17 +149,19 @@ export function useScrollScene(sceneRef, mediaRef, checkerRef) {
         let followStory;
         let storyTarget = 0;
         let initializing = true;
-        const motionFrame = () => storyMotionFrame(mobile || reduced ? storyMotion.time : displayedStoryTime);
+        const motionFrame = () => storyMotionFrame(nativeTouch || reduced ? storyMotion.time : displayedStoryTime);
         const checkerTop = positionGeometry.checkerTop;
         renderEntrance = () => checkerEntrance.render(motionFrame().outro, geometry, reduced, window.scrollY < checkerTop);
         const renderChipFrame = () => {
           const motion = motionFrame();
           const side = storyComposition(motion.story, STORY_BENEFITS.length, reduced, motion.storyCenter).side;
-          renderChip({ ...state, ...motion, storySide: side }, geometry, reduced);
+          const renderedState = { ...state, ...motion, storySide: side };
+          renderChip(renderedState, geometry, reduced);
+          progressRef?.value?.setScene(renderedState, geometry);
           renderEntrance();
         };
         advanceMotion = seconds => {
-          if (!active || initializing || reduced || mobile) return;
+          if (!active || initializing || reduced || nativeTouch) return;
           const next = advanceStoryMotion(displayedStoryTime, storyMotion.time, seconds);
           if (Math.abs(next - displayedStoryTime) < 1e-9) return;
           displayedStoryTime = next;
@@ -184,14 +182,16 @@ export function useScrollScene(sceneRef, mediaRef, checkerRef) {
             buttonTween?.kill(); buttonTween = undefined;
             state.buttonReveal = 0;
           }
-          renderRoulette(state, geometry, reduced);
+          renderIntroText(state, geometry, reduced);
           // The pinned story is always in the viewport, so visibility cannot
           // tell us when to fetch its media. Prepare two scroll units early.
           if (timeline?.time() >= TRACKS.reveal[0] - 2) mediaRef.value?.prepare();
           // Lateral return and subsequent zoom/copy share one follower, so
           // growth cannot start while a separate horizontal tween lags behind.
           const storyTime = timeline?.time() ?? 0;
-          if (initializing || reduced) {
+          // Touch already has ScrollTrigger's scrub. A second .75s follower
+          // both rendered this subtree twice and delayed it behind native flow.
+          if (initializing || reduced || nativeTouch) {
             followStory?.tween.pause();
             storyMotion.time = storyTarget = storyTime;
             displayedStoryTime = storyTime;
@@ -204,7 +204,7 @@ export function useScrollScene(sceneRef, mediaRef, checkerRef) {
         };
         renderScene = render;
         sceneContext = gsap.context(() => {
-          if (!reduced) followStory = gsap.quickTo(storyMotion, 'time', {
+          if (!reduced && !nativeTouch) followStory = gsap.quickTo(storyMotion, 'time', {
             duration: 0.75, ease: 'power2.out',
             onUpdate: () => { if (active && !initializing) renderChipFrame(); },
           });
@@ -212,15 +212,6 @@ export function useScrollScene(sceneRef, mediaRef, checkerRef) {
           const units = Math.max((scene.offsetHeight - geometry.height) / scrollUnit, 1);
           timeline.to({ hold: 0 }, { hold: 1, duration: units, ease: 'none' }, 0);
           for (const [key, [start, end, value, ease]] of Object.entries(TRACKS)) {
-            if (key === 'roulette') {
-              for (const segment of rouletteSegments(geometry.mobile)) {
-                timeline.fromTo(state, { roulette: segment.from }, {
-                  roulette: segment.to, duration: segment.end - segment.start,
-                  ease: segment.ease === 'smooth' ? t => smoothstep(0, 1, t) : 'none', immediateRender: false,
-                }, segment.start);
-              }
-              continue;
-            }
             timeline.fromTo(state, { [key]: 0 }, {
               [key]: value, duration: end - start, ease: ease === 'smooth' ? t => smoothstep(0, 1, t) : 'none', immediateRender: false,
             }, start);
@@ -275,7 +266,12 @@ export function useScrollScene(sceneRef, mediaRef, checkerRef) {
       };
       const resize = () => {
         clearTimeout(resizeTimer);
-        resizeTimer = setTimeout(() => rebuild(), 120);
+        cancelAnimationFrame(resizeFrame);
+        // Follow Safari's live toolbar height once per frame. A 120ms debounce
+        // left the composition at its old centre, then moved it in one step.
+        if (nativeTouch && geometry?.width === window.innerWidth) {
+          resizeFrame = requestAnimationFrame(() => rebuild());
+        } else resizeTimer = setTimeout(() => rebuild(), 120);
       };
       const fontsReady = () => { if (active && !disposed) rebuild(true); };
       rebuild(true);
@@ -318,6 +314,7 @@ export function useScrollScene(sceneRef, mediaRef, checkerRef) {
         // A pending CTA focus must not reopen the keyboard during a check.
         focusDelay?.kill();
         clearTimeout(resizeTimer);
+        cancelAnimationFrame(resizeFrame);
         rebuild();
         const section = checkerRef.value.section;
         section.scrollTop = 0;
@@ -359,6 +356,7 @@ export function useScrollScene(sceneRef, mediaRef, checkerRef) {
         active = false;
         finishResultAnchor?.();
         clearTimeout(resizeTimer);
+        cancelAnimationFrame(resizeFrame);
         window.removeEventListener('resize', resize);
         window.removeEventListener('scroll', scroll);
         window.removeEventListener('orientationchange', resize);

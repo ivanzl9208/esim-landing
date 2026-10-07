@@ -18,6 +18,9 @@ let frameCallback;
 let presentationFrame;
 let loadDeadline;
 let failed = false;
+let playbackBlocked = false;
+let retryTimer;
+let failures = 0;
 const cancelPresentation = () => {
   clearTimeout(loadDeadline);
   if (frameCallback !== undefined) video.value?.cancelVideoFrameCallback?.(frameCallback);
@@ -29,9 +32,18 @@ const reportError = error => {
   if (disposed || error?.name === 'AbortError') return;
   const message = `${error?.name || 'MediaError'}: ${error?.message || 'Unable to decode video'}`;
   presented.value = false;
-  failed = true;
   cancelPresentation();
-  source.value = '';
+  clearTimeout(retryTimer);
+  playbackBlocked = error?.name === 'NotAllowedError';
+  failed = !playbackBlocked;
+  if (failed) {
+    source.value = '';
+    // Retry transient transport/decoder errors with a bound; do not loop on
+    // an unsupported codec or try to override Safari's autoplay policy.
+    if (++failures <= 2) retryTimer = setTimeout(() => {
+      if (!disposed && !document.hidden) { failed = false; syncPlayback(); }
+    }, 500 * failures);
+  }
   if (message !== playbackError.value) console.warn('[HeroVideo]', message);
   playbackError.value = message;
 };
@@ -42,7 +54,7 @@ const markPresented = () => {
     frameCallback = undefined;
     if (!disposed && source.value && !reduced.value && !avoidVideo.value) {
       clearTimeout(loadDeadline);
-      presented.value = true; playbackError.value = '';
+      presented.value = true; playbackError.value = ''; failures = 0;
     }
   };
   // `playing` promises playback, not a painted frame. Keep the identical
@@ -68,11 +80,24 @@ const syncPlayback = () => {
       source.value = asset(getMediaPlayback(navigator).heroSource);
       loadDeadline = setTimeout(() => {
         markSlow();
-        reportError(new Error('Video load deadline exceeded'));
+        // Retain the poster while a slow download continues. Cancelling src
+        // after four seconds permanently froze otherwise playable iPhone media.
       }, MEDIA_LOAD_DEADLINE);
     }
-    element.play()?.catch(reportError);
+    if (!playbackBlocked) element.play()?.catch(reportError);
   }
+};
+const recoverPlayback = () => {
+  if (disposed || document.hidden) return;
+  clearTimeout(retryTimer);
+  failed = false; failures = 0;
+  syncPlayback();
+};
+const gesturePlayback = () => {
+  if (presented.value && !video.value?.paused) return;
+  // A real touch/click permits playback when iOS initially rejected autoplay.
+  playbackBlocked = false;
+  recoverPlayback();
 };
 const syncSource = () => {
   if (!mounted) return;
@@ -85,18 +110,26 @@ onMounted(() => {
   video.value.muted = true;
   video.value.playsInline = true;
   syncSource();
-  document.addEventListener('visibilitychange', syncPlayback);
-  window.addEventListener('pageshow', syncPlayback);
+  document.addEventListener('visibilitychange', visibilityPlayback);
+  window.addEventListener('pageshow', recoverPlayback);
+  window.addEventListener('online', recoverPlayback);
+  window.addEventListener('touchstart', gesturePlayback, { passive: true });
+  window.addEventListener('pointerdown', gesturePlayback, { passive: true });
 });
+const visibilityPlayback = () => document.hidden ? syncPlayback() : recoverPlayback();
 onScopeDispose(() => {
   disposed = true;
+  clearTimeout(retryTimer);
   cancelPresentation();
   video.value?.pause();
   video.value?.removeAttribute('src');
   video.value?.load();
   if (typeof document !== 'undefined') {
-    document.removeEventListener('visibilitychange', syncPlayback);
-    window.removeEventListener('pageshow', syncPlayback);
+    document.removeEventListener('visibilitychange', visibilityPlayback);
+    window.removeEventListener('pageshow', recoverPlayback);
+    window.removeEventListener('online', recoverPlayback);
+    window.removeEventListener('touchstart', gesturePlayback);
+    window.removeEventListener('pointerdown', gesturePlayback);
   }
 });
 </script>

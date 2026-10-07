@@ -15,7 +15,7 @@ const flush = async () => { for (let i = 0; i < 150; i++) await nextTick(); };
 
 // Exercise the real Vue lifecycle, shared hero policy, loader and still decode.
 // Browser downloads/events are controlled; no copy of the media state machine.
-function mountMedia(t, { slow = false, pendingVideo = false } = {}) {
+function mountMedia(t, { slow = false, pendingVideo = false, iphone = false, unavailableFrames = false } = {}) {
   const previous = new Map();
   const replace = (key, value) => {
     previous.set(key, Object.getOwnPropertyDescriptor(globalThis, key));
@@ -24,7 +24,7 @@ function mountMedia(t, { slow = false, pendingVideo = false } = {}) {
   const motion = new EventTarget(); motion.matches = false;
   const window = new EventTarget(); window.matchMedia = () => motion;
   replace('window', window); replace('document', Object.assign(new EventTarget(), { hidden: false }));
-  replace('navigator', { userAgent: 'Chrome', onLine: true, connection: Object.assign(new EventTarget(), { effectiveType: slow ? '3g' : '4g' }) });
+  replace('navigator', { userAgent: iphone ? 'iPhone Safari' : 'Chrome', onLine: true, connection: Object.assign(new EventTarget(), { effectiveType: slow ? '3g' : '4g' }) });
   let clock = 0;
   replace('requestAnimationFrame', callback => { const id = ++clock; queueMicrotask(() => callback(id * 16)); return id; });
   replace('cancelAnimationFrame', () => {});
@@ -37,7 +37,7 @@ function mountMedia(t, { slow = false, pendingVideo = false } = {}) {
     return Promise.resolve({ ok: true, blob: async () => new Blob(['media']) });
   });
   replace('Image', class {
-    set src(value) { this._src = value; if (value) queueMicrotask(() => this.onload?.()); }
+    set src(value) { this._src = value; if (value) queueMicrotask(() => unavailableFrames ? this.onerror?.() : this.onload?.()); }
     get src() { return this._src; }
     decode() { return Promise.resolve(); }
     removeAttribute() { this._src = ''; }
@@ -70,7 +70,7 @@ function mountMedia(t, { slow = false, pendingVideo = false } = {}) {
       else delete globalThis[key];
     }
   });
-  return { media, policy, frame, video, motion, requests };
+  return { media, policy, frame, video, motion, requests, recoverFrames: () => { unavailableFrames = false; } };
 }
 
 for (const slow of [false, true]) {
@@ -136,3 +136,19 @@ test('Both media ignore latched slow hints and follow Save-Data and online chang
   assert.equal(media.videoReady.value, true);
   assert.equal(policy.staticMedia.value, true, 'A latched hint does not suppress video');
 });
+
+for (const event of ['online', 'pageshow', 'visibilitychange']) {
+  test(`iPhone resumes the current chip orientation after transient frame failure and ${event}`, async t => {
+    const { media, frame, recoverFrames } = mountMedia(t, { iphone: true, unavailableFrames: true });
+    media.setPlayback(.25, 4); await flush();
+    assert.equal(media.frameMode.value, true);
+    assert.match(frame.src, /frame-001.webp$/);
+    recoverFrames();
+    (event === 'visibilitychange' ? document : window).dispatchEvent(new Event(event)); await flush();
+    assert.match(frame.src, /frame-038.webp$/);
+    media.setPlayback(.5, 4); await flush();
+    assert.match(frame.src, /frame-076.webp$/);
+    media.setPlayback(.25, 4); await flush();
+    assert.match(frame.src, /frame-038.webp$/);
+  });
+}

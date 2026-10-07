@@ -191,85 +191,60 @@ a {
   will-change: transform;
 }
 
-.roulette-viewport {
-  --curtain-y: 100%;
+/* Keep the incoming text on its panel and out of the uncovered hero area. */
+.hero-stage > .white-curtain {
+  overflow: hidden;
+}
+
+.intro-text-viewport {
   position: absolute;
   z-index: 23;
   inset: 0;
   overflow: hidden;
-  transform: translate3d(0, var(--curtain-y), 0);
   pointer-events: none;
-  will-change: transform;
-}
-
-.roulette-stage {
-  --roulette-reveal: 0;
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
-  /* Counter-move the content so only the reveal edge travels with the curtain. */
-  transform: translate3d(0, calc(-1 * var(--curtain-y)), 0);
   color: rgba(11, 12, 13, 0.86);
-  opacity: var(--roulette-reveal);
-  will-change: transform, opacity;
 }
 
-.roulette-copy {
-  position: absolute;
-  inset: 0;
-  font-family: "SB Sans Display", Arial, sans-serif;
-  font-size: calc(120px * var(--layout-scale));
-  font-weight: 600;
-  line-height: calc(96px * var(--layout-scale));
-  letter-spacing: calc(-2.4px * var(--layout-scale));
-  text-align: center;
-  -webkit-mask-image: linear-gradient(
-    to bottom,
-    transparent 0%,
-    #000 14%,
-    #000 86%,
-    transparent 100%
-  );
-  mask-image: linear-gradient(
-    to bottom,
-    transparent 0%,
-    #000 14%,
-    #000 86%,
-    transparent 100%
-  );
-}
-
-.roulette-line {
+/* A single flowing column: scroll moves the column, opacity reveals each item.
+   No per-line vertical trajectories, clipping masks or changing font sizes. */
+.intro-text-column {
   position: absolute;
   top: 0;
-  left: 50%;
+  left: 0;
+  width: 100%;
+  will-change: transform;
+  font-family: "SB Sans Display", Arial, sans-serif;
+  font-weight: 600;
+  text-align: center;
+}
+
+.intro-text-list {
   display: flex;
-  width: max-content;
-  max-width: calc(100vw - 64px * var(--layout-scale));
-  height: calc(96px * var(--layout-scale));
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  white-space: nowrap;
-  transform-origin: center;
-  will-change: transform, opacity;
+  gap: calc(144px * var(--layout-scale));
+  font-size: calc(120px * var(--layout-scale));
+  line-height: calc(96px * var(--layout-scale));
+  letter-spacing: -.02em;
 }
 
-.roulette-finale {
-  position: absolute;
-  top: 0;
-  left: 50%;
-  width: min(calc(1108px * var(--layout-scale)), calc(100vw - 64px * var(--layout-scale)));
-  height: calc(420px * var(--layout-scale));
-  transform: translate3d(-50%, 0, 0);
-  transform-origin: 50% 0;
-  font-family: "SB Sans Display", Arial, sans-serif;
+.intro-text-line {
+  display: block;
+  width: calc(100% - 64px * var(--layout-scale));
+  opacity: 0;
+  transform-origin: center;
+  will-change: opacity, transform;
+}
+
+.intro-text-finale {
+  width: min(calc(1108px * var(--layout-scale)), calc(100% - 64px * var(--layout-scale)));
+  margin: max(calc(180px * var(--layout-scale)), calc(50svh - 105px * var(--layout-scale))) auto 0;
   font-size: calc(220px * var(--layout-scale));
-  font-weight: 600;
   line-height: calc(180px * var(--layout-scale));
-  letter-spacing: calc(-4.4px * var(--layout-scale));
-  text-align: center;
-  white-space: nowrap;
-  will-change: top, opacity, transform;
+  letter-spacing: -.02em;
+  opacity: 0;
+  transform-origin: center;
+  will-change: opacity, transform;
 }
 
 .roulette-button {
@@ -677,27 +652,21 @@ a {
     border-radius: calc(24px * var(--layout-scale));
   }
 
-  .roulette-copy {
+  .intro-text-list {
+    gap: calc(84px * var(--layout-scale));
     font-size: calc(52px * var(--layout-scale));
     line-height: calc(52px * var(--layout-scale));
-    letter-spacing: calc(-1.04px * var(--layout-scale));
   }
 
-  .roulette-line {
-    width: calc(100vw - 32px * var(--layout-scale));
-    max-width: calc(328px * var(--layout-scale));
-    height: calc(104px * var(--layout-scale));
-    white-space: normal;
+  .intro-text-line {
+    width: calc(100% - 40px * var(--layout-scale));
   }
 
-  .roulette-finale {
-    width: calc(100vw - 32px * var(--layout-scale));
-    max-width: calc(328px * var(--layout-scale));
-    height: calc(192px * var(--layout-scale));
+  .intro-text-finale {
+    width: calc(100% - 32px * var(--layout-scale));
+    margin-top: max(calc(80px * var(--layout-scale)), calc(50svh - 43.2px * var(--layout-scale)));
     font-size: calc(64px * var(--layout-scale));
     line-height: calc(64px * var(--layout-scale));
-    letter-spacing: calc(-1.28px * var(--layout-scale));
-    white-space: normal;
   }
 
   .roulette-bottom-fade {

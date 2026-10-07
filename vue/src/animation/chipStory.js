@@ -117,11 +117,18 @@ export function createChipStoryRenderer(scene, media) {
       enterEnd = 0.38,
       exitStart = 0.68,
     ) => {
-      const { icon, units, story } = textMotionCache.get(element);
+      const cache = textMotionCache.get(element);
+      const { icon, units, story } = cache;
 
       const localProgress = clamp(
         (progress - start) / Math.max(end - start, 0.0001),
       );
+      // Hidden paragraphs stay at 0/1 for most of the story. Reuse their
+      // settled state instead of re-easing and rewriting every word each tick.
+      if (cache.progress === localProgress && cache.scale === geometry.scale && cache.reduced === reduced) return;
+      cache.progress = localProgress;
+      cache.scale = geometry.scale;
+      cache.reduced = reduced;
       const enterProgress = clamp(localProgress / enterEnd);
       const exitProgress = clamp((localProgress - exitStart) / (1 - exitStart));
       const unitCount = Math.max(units.length, 1);

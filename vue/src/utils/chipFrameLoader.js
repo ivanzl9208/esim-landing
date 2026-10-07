@@ -7,7 +7,8 @@ const distance = (a, b) => Math.min(Math.abs(a - b), CHIP_FRAME_COUNT - Math.abs
 export function createChipFrameLoader({ load, present, failed, concurrency = 3, cacheSize = 40 }) {
   const ready = new Map();
   const active = new Map();
-  const errors = new Set();
+  const errors = new Map();
+  let retryTimer;
   let wanted = 0;
   let shown = -1;
   let plan = [];
@@ -29,19 +30,30 @@ export function createChipFrameLoader({ load, present, failed, concurrency = 3, 
     if (disposed) return;
     for (const index of plan) {
       if (active.size >= concurrency) break;
-      if (ready.has(index) || active.has(index) || errors.has(index)) continue;
+      const failure = errors.get(index);
+      if (ready.has(index) || active.has(index) || (failure && (failure.attempts >= 4 || failure.after > Date.now()))) continue;
       const controller = new AbortController();
       active.set(index, controller);
       Promise.resolve().then(() => load(index, controller.signal)).then(image => {
         if (disposed) return;
+        errors.delete(index);
         ready.set(index, image);
         show();
         trim();
       }, error => {
         if (disposed) return;
-        errors.add(index);
+        const attempts = (errors.get(index)?.attempts ?? 0) + 1;
+        errors.set(index, { attempts, after: Date.now() + 500 * 2 ** (attempts - 1) });
         failed?.(error);
       }).finally(() => { active.delete(index); pump(); });
+    }
+    // One bounded backoff timer, independent of scroll updates. A temporary
+    // timeout must not blacklist a rotation frame for the rest of the visit.
+    clearTimeout(retryTimer);
+    const pending = plan.map(index => !active.has(index) && errors.get(index))
+      .filter(failure => failure && failure.attempts < 4);
+    if (pending.length && active.size < concurrency) {
+      retryTimer = setTimeout(pump, Math.max(0, Math.min(...pending.map(failure => failure.after)) - Date.now()));
     }
   };
   return {
@@ -62,8 +74,14 @@ export function createChipFrameLoader({ load, present, failed, concurrency = 3, 
       show();
       pump();
     },
+    retry() {
+      if (disposed) return;
+      errors.clear();
+      pump();
+    },
     dispose() {
       disposed = true;
+      clearTimeout(retryTimer);
       active.forEach(controller => controller.abort());
       active.clear(); ready.clear(); plan = [];
     },

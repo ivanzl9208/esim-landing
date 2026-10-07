@@ -1,5 +1,5 @@
 import { curtainTrack } from './curtain.js';
-import { ROULETTE_TRACK, ROULETTE_READING_HOLD, ROULETTE_EXIT_EXTENSION } from './heroReveal.js';
+import { INTRO_TEXT_TRACK, INTRO_SCROLL_EXTENSION } from './introFade.js';
 import { FEATURE_READING_EXTENSION } from './featureReading.js';
 
 // All positions are viewport-height multiples measured from the scene top.
@@ -12,10 +12,12 @@ export const CHIP_CENTER_RETURN_EXTENSION = .525;
 // Scroll space for the first zoom and the simultaneous safety-copy entrance.
 export const CENTERED_CHIP_HOLD = 2;
 const CHIP_INTRO_PAUSE_REDUCTION = .4;
+// The opacity-based finale fades before its column has fully left the screen.
+// Start the shutter during that quiet tail instead of leaving an empty viewport.
+export const INTRO_HANDOFF_ADVANCE = .7;
 const BASE_TRACKS = {
   curtain: curtainTrack(0),
-  rouletteReveal: [0.8, 1, 1, 'smooth'],
-  roulette: ROULETTE_TRACK,
+  introText: INTRO_TEXT_TRACK,
   reveal: [4.28, 6.149, 1, 'smooth'],
   chip: [4.3868, 6.0956, 1, 'smooth'],
   marquee: [6.95, 12.45, 1, 'none'],
@@ -32,14 +34,14 @@ const BASE_TRACKS = {
   returnGradient: [37.16 + STORY_EXTENSION + CENTERED_CHIP_HOLD + FEATURE_READING_EXTENSION, 39.41 + STORY_EXTENSION + CENTERED_CHIP_HOLD + FEATURE_READING_EXTENSION, 1, 'smooth'],
   outro: [37.4 + STORY_EXTENSION + CENTERED_CHIP_HOLD + FEATURE_READING_EXTENSION, 39.68 + STORY_EXTENSION + CENTERED_CHIP_HOLD + FEATURE_READING_EXTENSION, 1, 'smooth'], // Original checker entrance and floating CTA exit.
 };
-// Insert reading space before the chip reveal and shorten its later idle gap.
-// Shift following tracks together, preserving their durations and overlaps.
+// Remove the empty intro tail, shifting subsequent tracks together so their
+// durations, reading holds and overlaps remain unchanged.
 export const TRACKS = Object.fromEntries(Object.entries(BASE_TRACKS).map(([key, track]) => {
   const [start, end, value, ease] = track;
   if (start < BASE_TRACKS.reveal[0]) return [key, track];
   const introReduction = start >= BASE_TRACKS.marquee[0] ? CHIP_INTRO_PAUSE_REDUCTION : 0;
   const centreExtension = start > BASE_TRACKS.story[1] ? CHIP_CENTER_RETURN_EXTENSION : 0;
-  const shift = ROULETTE_READING_HOLD + ROULETTE_EXIT_EXTENSION - introReduction + centreExtension;
+  const shift = INTRO_SCROLL_EXTENSION - INTRO_HANDOFF_ADVANCE - introReduction + centreExtension;
   return [key, [Number((start + shift).toFixed(4)), Number((end + shift).toFixed(4)), value, ease]];
 }));
 TRACKS.storyCenter = [
