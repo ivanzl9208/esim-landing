@@ -69,6 +69,7 @@ export function useScrollScene(sceneRef, mediaRef, checkerRef, progressRef) {
       let positionGeometry;
       let renderEntrance = () => {};
       let renderScene = () => {};
+      let settleStoryMotion = () => {};
       let advanceMotion = () => {};
       const checkerEntrance = createCheckerEntrance(checkerRef.value.section);
       const tick = (time, delta) => { lenis?.raf(time * 1000); advanceMotion(delta / 1000); };
@@ -203,6 +204,11 @@ export function useScrollScene(sceneRef, mediaRef, checkerRef, progressRef) {
           rendering = false;
         };
         renderScene = render;
+        settleStoryMotion = () => {
+          followStory?.tween.pause();
+          storyMotion.time = storyTarget = displayedStoryTime = timeline.time();
+          renderChipFrame();
+        };
         sceneContext = gsap.context(() => {
           if (!reduced && !nativeTouch) followStory = gsap.quickTo(storyMotion, 'time', {
             duration: 0.75, ease: 'power2.out',
@@ -349,6 +355,9 @@ export function useScrollScene(sceneRef, mediaRef, checkerRef, progressRef) {
           trigger.getTween()?.progress?.(1);
           timeline.totalProgress(trigger.progress, false);
           renderScene();
+          // A direct CTA/skip-link jump does not need to replay the hidden
+          // desktop story follower after arriving at the checker.
+          settleStoryMotion();
           focusDelay = gsap.delayedCall(reduced ? 0 : 0.35, () => { if (active) checkerRef.value?.focusInput(); });
         };
         if (lenis) lenis.scrollTo(target, { duration: 1.2, onComplete: focus });
