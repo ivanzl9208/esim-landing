@@ -78,9 +78,12 @@ test('Reduced motion keeps in-view text solid and removes decorative scale', () 
 test('Renderer only measures layout on resize and clears the column by the end of its track', () => {
   let reads = 0;
   const item = (top, height) => ({ style: {}, get offsetTop() { reads++; return top; }, get offsetHeight() { reads++; return height; } });
-  const lines = Array.from({ length: 6 }, (_, i) => item(i * 100, 50));
+  const groups = [item(0, 52), item(136, 104), item(324, 156)];
   const finale = item(680, 280);
-  const column = { style: {}, querySelectorAll: () => lines, querySelector: () => finale };
+  const column = { style: {}, querySelectorAll: selector => {
+    assert.equal(selector, '.intro-text-group', 'Animate phrases together, never their individual lines');
+    return groups;
+  }, querySelector: () => finale };
   const curtain = { style: { setProperty(key, value) { this[key] = value; } } };
   const hero = { style: {} };
   const nodes = { '.intro-text-column': column, '.white-curtain': curtain, '.hero-surface': hero };
@@ -91,7 +94,7 @@ test('Renderer only measures layout on resize and clears the column by the end o
   const initialReads = reads;
   for (let i = 0; i <= 100; i++) sample(i / 100);
   assert.equal(reads, initialReads);
-  assert.ok([...lines, finale].every(node => Number(node.style.opacity) === 0));
+  assert.ok([...groups, finale].every(node => Number(node.style.opacity) === 0));
   assert.equal('top' in finale.style, false, 'Scroll must not animate layout properties');
   geometry = { ...geometry, height: 780 };
   sample(.5);

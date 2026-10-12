@@ -1,9 +1,9 @@
 import { clamp, mix, smoothstep } from './math.js';
 
-// Each thesis uses 3.15 viewport heights: 0.525 in, 2.1 hold, 0.525 out.
-// Only the hold grows; the word and column transitions keep their distance.
-export const STORY_ENTER_END = 1 / 6;
-export const STORY_EXIT_START = 5 / 6;
+// Each thesis uses 2.1 viewport heights: 0.525 in, 1.05 hold, 0.525 out.
+// Only the hold is shortened; the word and column transitions keep their distance.
+export const STORY_ENTER_END = 1 / 4;
+export const STORY_EXIT_START = 3 / 4;
 
 // Change columns only while the adjacent theses are fading out / coming in.
 // The object returns to the centre before the existing safety scene begins.

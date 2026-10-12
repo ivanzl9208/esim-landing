@@ -133,3 +133,43 @@ test('Interrupted lateral movement reverses with the same speed budget; slow scr
     }
   }
 });
+
+test('A shared visual playhead never combines the definition screen with gray theses', () => {
+  const start = TRACKS.definition[0];
+  const end = TRACKS.story[1];
+  for (let i = 0; i <= 1000; i++) {
+    const frame = storyMotionFrame(start + (end - start) * i / 1000);
+    assert.ok(!(frame.definition < 1 && frame.story > 0), 'Definition travel must end before any gray thesis enters');
+    if (frame.story > 0) {
+      assert.equal(frame.features, 1);
+      assert.equal(frame.definition, 1);
+      assert.equal(frame.background, 1);
+    }
+  }
+});
+
+test('Reverse handoff keeps the front video pose until the gray scene returns to centre', () => {
+  for (const fps of [30, 60, 120]) {
+    let time = TRACKS.story[0] + .8;
+    const target = TRACKS.story[0] - .7;
+    let previousSide = position(time, false).x;
+    let rotated = false;
+    for (let frame = 0; frame < fps * 3; frame++) {
+      time = advanceStoryMotion(time, target, 1 / fps);
+      const current = position(time, false);
+      assert.ok(current.x >= previousSide - 1e-8, 'Return must move continuously toward centre');
+      assert.ok(current.x - previousSide <= STORY_SIDE_SPEED / fps + .0001);
+      if (current.story > 0 || Math.abs(current.x) > .0001) {
+        assert.equal(current.playback, TRACKS.playback[2], 'Video must not rotate while the old gray geometry is still visible');
+      }
+      if (current.playback < TRACKS.playback[2]) {
+        rotated = true;
+        assert.equal(current.x, 0);
+        assert.equal(current.story, 0);
+      }
+      previousSide = current.x;
+    }
+    assert.equal(time, target);
+    assert.equal(rotated, true, 'Rotation resumes in the preceding scroll-controlled scene');
+  }
+});

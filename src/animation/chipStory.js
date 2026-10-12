@@ -324,9 +324,10 @@ export function createChipStoryRenderer(scene, media) {
 
       const storyTimeline = clamp(currentStory) * STORY_BENEFITS.length;
       storyElements.forEach((element, index) => {
-        setSoftBlurProgress(element, index, index + 1, storyTimeline, STORY_ENTER_END, STORY_EXIT_START);
+        const local = state.storyText?.[index] ?? clamp(storyTimeline - index);
+        setSoftBlurProgress(element, 0, 1, local, STORY_ENTER_END, STORY_EXIT_START);
         // The words own the effect; the paragraph stays sharp and stationary.
-        element.style.opacity = storyTimeline > index && storyTimeline < index + 1 ? '1.0000' : '0.0000';
+        element.style.opacity = local > 0 && local < 1 ? '1.0000' : '0.0000';
       });
 
       const entranceReveal = mix(-.025, safetyEntranceFillEnd,
@@ -361,11 +362,12 @@ export function createChipStoryRenderer(scene, media) {
 
       featureElements.forEach((element, index) => {
         const { start, end } = featureWindow(index, isMobile);
+        const local = state.featureText?.[index] ?? clamp((featureProgress - start) / (end - start));
         setSoftBlurProgress(
           element,
-          start,
-          end,
-          featureProgress,
+          0,
+          1,
+          local,
         );
       });
 

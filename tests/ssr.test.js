@@ -18,6 +18,13 @@ test('Imports and server-renders the complete app without browser globals', asyn
     assert.match(html, /role="tablist"/);
     assert.match(html, /Подключайтесь/);
     assert.match(html, /<footer/);
+    const introGroups = [...html.matchAll(/class="intro-text-group">([\s\S]*?)<\/div>/g)]
+      .map(match => [...match[1].matchAll(/class="intro-text-line">([^<]*)<\/span>/g)].map(line => line[1]));
+    assert.deepEqual(introGroups, [
+      ['eSIM\u00a0—'],
+      ['виртуальная', 'сим-карта:'],
+      ['звонки,', 'интернет', 'и\u00a0смс\u00a0—'],
+    ]);
     assert.doesNotMatch(html, /id="device-checker"[^>]*inert/);
     assert.doesNotMatch(html, /result-curtain|faq-reveal|data-faq-ready/);
     assert.match(html, /id="device-checker"[\s\S]*class="landing-ending"/);

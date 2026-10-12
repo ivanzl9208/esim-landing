@@ -1,10 +1,7 @@
-export const INTRO_LINES = [
-  "eSIM\u00A0—",
-  "виртуальная",
-  "сим-карта:",
-  "звонки,",
-  "интернет",
-  "и\u00A0смс\u00A0—",
+export const INTRO_GROUPS = [
+  ["eSIM\u00A0—"],
+  ["виртуальная", "сим-карта:"],
+  ["звонки,", "интернет", "и\u00A0смс\u00A0—"],
 ];
 
 export const CHIP_FEATURES = [

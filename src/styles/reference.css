@@ -205,8 +205,7 @@ a {
   color: rgba(11, 12, 13, 0.86);
 }
 
-/* A single flowing column: scroll moves the column, opacity reveals each item.
-   No per-line vertical trajectories, clipping masks or changing font sizes. */
+/* Scroll moves one column; all lines in a phrase share opacity and scale. */
 .intro-text-column {
   position: absolute;
   top: 0;
@@ -228,12 +227,16 @@ a {
   letter-spacing: -.02em;
 }
 
-.intro-text-line {
+.intro-text-group {
   display: block;
   width: calc(100% - 64px * var(--layout-scale));
   opacity: 0;
   transform-origin: center;
   will-change: opacity, transform;
+}
+
+.intro-text-line {
+  display: block;
 }
 
 .intro-text-finale {
@@ -658,7 +661,7 @@ a {
     line-height: calc(52px * var(--layout-scale));
   }
 
-  .intro-text-line {
+  .intro-text-group {
     width: calc(100% - 40px * var(--layout-scale));
   }
 

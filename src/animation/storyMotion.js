@@ -3,7 +3,7 @@ import { TRACKS } from './timing.js';
 import { STORY_ENTER_END, STORY_EXIT_START } from './storyComposition.js';
 import { STORY_BENEFITS } from '../data/story.js';
 
-const motionTracks = ['story', 'storyCenter', 'chipZoom', 'safety', 'returnGradient', 'outro'].map(key => {
+const motionTracks = ['playback', 'features', 'definition', 'definitionVisibility', 'background', 'story', 'storyCenter', 'chipZoom', 'safety', 'returnGradient', 'outro'].map(key => {
   const [start, end, value, ease] = TRACKS[key];
   return { key, start, duration: end - start, value, ease };
 });
@@ -55,7 +55,7 @@ export function advanceStoryMotion(time, target, seconds) {
   return next;
 }
 
-// Sample lateral return, growth, copy, background and checker from one time.
+// Sample headings, feature copy, background, lateral return, growth and checker from one time.
 // Independent followers can leave x in the old column while y/scale already
 // reach the zoom scene on a fast scroll; a shared time keeps the phase order.
 export function storyMotionFrame(time) {

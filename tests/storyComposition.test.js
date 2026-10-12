@@ -16,11 +16,11 @@ test('forward and reverse sampling is continuous across column changes', () => {
   for (let i = 1; i < forward.length; i++) assert.ok(Math.abs(forward[i] - forward[i - 1]) < .04);
 });
 
-test('all four theses double their reading hold while preserving entrance and exit distances', () => {
+test('all four theses shorten their reading hold while preserving entrance and exit distances', () => {
   const distance = (TRACKS.story[1] - TRACKS.story[0]) / 4;
   assert.ok(Math.abs(distance * STORY_ENTER_END - 0.525) < 1e-10);
   assert.ok(Math.abs(distance * (1 - STORY_EXIT_START) - 0.525) < 1e-10);
-  assert.ok(Math.abs(distance * (STORY_EXIT_START - STORY_ENTER_END) - 2.1) < 1e-10);
+  assert.ok(Math.abs(distance * (STORY_EXIT_START - STORY_ENTER_END) - 1.05) < 1e-10);
   for (let index = 0; index < 4; index++) {
     const side = index % 2 ? 1 : -1;
     for (const local of [STORY_ENTER_END, 0.25, 0.5, 0.75, STORY_EXIT_START]) {
@@ -37,7 +37,7 @@ test('reduced motion uses stationary columns without scaling or intermediate tra
   }
 });
 
-test('Final return uses twice the scroll distance without changing previous column changes or growth durations', () => {
+test('Final return uses twice the scroll distance without changing previous column changes before the scroll-controlled growth zone', () => {
   const [start, end] = TRACKS.storyCenter;
   const duration = end - start;
   const previousDuration = (TRACKS.story[1] - TRACKS.story[0]) / 4 * (1 - STORY_EXIT_START);

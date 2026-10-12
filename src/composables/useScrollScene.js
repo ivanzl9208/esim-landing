@@ -3,6 +3,8 @@ import { TRACKS, SCENE_SCROLL_END, getLayout } from '../animation/timing.js';
 import { createIntroTextRenderer } from '../animation/introText.js';
 import { createChipStoryRenderer } from '../animation/chipStory.js';
 import { createCheckerEntrance } from '../animation/checkerEntrance.js';
+import { reverseCheckerScroll } from '../animation/checkerHold.js';
+import { createAutoTransitions } from '../animation/autoTransitions.js';
 import { smoothstep } from '../animation/math.js';
 import { captureScenePosition, restoreScenePosition } from '../animation/scenePosition.js';
 import { storyComposition } from '../animation/storyComposition.js';
@@ -63,6 +65,7 @@ export function useScrollScene(sceneRef, mediaRef, checkerRef, progressRef) {
       let buttonTween;
       let focusDelay;
       let finishResultAnchor;
+      let previousScrollY = window.scrollY;
       let active = true;
       let geometry;
       let signature;
@@ -71,6 +74,7 @@ export function useScrollScene(sceneRef, mediaRef, checkerRef, progressRef) {
       let renderScene = () => {};
       let settleStoryMotion = () => {};
       let advanceMotion = () => {};
+      const autoTransitions = createAutoTransitions(mobile, reduced);
       const checkerEntrance = createCheckerEntrance(checkerRef.value.section);
       const tick = (time, delta) => { lenis?.raf(time * 1000); advanceMotion(delta / 1000); };
       if (!reduced) gsap.ticker.add(tick);
@@ -127,6 +131,7 @@ export function useScrollScene(sceneRef, mediaRef, checkerRef, progressRef) {
           lenis?.resize();
           renderScene();
           position = captureScenePosition(window.scrollY, positionGeometry);
+          previousScrollY = window.scrollY;
           return;
         }
         if (scrollWidth !== window.innerWidth) {
@@ -150,23 +155,33 @@ export function useScrollScene(sceneRef, mediaRef, checkerRef, progressRef) {
         let followStory;
         let storyTarget = 0;
         let initializing = true;
-        const motionFrame = () => storyMotionFrame(nativeTouch || reduced ? storyMotion.time : displayedStoryTime);
+        let checkerProgress = 0;
+        const visualTime = () => nativeTouch || reduced ? storyMotion.time : displayedStoryTime;
+        const motionFrame = () => storyMotionFrame(visualTime());
         const checkerTop = positionGeometry.checkerTop;
-        renderEntrance = () => checkerEntrance.render(motionFrame().outro, geometry, reduced, window.scrollY < checkerTop);
-        const renderChipFrame = () => {
+        renderEntrance = () => checkerEntrance.render(checkerProgress, geometry, reduced, window.scrollY < checkerTop);
+        const renderChipFrame = (immediate = false) => {
           const motion = motionFrame();
+          autoTransitions.update(visualTime(), motion.story, immediate || initializing || reduced);
           const side = storyComposition(motion.story, STORY_BENEFITS.length, reduced, motion.storyCenter).side;
-          const renderedState = { ...state, ...motion, storySide: side };
+          const renderedState = { ...state, ...motion, ...autoTransitions.frame(), storySide: side };
+          // The checker entrance follows the same playhead as the chip and copy.
+          checkerProgress = renderedState.outro;
           renderChip(renderedState, geometry, reduced);
           progressRef?.value?.setScene(renderedState, geometry);
           renderEntrance();
         };
         advanceMotion = seconds => {
-          if (!active || initializing || reduced || nativeTouch) return;
-          const next = advanceStoryMotion(displayedStoryTime, storyMotion.time, seconds);
-          if (Math.abs(next - displayedStoryTime) < 1e-9) return;
-          displayedStoryTime = next;
-          renderChipFrame();
+          if (!active || initializing || reduced) return;
+          let changed = autoTransitions.advance(seconds);
+          if (!nativeTouch) {
+            const next = advanceStoryMotion(displayedStoryTime, storyMotion.time, seconds);
+            if (Math.abs(next - displayedStoryTime) >= 1e-9) {
+              displayedStoryTime = next;
+              changed = true;
+            }
+          }
+          if (changed) renderChipFrame();
         };
         let rendering = false;
         const render = () => {
@@ -192,7 +207,12 @@ export function useScrollScene(sceneRef, mediaRef, checkerRef, progressRef) {
           const storyTime = timeline?.time() ?? 0;
           // Touch already has ScrollTrigger's scrub. A second .75s follower
           // both rendered this subtree twice and delayed it behind native flow.
-          if (initializing || reduced || nativeTouch) {
+          // Keep the shared follower through the adjacent definition screen:
+          // resetting at the story edge snapped the chip from its side to centre.
+          // Only a jump past that whole screen discards an obsolete gray scene
+          // before earlier orange/intro content can become visible.
+          const skippingStory = storyTime < TRACKS.definition[0] && displayedStoryTime >= TRACKS.story[0];
+          if (initializing || reduced || nativeTouch || skippingStory) {
             followStory?.tween.pause();
             storyMotion.time = storyTarget = storyTime;
             displayedStoryTime = storyTime;
@@ -207,7 +227,7 @@ export function useScrollScene(sceneRef, mediaRef, checkerRef, progressRef) {
         settleStoryMotion = () => {
           followStory?.tween.pause();
           storyMotion.time = storyTarget = displayedStoryTime = timeline.time();
-          renderChipFrame();
+          renderChipFrame(true);
         };
         sceneContext = gsap.context(() => {
           if (!reduced && !nativeTouch) followStory = gsap.quickTo(storyMotion, 'time', {
@@ -269,6 +289,7 @@ export function useScrollScene(sceneRef, mediaRef, checkerRef, progressRef) {
         timeline.totalProgress(trigger.progress, false);
         render();
         position = captureScenePosition(window.scrollY, positionGeometry);
+        previousScrollY = window.scrollY;
       };
       const resize = () => {
         clearTimeout(resizeTimer);
@@ -284,16 +305,35 @@ export function useScrollScene(sceneRef, mediaRef, checkerRef, progressRef) {
       window.addEventListener('resize', resize, { passive: true });
       // The fixed-to-flow handoff must also update outside the timeline's range.
       const scroll = () => {
-        renderEntrance();
         // Ignore scroll clamping during resize until rebuild has restored the
         // checkpoint. Reading the new DOM here would lose the old scene point.
         if (signature === `${window.innerWidth}:${window.innerHeight}`) {
+          const current = window.scrollY;
+          const top = keyboardIsOpen() || finishResultAnchor ? current : reverseCheckerScroll(previousScrollY, current, {
+            start: positionGeometry.sceneTop + TRACKS.outro[1] * scrollUnit,
+            end: positionGeometry.checkerTop,
+          });
+          previousScrollY = top;
+          if (top !== current) {
+            // Both ends of the skipped range show the same finished checker.
+            // Sync native scroll, Lenis and the scrub/follower in this event so
+            // the fixed-to-flow handoff cannot flash a stale form position.
+            if (lenis) lenis.scrollTo(top, { immediate: true, force: true });
+            else window.scrollTo({ top, behavior: 'instant' });
+            ScrollTrigger.update();
+            trigger.getTween()?.progress?.(1);
+            timeline.totalProgress(trigger.progress, false);
+            settleStoryMotion();
+            renderScene();
+          }
           position = captureScenePosition(window.scrollY, positionGeometry);
         }
+        renderEntrance();
       };
       positionViewport = top => {
         // Keep wheel smoothing and native scrolling at the same position when
         // an accordion changes layout during a programmatic scroll.
+        previousScrollY = top;
         if (lenis) lenis.scrollTo(top, { immediate: true, force: true });
         else window.scrollTo({ top, behavior: 'instant' });
         ScrollTrigger.update();
@@ -306,6 +346,7 @@ export function useScrollScene(sceneRef, mediaRef, checkerRef, progressRef) {
         // Lenis.scrollTo can skip a target that equals its cached position
         // while ScrollTrigger has temporarily moved the native scroller to 0.
         const top = restoreScenePosition(checkpoint, positionGeometry);
+        previousScrollY = top;
         window.scrollTo({ top, behavior: 'instant' });
         lenis?.resize();
         lenis?.scrollTo(top, { immediate: true, force: true });
@@ -333,6 +374,7 @@ export function useScrollScene(sceneRef, mediaRef, checkerRef, progressRef) {
             timeline.totalProgress(trigger.progress, false);
             renderScene();
             position = captureScenePosition(window.scrollY, positionGeometry);
+            previousScrollY = window.scrollY;
           }
           resolve();
         };
@@ -358,6 +400,7 @@ export function useScrollScene(sceneRef, mediaRef, checkerRef, progressRef) {
           // A direct CTA/skip-link jump does not need to replay the hidden
           // desktop story follower after arriving at the checker.
           settleStoryMotion();
+          previousScrollY = window.scrollY;
           focusDelay = gsap.delayedCall(reduced ? 0 : 0.35, () => { if (active) checkerRef.value?.focusInput(); });
         };
         if (lenis) lenis.scrollTo(target, { duration: 1.2, onComplete: focus });

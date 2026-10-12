@@ -1,7 +1,7 @@
 import { clamp } from './math.js';
 
 export const FEATURE_SCROLL_DISTANCE = 8;
-export const FEATURE_READING_EXTENSION = 6;
+export const FEATURE_READING_EXTENSION = 1.5;
 
 export function featureWindow(index, mobile) {
   const start = mobile ? 0.035 + index * 0.153 : 0.045 + Math.floor(index / 2) * 0.305;
@@ -9,7 +9,7 @@ export function featureWindow(index, mobile) {
 }
 
 // Freeze only the text playhead at a fully revealed point. The chip's
-// independent scroll track continues through all six extra viewports.
+// independent scroll track continues through the brief reading pauses.
 export function featureReadingProgress(progress, mobile) {
   const distance = clamp(progress) * (FEATURE_SCROLL_DISTANCE + FEATURE_READING_EXTENSION);
   const count = mobile ? 6 : 3;

@@ -1,0 +1,112 @@
+import { clamp, mix, smoothstep } from './math.js';
+import { TRACKS } from './timing.js';
+import { featureReadingProgress, featureWindow } from './featureReading.js';
+import { STORY_ENTER_END, STORY_EXIT_START } from './storyComposition.js';
+import { STORY_BENEFITS } from '../data/story.js';
+
+export const SHUTTER_DURATION = 1.1;
+export const TEXT_ENTER_DURATION = .65;
+export const TEXT_EXIT_DURATION = .45;
+const clock = () => ({ value: 0, target: 0, from: 0, elapsed: 0, duration: 0 });
+const request = (motion, target, duration, immediate) => {
+  if (immediate) {
+    motion.value = motion.target = target;
+    motion.elapsed = motion.duration = 0;
+  } else if (motion.target !== target) {
+    motion.from = motion.value;
+    motion.target = target;
+    motion.elapsed = 0;
+    motion.duration = duration;
+  }
+};
+const advance = (motion, seconds) => {
+  if (motion.value === motion.target) return false;
+  motion.elapsed = Math.min(motion.duration, motion.elapsed + Math.max(0, seconds));
+  motion.value = motion.elapsed === motion.duration ? motion.target
+    : mix(motion.from, motion.target, motion.elapsed / motion.duration);
+  return true;
+};
+
+const textTarget = (local, reverse, enterEnd, exitStart) => {
+  if (local <= 0) return 0;
+  if (local >= 1) return 1;
+  if (reverse && local < enterEnd) return 0;
+  if (!reverse && local > exitStart) return 1;
+  return (enterEnd + exitStart) / 2;
+};
+const requestText = (motion, target, enterEnd, exitStart, immediate) => {
+  const visible = target > 0 && target < 1;
+  if (immediate) {
+    request(motion, target, 0, true);
+    return;
+  }
+  // The whole reading interval renders identically. Skip this static section
+  // of the phase when starting an entrance/exit, rather than adding a delay.
+  const settled = motion.value >= enterEnd && motion.value <= exitStart;
+  if (visible) {
+    if (settled) request(motion, target, 0, true);
+    else request(motion, motion.value < enterEnd ? enterEnd : exitStart, TEXT_ENTER_DURATION, false);
+  } else {
+    // A fast jump over an unseen card must not play its entrance afterwards.
+    if ((motion.value === 0 || motion.value === 1) && motion.value !== target) {
+      request(motion, target, 0, true);
+      return;
+    }
+    if (settled) motion.value = target === 0 ? enterEnd : exitStart;
+    request(motion, target, TEXT_EXIT_DURATION, false);
+  }
+};
+
+/** Scroll chooses a transition; this clock finishes it even without more input. */
+export function createAutoTransitions(mobile, reduced = false) {
+  const shutter = clock();
+  const features = Array.from({ length: 6 }, clock);
+  const stories = Array.from({ length: STORY_BENEFITS.length }, clock);
+  let previousTime = 0;
+  let previousStory = 0;
+  let reverseTime = false;
+  let reverseStory = false;
+  return {
+    update(time, story, immediate = false) {
+      if (immediate) reverseTime = reverseStory = false;
+      else {
+        if (Math.abs(time - previousTime) > 1e-6) reverseTime = time < previousTime;
+        if (Math.abs(story - previousStory) > 1e-6) reverseStory = story < previousStory;
+      }
+      previousTime = time;
+      previousStory = story;
+      const [start, end] = TRACKS.reveal;
+      const target = time <= start ? 0 : time >= end ? 1 : reverseTime ? 0 : 1;
+      // Once the user has left this screen, its old curtain must not cover
+      // the intro while a closing clock catches up after a fast reverse jump.
+      request(shutter, target, SHUTTER_DURATION, immediate || time <= start);
+      const rawFeatures = clamp((time - TRACKS.features[0]) / (TRACKS.features[1] - TRACKS.features[0]));
+      const featureProgress = featureReadingProgress(rawFeatures, mobile);
+      features.forEach((motion, index) => {
+        const window = featureWindow(index, mobile);
+        const local = clamp((featureProgress - window.start) / (window.end - window.start));
+        requestText(motion, textTarget(local, reverseTime, .38, .68), .38, .68, immediate || reduced || local === 0 || local === 1);
+      });
+      stories.forEach((motion, index) => {
+        const local = clamp(story * stories.length - index);
+        requestText(motion, textTarget(local, reverseStory, STORY_ENTER_END, STORY_EXIT_START), STORY_ENTER_END, STORY_EXIT_START, immediate || reduced || local === 0 || local === 1);
+      });
+    },
+    advance(seconds) {
+      // Evaluate every clock even if an earlier one already changed.
+      const changed = [shutter, ...features, ...stories].map(motion => advance(motion, seconds)).some(Boolean);
+      return changed;
+    },
+    frame() {
+      const [start, end] = TRACKS.reveal;
+      const chipStart = (TRACKS.chip[0] - start) / (end - start);
+      const chipEnd = (TRACKS.chip[1] - start) / (end - start);
+      return {
+        reveal: smoothstep(0, 1, shutter.value),
+        chip: smoothstep(chipStart, chipEnd, shutter.value),
+        featureText: features.map(motion => motion.value),
+        storyText: stories.map(motion => motion.value),
+      };
+    },
+  };
+}

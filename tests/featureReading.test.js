@@ -6,7 +6,7 @@ import { createChipStoryRenderer } from '../src/animation/chipStory.js';
 import { TRACKS } from '../src/animation/timing.js';
 
 test('Added reading distance freezes text only, preserving continuous forward and reverse progress', () => {
-  assert.equal(TRACKS.features[1] - TRACKS.features[0], 14);
+  assert.ok(Math.abs(TRACKS.features[1] - TRACKS.features[0] - 9.5) < 1e-10);
   for (const mobile of [false, true]) {
     const values = Array.from({ length: 2001 }, (_, index) => featureReadingProgress(index / 2000, mobile));
     assert.equal(values[0], 0);

@@ -4,9 +4,9 @@ import { FEATURE_READING_EXTENSION } from './featureReading.js';
 
 // All positions are viewport-height multiples measured from the scene top.
 // Safety and the returning gradient retain their original overlapping tracks.
-// Four theses use 3.15 viewports each, with twice the previous reading hold.
+// Four theses use 2.1 viewports each, retaining entrance and exit distances.
 // Later tracks shift without being compressed.
-const STORY_EXTENSION = 5.4;
+const STORY_EXTENSION = 1.2;
 // Double only the last lateral return, adding half a viewport before zoom.
 export const CHIP_CENTER_RETURN_EXTENSION = .525;
 // Scroll space for the first zoom and the simultaneous safety-copy entrance.
@@ -49,9 +49,9 @@ TRACKS.storyCenter = [
   TRACKS.story[1] + CHIP_CENTER_RETURN_EXTENSION,
   1, 'none',
 ];
-// Give the fully revealed checker three viewports of reading/selection space
+// Give the fully revealed checker two viewports of reading/selection space
 // before handing it to document flow, without stretching its entrance.
-export const CHECKER_HOLD = 3;
+export const CHECKER_HOLD = 2;
 export const SCENE_SCROLL_END = TRACKS.outro[1] + CHECKER_HOLD;
 export const SCENE_BASE_HEIGHT = `${(SCENE_SCROLL_END + 1) * 100}svh`;
 export const getLayout = (width, height) => {

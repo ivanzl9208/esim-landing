@@ -137,7 +137,7 @@ test('Equal scroll distances rotate the chip equally across features, reading ho
         assert.ok(Math.abs(values[index] - values[index - 1] - turns / 1000) < 2e-6);
       }
       // This was where the independent last turn accelerated by 2.36x.
-      const previousBoundary = 28.55;
+      const previousBoundary = TRACKS.definition[0];
       assert.ok(Math.abs((sample(previousBoundary + .05) - sample(previousBoundary)) -
         (sample(previousBoundary) - sample(previousBoundary - .05))) < 2e-6);
       assert.deepEqual([...times].reverse().map(sample), [...values].reverse());
