@@ -149,9 +149,90 @@ test('Automatic curtain and card clocks leave chip rotation and heading movement
     const frame = finish(motion, TRACKS.reveal[0] + .01, 0, 60, 10);
     assert.equal(frame.reveal, 1);
     assert.ok(frame.featureText.every(value => value === 0));
-    assert.equal('playback' in frame, false);
-    assert.equal('marquee' in frame, false);
+    assert.equal(frame.playback, 0);
+    assert.equal(frame.marquee, 0);
     assert.equal(motion.advance(1), false);
     assert.deepEqual(motion.frame(), frame);
   }
+});
+
+test('The next scroll after opening moves the heading immediately; parking does not autoplay it', () => {
+  for (const mobile of [false, true]) for (const fps of [30, 60, 120]) {
+    const motion = createAutoTransitions(mobile);
+    const opening = TRACKS.reveal[0] + .01;
+    motion.update(0, 0, true);
+    finish(motion, opening, 0, fps);
+    assert.equal(motion.frame().marquee, 0);
+    motion.update(opening + .2, 0);
+    const moved = motion.frame();
+    assert.ok(moved.marquee > 0, 'No remaining curtain scroll distance should delay the text');
+    assert.ok(moved.playback > 0, 'Rotation must share the immediate scroll handoff');
+    assert.equal(moved.reveal, 1);
+    assert.deepEqual(finish(motion, opening + .2, 0, fps, 4), moved);
+    motion.update(opening + .1, 0);
+    assert.ok(motion.frame().marquee > 0 && motion.frame().marquee < moved.marquee);
+    assert.ok(motion.frame().playback > 0 && motion.frame().playback < moved.playback);
+    assert.equal(finish(motion, opening + .1, 0, fps).reveal, 1, 'Reverse text movement must not close the shutter early');
+    assert.ok(motion.frame().featureText.every(value => value === 0));
+    motion.update(TRACKS.features[0], 0);
+    assert.equal(motion.frame().marquee, 1, 'The heading still ends before cards start');
+    motion.update(0, 0);
+    assert.equal(motion.frame().marquee, 0);
+    assert.equal(motion.frame().playback, 0);
+    finish(motion, opening + .05, 0, fps);
+    assert.equal(motion.frame().marquee, 0, 'Reopening starts at its new position, without an old anchor');
+  }
+});
+
+test('Early rotation stays linear through the cards and reaches the original final pose before gray text', () => {
+  for (const mobile of [false, true]) {
+    const motion = createAutoTransitions(mobile);
+    const start = TRACKS.reveal[0] + .01;
+    motion.update(0, 0, true);
+    finish(motion, start, 0);
+    const samples = Array.from({length: 501}, (_, index) => {
+      motion.update(start + (TRACKS.playback[1] - start) * index / 500, 0);
+      return motion.frame().playback;
+    });
+    assert.equal(samples[0], 0);
+    assert.equal(samples.at(-1), TRACKS.playback[2]);
+    for (let index = 1; index < samples.length; index++) {
+      assert.ok(Math.abs(samples[index] - samples[index - 1] - TRACKS.playback[2] / 500) < 1e-10);
+    }
+    motion.update(TRACKS.story[0], .1);
+    assert.equal(motion.frame().playback, TRACKS.playback[2]);
+    const backwards = Array.from({length: 501}, (_, index) => {
+      motion.update(start + (TRACKS.playback[1] - start) * (500 - index) / 500, 0);
+      return motion.frame().playback;
+    });
+    assert.deepEqual(backwards.reverse(), samples);
+  }
+});
+
+test('Direct restoration retains the original video phase when no early handoff happened', () => {
+  const motion = createAutoTransitions(false);
+  motion.update((TRACKS.playback[0] + TRACKS.playback[1]) / 2, 0, true);
+  assert.equal(motion.frame().playback, TRACKS.playback[2] / 2);
+  motion.update(TRACKS.playback[1], 0, true);
+  assert.equal(motion.frame().playback, TRACKS.playback[2]);
+  assert.equal(motion.advance(1), false);
+});
+
+test('Opening during continued scroll anchors the heading when the curtain actually finishes', () => {
+  const motion = createAutoTransitions(false);
+  motion.update(0, 0, true);
+  const opening = TRACKS.reveal[0] + .01;
+  for (let index = 0; index < 90; index++) {
+    motion.update(opening + index / 90, 0);
+    motion.advance(1 / 60);
+  }
+  assert.equal(motion.frame().reveal, 1);
+  assert.ok(motion.frame().marquee > 0);
+  const before = motion.frame();
+  motion.update(opening + 1.05, 0);
+  assert.ok(motion.frame().marquee > before.marquee);
+  assert.equal(motion.frame().reveal, 1);
+  const restored = createAutoTransitions(false);
+  restored.update((TRACKS.marquee[0] + TRACKS.marquee[1]) / 2, 0, true);
+  assert.equal(restored.frame().marquee, .5);
 });

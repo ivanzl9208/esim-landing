@@ -66,6 +66,7 @@ export function createAutoTransitions(mobile, reduced = false) {
   let previousStory = 0;
   let reverseTime = false;
   let reverseStory = false;
+  let scrollStart = null;
   return {
     update(time, story, immediate = false) {
       if (immediate) reverseTime = reverseStory = false;
@@ -76,10 +77,19 @@ export function createAutoTransitions(mobile, reduced = false) {
       previousTime = time;
       previousStory = story;
       const [start, end] = TRACKS.reveal;
-      const target = time <= start ? 0 : time >= end ? 1 : reverseTime ? 0 : 1;
+      if (time <= start || reduced) scrollStart = null;
+      const scrollActive = scrollStart !== null && time >= scrollStart;
+      const target = time <= start ? 0 : time >= end || scrollActive ? 1 : reverseTime ? 0 : 1;
       // Once the user has left this screen, its old curtain must not cover
       // the intro while a closing clock catches up after a fast reverse jump.
       request(shutter, target, SHUTTER_DURATION, immediate || time <= start);
+      // Opening can finish well before its former scroll endpoint. Let the
+      // next gesture move both heading and rotation from that actual position.
+      // Keep their original endpoints and never advance them on the clock.
+      if (shutter.value === 0 && shutter.target === 0) scrollStart = null;
+      if (!reduced && scrollStart === null && shutter.value === 1 && shutter.target === 1 && time < TRACKS.marquee[0]) {
+        scrollStart = time;
+      }
       const rawFeatures = clamp((time - TRACKS.features[0]) / (TRACKS.features[1] - TRACKS.features[0]));
       const featureProgress = featureReadingProgress(rawFeatures, mobile);
       features.forEach((motion, index) => {
@@ -104,6 +114,10 @@ export function createAutoTransitions(mobile, reduced = false) {
       return {
         reveal: smoothstep(0, 1, shutter.value),
         chip: smoothstep(chipStart, chipEnd, shutter.value),
+        marquee: clamp((previousTime - (scrollStart ?? TRACKS.marquee[0])) /
+          (TRACKS.marquee[1] - (scrollStart ?? TRACKS.marquee[0]))),
+        playback: TRACKS.playback[2] * clamp((previousTime - (scrollStart ?? TRACKS.playback[0])) /
+          (TRACKS.playback[1] - (scrollStart ?? TRACKS.playback[0]))),
         featureText: features.map(motion => motion.value),
         storyText: stories.map(motion => motion.value),
       };
