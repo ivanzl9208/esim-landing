@@ -5,6 +5,7 @@ import { createChipStoryRenderer } from '../animation/chipStory.js';
 import { createCheckerEntrance } from '../animation/checkerEntrance.js';
 import { reverseCheckerScroll } from '../animation/checkerHold.js';
 import { createAutoTransitions } from '../animation/autoTransitions.js';
+import { createChipRotation } from '../animation/chipRotation.js';
 import { smoothstep } from '../animation/math.js';
 import { captureScenePosition, restoreScenePosition } from '../animation/scenePosition.js';
 import { storyComposition } from '../animation/storyComposition.js';
@@ -156,6 +157,7 @@ export function useScrollScene(sceneRef, mediaRef, checkerRef, progressRef) {
         let storyTarget = 0;
         let initializing = true;
         let checkerProgress = 0;
+        const chipRotation = createChipRotation();
         const visualTime = () => nativeTouch || reduced ? storyMotion.time : displayedStoryTime;
         const motionFrame = () => storyMotionFrame(visualTime());
         const checkerTop = positionGeometry.checkerTop;
@@ -165,6 +167,14 @@ export function useScrollScene(sceneRef, mediaRef, checkerRef, progressRef) {
           autoTransitions.update(visualTime(), motion.story, immediate || initializing || reduced);
           const side = storyComposition(motion.story, STORY_BENEFITS.length, reduced, motion.storyCenter).side;
           const renderedState = { ...state, ...motion, ...autoTransitions.frame(), storySide: side };
+          // Only video rotation gets the approved 1.2s tail. Read native scroll
+          // rather than stacking it after the timeline and geometry followers.
+          // Gray copy/zoom use a fixed front pose, including their reverse exit.
+          const nativeTime = (window.scrollY - positionGeometry.sceneTop) / scrollUnit;
+          const fixedPose = visualTime() >= TRACKS.playback[1];
+          const turns = fixedPose ? TRACKS.playback[2] : autoTransitions.playbackAt(nativeTime);
+          chipRotation.update(turns, immediate || initializing || reduced || fixedPose || renderedState.reveal === 0);
+          renderedState.playback = chipRotation.value();
           // The checker entrance follows the same playhead as the chip and copy.
           checkerProgress = renderedState.outro;
           renderChip(renderedState, geometry, reduced);
@@ -174,6 +184,7 @@ export function useScrollScene(sceneRef, mediaRef, checkerRef, progressRef) {
         advanceMotion = seconds => {
           if (!active || initializing || reduced) return;
           let changed = autoTransitions.advance(seconds);
+          if (chipRotation.advance(seconds)) changed = true;
           if (!nativeTouch) {
             const next = advanceStoryMotion(displayedStoryTime, storyMotion.time, seconds);
             if (Math.abs(next - displayedStoryTime) >= 1e-9) {

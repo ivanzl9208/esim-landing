@@ -67,7 +67,12 @@ export function createAutoTransitions(mobile, reduced = false) {
   let reverseTime = false;
   let reverseStory = false;
   let scrollStart = null;
+  const playbackAt = time => TRACKS.playback[2] * clamp((time - (scrollStart ?? TRACKS.playback[0])) /
+    (TRACKS.playback[1] - (scrollStart ?? TRACKS.playback[0])));
   return {
+    // Rotation can follow native scroll independently of the geometry scrub,
+    // while sharing the actual position at which the shutter finished opening.
+    playbackAt,
     update(time, story, immediate = false) {
       if (immediate) reverseTime = reverseStory = false;
       else {
@@ -116,8 +121,7 @@ export function createAutoTransitions(mobile, reduced = false) {
         chip: smoothstep(chipStart, chipEnd, shutter.value),
         marquee: clamp((previousTime - (scrollStart ?? TRACKS.marquee[0])) /
           (TRACKS.marquee[1] - (scrollStart ?? TRACKS.marquee[0]))),
-        playback: TRACKS.playback[2] * clamp((previousTime - (scrollStart ?? TRACKS.playback[0])) /
-          (TRACKS.playback[1] - (scrollStart ?? TRACKS.playback[0]))),
+        playback: playbackAt(previousTime),
         featureText: features.map(motion => motion.value),
         storyText: stories.map(motion => motion.value),
       };
