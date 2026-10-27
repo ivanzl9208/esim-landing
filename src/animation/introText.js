@@ -38,7 +38,7 @@ export function createIntroTextRenderer(scene) {
         - (isFinale ? .05 * geometry.height : 0);
       const frame = introFadeFrame(fadeTop, geometry.height, isFinale, reduced);
       item.style.opacity = frame.opacity.toFixed(4);
-      item.style.transform = `scale(${frame.scale.toFixed(5)})`;
+      item.style.transform = `${isFinale ? 'translateX(-50%) ' : ''}scale(${frame.scale.toFixed(5)})`;
     });
   };
 }

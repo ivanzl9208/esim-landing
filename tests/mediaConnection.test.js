@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { avoidsVideo, prefersStaticMedia } from '../src/utils/mediaConnection.js';
+import { prefersFrameScrubbing } from '../src/utils/mediaPlayback.js';
 
 test('Hero attempts playback on estimated slow connections; explicit data saving and offline still stop downloads', () => {
   for (const connection of [undefined, {}, { effectiveType: '3g', downlink: .8, rtt: 600 },
@@ -25,4 +26,14 @@ test('Unknown Safari connection and fast networks retain animation until an actu
     { connection: { effectiveType: '4g', downlink: 1.45, rtt: 50 } }]) {
     assert.equal(prefersStaticMedia(navigator), false);
   }
+});
+
+test('Low-power desktop Chromium uses frame scrubbing without changing mobile or Safari media', () => {
+  const desktop = { userAgent: 'Mozilla/5.0 Chrome/140.0 YaBrowser/25.8 Safari/537.36', platform: 'Win32' };
+  assert.equal(prefersFrameScrubbing({ ...desktop, hardwareConcurrency: 4, deviceMemory: 8 }), true);
+  assert.equal(prefersFrameScrubbing({ ...desktop, hardwareConcurrency: 8, deviceMemory: 4 }), true);
+  assert.equal(prefersFrameScrubbing({ ...desktop, hardwareConcurrency: 8, deviceMemory: 8 }), false);
+  assert.equal(prefersFrameScrubbing({ ...desktop, hardwareConcurrency: 4, userAgentData: { mobile: true } }), false);
+  assert.equal(prefersFrameScrubbing({ userAgent: 'Mozilla/5.0 Safari/605.1.15', platform: 'MacIntel', hardwareConcurrency: 4 }), false);
+  assert.equal(prefersFrameScrubbing({ userAgent: 'Mozilla/5.0 CriOS/140.0 Mobile', platform: 'iPhone', hardwareConcurrency: 4 }), false);
 });

@@ -8,6 +8,7 @@
 }
 .landing-ending {
   --ending-radius: 60px;
+  --ending-seam-orange: #e44f03;
   position: relative;
   z-index: 60;
   /* Answers change the banner's position too. Exclude the whole ending from
@@ -15,7 +16,7 @@
   overflow-anchor: none;
   /* Extend the checker's orange surface behind the FAQ's rounded top corners.
      The card stays in document flow, so its overlap adds no scroll range. */
-  background: linear-gradient(to bottom, #e44f03 0 var(--ending-radius), #e9ebeb var(--ending-radius) 100%);
+  background: linear-gradient(to bottom, var(--ending-seam-orange) 0 var(--ending-radius), #e9ebeb var(--ending-radius) 100%);
 }
 .ending-white {
   --ending-gutter: 32px;

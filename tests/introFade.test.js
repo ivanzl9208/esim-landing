@@ -95,6 +95,10 @@ test('Renderer only measures layout on resize and clears the column by the end o
   for (let i = 0; i <= 100; i++) sample(i / 100);
   assert.equal(reads, initialReads);
   assert.ok([...groups, finale].every(node => Number(node.style.opacity) === 0));
+  assert.match(finale.style.transform, /^translateX\(-50%\) scale\(/,
+    'The large finale stays centred while its scroll scale changes');
+  assert.ok(groups.every(node => !node.style.transform.includes('translateX')),
+    'Only the finale needs explicit viewport centring');
   assert.equal('top' in finale.style, false, 'Scroll must not animate layout properties');
   geometry = { ...geometry, height: 780 };
   sample(.5);

@@ -12,6 +12,8 @@ export function createChipFrameLoader({ load, present, failed, concurrency = 3, 
   let wanted = 0;
   let shown = -1;
   let plan = [];
+  let warmPlan = [];
+  const warmed = new Set();
   let disposed = false;
   const show = () => {
     if (disposed || !ready.size) return;
@@ -28,15 +30,21 @@ export function createChipFrameLoader({ load, present, failed, concurrency = 3, 
   };
   const pump = () => {
     if (disposed) return;
-    for (const index of plan) {
+    const queue = [
+      ...plan.map(index => ({ index, priority: true })),
+      ...warmPlan.map(index => ({ index, priority: false })),
+    ];
+    for (const { index, priority } of queue) {
       if (active.size >= concurrency) break;
       const failure = errors.get(index);
-      if (ready.has(index) || active.has(index) || (failure && (failure.attempts >= 4 || failure.after > Date.now()))) continue;
+      if (ready.has(index) || active.has(index) || (!priority && warmed.has(index))
+        || (failure && (failure.attempts >= 4 || failure.after > Date.now()))) continue;
       const controller = new AbortController();
       active.set(index, controller);
       Promise.resolve().then(() => load(index, controller.signal)).then(image => {
         if (disposed) return;
         errors.delete(index);
+        warmed.add(index);
         ready.set(index, image);
         show();
         trim();
@@ -50,7 +58,8 @@ export function createChipFrameLoader({ load, present, failed, concurrency = 3, 
     // One bounded backoff timer, independent of scroll updates. A temporary
     // timeout must not blacklist a rotation frame for the rest of the visit.
     clearTimeout(retryTimer);
-    const pending = plan.map(index => !active.has(index) && errors.get(index))
+    const pending = [...new Set([...plan, ...warmPlan])]
+      .map(index => !active.has(index) && errors.get(index))
       .filter(failure => failure && failure.attempts < 4);
     if (pending.length && active.size < concurrency) {
       retryTimer = setTimeout(pump, Math.max(0, Math.min(...pending.map(failure => failure.after)) - Date.now()));
@@ -74,6 +83,15 @@ export function createChipFrameLoader({ load, present, failed, concurrency = 3, 
       show();
       pump();
     },
+    warm() {
+      if (disposed || warmPlan.length) return;
+      // Start close to the front pose, then walk around the loop. A later
+      // request is always placed before this queue and therefore remains the
+      // first frame decoded after the currently active batch.
+      warmPlan = Array.from({ length: CHIP_FRAME_COUNT }, (_, index) => index)
+        .sort((a, b) => distance(a, wanted) - distance(b, wanted));
+      pump();
+    },
     retry() {
       if (disposed) return;
       errors.clear();
@@ -83,7 +101,7 @@ export function createChipFrameLoader({ load, present, failed, concurrency = 3, 
       disposed = true;
       clearTimeout(retryTimer);
       active.forEach(controller => controller.abort());
-      active.clear(); ready.clear(); plan = [];
+      active.clear(); ready.clear(); warmed.clear(); plan = []; warmPlan = [];
     },
   };
 }

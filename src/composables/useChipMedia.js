@@ -1,6 +1,6 @@
 import { onMounted, onScopeDispose, ref, watch } from 'vue';
 import { asset } from '../utils/assets.js';
-import { getMediaPlayback } from '../utils/mediaPlayback.js';
+import { getMediaPlayback, prefersFrameScrubbing } from '../utils/mediaPlayback.js';
 import { CHIP_FRAME_COUNT, createChipFrameLoader } from '../utils/chipFrameLoader.js';
 import { MEDIA_LOAD_DEADLINE, CHIP_MOV_LOAD_DEADLINE } from '../utils/mediaConnection.js';
 import { useMediaConnection } from './useMediaConnection.js';
@@ -30,6 +30,7 @@ export function useChipMedia(videoRef, frameRef, stillRef) {
   let frameIndex = 0;
   let mediaRequested = false;
   let videoFailed = false;
+  let preferFrames = false;
   let fetchController;
   let blobUrl;
   let loadDeadline;
@@ -171,10 +172,18 @@ export function useChipMedia(videoRef, frameRef, stillRef) {
     frameMode.value = true;
     prepareFrames();
     draw(displayedTurns);
+    loader?.warm();
   };
   const loadMedia = async () => {
     if (!mounted || disposed || isStatic()) return;
-    if (frameMode.value) { prepareFrames(); draw(displayedTurns); return; }
+    if (frameMode.value) {
+      prepareFrames();
+      draw(displayedTurns);
+      // Save-Data/offline stays demand-driven. Hardware fallback and a failed
+      // video warm the complete loop while the user is still above the scene.
+      if (preferFrames || videoFailed) loader?.warm();
+      return;
+    }
     if (fetchController || blobUrl) return;
     const controller = new AbortController();
     fetchController = controller;
@@ -256,7 +265,7 @@ export function useChipMedia(videoRef, frameRef, stillRef) {
       loader?.dispose(); loader = undefined;
       releaseVideo(); showFront();
     } else {
-      const needsFrames = avoidVideo.value || videoFailed;
+      const needsFrames = avoidVideo.value || videoFailed || preferFrames;
       if (needsFrames && !frameMode.value) releaseVideo();
       frameMode.value = needsFrames;
       if (!needsFrames) { loader?.dispose(); loader = undefined; }
@@ -269,7 +278,11 @@ export function useChipMedia(videoRef, frameRef, stillRef) {
     mounted = true;
     video = videoRef.value;
     videoSource.value = getMediaPlayback(navigator).chipSource;
-    frameMode.value = avoidVideo.value;
+    // Low-power desktop Chromium/Yandex gets decoded still frames instead of
+    // repeated VP9 seeks. The first frame is already in the DOM, so switching
+    // modes cannot flash or change the chip pose.
+    preferFrames = videoSource.value.endsWith('.webm') && prefersFrameScrubbing(navigator);
+    frameMode.value = avoidVideo.value || preferFrames;
     video.defaultMuted = true; video.muted = true;
     video.addEventListener('loadedmetadata', metadata);
     video.addEventListener('loadeddata', decoded);
@@ -280,7 +293,10 @@ export function useChipMedia(videoRef, frameRef, stillRef) {
     window.addEventListener('pageshow', visibility);
     window.addEventListener('online', visibility);
     visibility();
-    if (mediaRequested) loadMedia();
+    // Begin downloading the correct WebM/MOV (or warming the frame fallback)
+    // as soon as the page mounts, on every viewport. The media is already
+    // hidden behind frame 001, so early preparation cannot alter composition.
+    prepare();
     draw(requestedTurns);
   });
   onScopeDispose(() => {

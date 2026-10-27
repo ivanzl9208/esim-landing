@@ -41,7 +41,7 @@ button:disabled { opacity: 1; }
   .checker-input-shell input { font-size: max(16px, calc(16px * var(--layout-scale))); }
 }
 @media (max-height: 460px) {
-  .hero-stage { min-height: 100svh; }
+  .hero-stage { min-height: 100vh; }
 }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition-duration: 0s !important; }

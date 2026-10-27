@@ -94,3 +94,29 @@ test('Disposal cancels a scheduled retry', async t => {
   t.mock.timers.tick(10000); await drain();
   assert.equal(calls, before);
 });
+
+test('Background warm-up stays bounded and a scroll request takes priority over the remaining queue', async () => {
+  const { loader, loads, shown, peak } = setup();
+  loader.request(0);
+  loader.warm();
+  await drain();
+  assert.equal(loads.size, 3);
+  assert.equal(peak(), 3);
+
+  // Finish the initial batch, then jump far into the rotation. Already active
+  // background work is not aborted, but the requested frame must be first in
+  // line as soon as one of those bounded slots becomes available.
+  for (const index of [...loads.keys()]) loads.get(index).finish();
+  await drain();
+  const backgroundBatch = [...loads.keys()].filter(index => ![0, 1, 149].includes(index));
+  loader.request(75);
+  await drain();
+  loads.get(backgroundBatch.at(-1)).finish();
+  await drain();
+  assert.ok(loads.has(75));
+  loads.get(75).finish();
+  await drain();
+  assert.equal(shown.at(-1), 75);
+  assert.equal(peak(), 3);
+  loader.dispose();
+});
