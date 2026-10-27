@@ -3,7 +3,14 @@
  * Chrome/Firefox/Edge on iOS must use the Apple media path too.
  * Accept a navigator snapshot so this policy stays pure and SSR-safe.
  */
-export function getMediaPlayback({ userAgent = '', platform = '', maxTouchPoints = 0 } = {}) {
+export function getMediaPlayback({
+  userAgent = '',
+  platform = '',
+  maxTouchPoints = 0,
+  hardwareConcurrency = 0,
+  deviceMemory = 0,
+  userAgentData,
+} = {}) {
   const ios = /iPad|iPhone|iPod|CriOS|FxiOS|EdgiOS|OPiOS/i.test(userAgent)
     || (/Mac/i.test(platform) && maxTouchPoints > 1);
   const safari = /AppleWebKit/i.test(userAgent) && /Safari/i.test(userAgent)
@@ -11,21 +18,21 @@ export function getMediaPlayback({ userAgent = '', platform = '', maxTouchPoints
   const appleMedia = ios || safari;
   return {
     heroSource: appleMedia ? 'hero-alpha.mov' : 'hero.webm',
-    chipSource: appleMedia ? 'chip-scroll-alpha.mov' : 'chip-scroll.webm',
+    chipSource: appleMedia ? 'chip-scroll-alpha.mov'
+      : prefersLiteChipVideo({ userAgent, platform, maxTouchPoints, hardwareConcurrency, deviceMemory, userAgentData })
+        ? 'chip-scroll-lite.webm'
+        : 'chip-scroll.webm',
   };
 }
 
 /**
- * Seeking a VP9 video on every scroll update is substantially more expensive
- * than ordinary playback. Older desktop Chromium/Yandex installations often
- * decode those seeks in software and visibly jump after the decoder catches
- * up. The existing WebP sequence trades a little more transfer for predictable
- * frame presentation on that class of hardware.
- *
- * Keep phones/tablets and Apple media on their dedicated paths: mobile memory
- * is tighter, while Safari uses the all-keyframe HEVC source instead of VP9.
+ * Older desktop Chromium/Yandex installations often decode VP9 seeks in
+ * software. Keep the same transparent all-keyframe video pipeline, but use a
+ * 480px source that cuts per-frame pixel work by 64%. Phones retain the full
+ * source (their decoder path is normally hardware accelerated), while Safari
+ * remains on its transparent MOV.
  */
-export function prefersFrameScrubbing({
+export function prefersLiteChipVideo({
   userAgent = '',
   platform = '',
   maxTouchPoints = 0,
@@ -40,8 +47,13 @@ export function prefersFrameScrubbing({
     && !/CriOS|EdgiOS|OPiOS/i.test(userAgent);
   if (mobile || !chromium) return false;
 
+  const chromeVersion = Number(userAgent.match(/(?:Chrome|Chromium)\/(\d+)/i)?.[1]);
+  const yandexVersion = Number(userAgent.match(/YaBrowser\/(\d+)/i)?.[1]);
+  const legacyDecoder = (Number.isFinite(chromeVersion) && chromeVersion < 110)
+    || (Number.isFinite(yandexVersion) && yandexVersion < 24);
   const cores = Number(hardwareConcurrency);
   const memory = Number(deviceMemory);
-  return (Number.isFinite(cores) && cores > 0 && cores <= 4)
+  const lowPower = (Number.isFinite(cores) && cores > 0 && cores <= 4)
     || (Number.isFinite(memory) && memory > 0 && memory <= 4);
+  return legacyDecoder || lowPower;
 }

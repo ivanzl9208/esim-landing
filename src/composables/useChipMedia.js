@@ -1,6 +1,6 @@
 import { onMounted, onScopeDispose, ref, watch } from 'vue';
 import { asset } from '../utils/assets.js';
-import { getMediaPlayback, prefersFrameScrubbing } from '../utils/mediaPlayback.js';
+import { getMediaPlayback } from '../utils/mediaPlayback.js';
 import { CHIP_FRAME_COUNT, createChipFrameLoader } from '../utils/chipFrameLoader.js';
 import { MEDIA_LOAD_DEADLINE, CHIP_MOV_LOAD_DEADLINE } from '../utils/mediaConnection.js';
 import { useMediaConnection } from './useMediaConnection.js';
@@ -30,7 +30,6 @@ export function useChipMedia(videoRef, frameRef, stillRef) {
   let frameIndex = 0;
   let mediaRequested = false;
   let videoFailed = false;
-  let preferFrames = false;
   let fetchController;
   let blobUrl;
   let loadDeadline;
@@ -39,6 +38,8 @@ export function useChipMedia(videoRef, frameRef, stillRef) {
   let stillUrl;
   let zoomQuality = { width: 0, zoom: 0, scale: 1, dpr: 1 };
   let revealFrame;
+  let seekFrame;
+  let videoFrameCallback;
   let revealEnvelope = 1;
   let revealSharpen = 1;
   let wasRenderable = false;
@@ -121,6 +122,12 @@ export function useChipMedia(videoRef, frameRef, stillRef) {
   };
   const releaseVideo = () => {
     clearTimeout(loadDeadline); clearTimeout(seekDeadline);
+    cancelAnimationFrame(seekFrame);
+    seekFrame = undefined;
+    if (videoFrameCallback !== undefined && video?.cancelVideoFrameCallback) {
+      video.cancelVideoFrameCallback(videoFrameCallback);
+    }
+    videoFrameCallback = undefined;
     fetchController?.abort(); fetchController = undefined;
     videoReady.value = false;
     if (video?.hasAttribute('src')) {
@@ -179,9 +186,9 @@ export function useChipMedia(videoRef, frameRef, stillRef) {
     if (frameMode.value) {
       prepareFrames();
       draw(displayedTurns);
-      // Save-Data/offline stays demand-driven. Hardware fallback and a failed
-      // video warm the complete loop while the user is still above the scene.
-      if (preferFrames || videoFailed) loader?.warm();
+      // Save-Data/offline stays demand-driven. A failed video warms the
+      // complete emergency frame loop while the user is still above the scene.
+      if (videoFailed) loader?.warm();
       return;
     }
     if (fetchController || blobUrl) return;
@@ -218,6 +225,29 @@ export function useChipMedia(videoRef, frameRef, stillRef) {
       seekDeadline = setTimeout(fallback, MEDIA_LOAD_DEADLINE);
     }
   };
+  const scheduleFlushAfterPaint = () => {
+    cancelAnimationFrame(seekFrame);
+    seekFrame = undefined;
+    if (videoFrameCallback !== undefined && video?.cancelVideoFrameCallback) {
+      video.cancelVideoFrameCallback(videoFrameCallback);
+    }
+    videoFrameCallback = undefined;
+    if (video?.requestVideoFrameCallback) {
+      videoFrameCallback = video.requestVideoFrameCallback(() => {
+        videoFrameCallback = undefined;
+        flush();
+      });
+      return;
+    }
+    // Chrome 98 supports requestVideoFrameCallback, but retain a two-frame
+    // fallback for other old engines: one frame can paint before the next seek.
+    seekFrame = requestAnimationFrame(() => {
+      seekFrame = requestAnimationFrame(() => {
+        seekFrame = undefined;
+        flush();
+      });
+    });
+  };
   const draw = turns => {
     displayedTurns = turns;
     if (!mounted || disposed) return;
@@ -250,7 +280,10 @@ export function useChipMedia(videoRef, frameRef, stillRef) {
     if (disposed || isStatic() || frameMode.value || video.readyState < 2) return;
     clearTimeout(loadDeadline); clearTimeout(seekDeadline);
     videoReady.value = true;
-    flush();
+    // `seeked` fires before the decoded frame is necessarily painted. Starting
+    // another seek synchronously drops that frame and looks like a large jump
+    // on slow decoders. Continue only after one frame has been presented.
+    scheduleFlushAfterPaint();
     updateStill();
   };
   const visibility = () => {
@@ -265,7 +298,7 @@ export function useChipMedia(videoRef, frameRef, stillRef) {
       loader?.dispose(); loader = undefined;
       releaseVideo(); showFront();
     } else {
-      const needsFrames = avoidVideo.value || videoFailed || preferFrames;
+      const needsFrames = avoidVideo.value || videoFailed;
       if (needsFrames && !frameMode.value) releaseVideo();
       frameMode.value = needsFrames;
       if (!needsFrames) { loader?.dispose(); loader = undefined; }
@@ -278,11 +311,7 @@ export function useChipMedia(videoRef, frameRef, stillRef) {
     mounted = true;
     video = videoRef.value;
     videoSource.value = getMediaPlayback(navigator).chipSource;
-    // Low-power desktop Chromium/Yandex gets decoded still frames instead of
-    // repeated VP9 seeks. The first frame is already in the DOM, so switching
-    // modes cannot flash or change the chip pose.
-    preferFrames = videoSource.value.endsWith('.webm') && prefersFrameScrubbing(navigator);
-    frameMode.value = avoidVideo.value || preferFrames;
+    frameMode.value = avoidVideo.value;
     video.defaultMuted = true; video.muted = true;
     video.addEventListener('loadedmetadata', metadata);
     video.addEventListener('loadeddata', decoded);

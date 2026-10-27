@@ -15,7 +15,7 @@ const flush = async () => { for (let i = 0; i < 150; i++) await nextTick(); };
 
 // Exercise the real Vue lifecycle, shared hero policy, loader and still decode.
 // Browser downloads/events are controlled; no copy of the media state machine.
-function mountMedia(t, { slow = false, pendingVideo = false, iphone = false, lowPower = false, unavailableFrames = false } = {}) {
+function mountMedia(t, { slow = false, pendingVideo = false, iphone = false, lowPower = false, legacy = false, controlledVideoFrames = false, unavailableFrames = false } = {}) {
   const previous = new Map();
   const replace = (key, value) => {
     previous.set(key, Object.getOwnPropertyDescriptor(globalThis, key));
@@ -25,7 +25,9 @@ function mountMedia(t, { slow = false, pendingVideo = false, iphone = false, low
   const window = new EventTarget(); window.matchMedia = () => motion;
   replace('window', window); replace('document', Object.assign(new EventTarget(), { hidden: false }));
   replace('navigator', {
-    userAgent: iphone ? 'iPhone Safari' : 'Mozilla/5.0 Chrome/140.0 YaBrowser/25.8 Safari/537.36',
+    userAgent: iphone ? 'iPhone Safari' : legacy
+      ? 'Mozilla/5.0 Chrome/98.0.4758.141 YaBrowser/22.3.4.734 Safari/537.36'
+      : 'Mozilla/5.0 Chrome/140.0 YaBrowser/25.8 Safari/537.36',
     platform: iphone ? 'iPhone' : 'Win32',
     hardwareConcurrency: lowPower ? 4 : 8,
     deviceMemory: 8,
@@ -38,7 +40,7 @@ function mountMedia(t, { slow = false, pendingVideo = false, iphone = false, low
   const requests = [];
   replace('fetch', (url, { signal } = {}) => {
     requests.push(url);
-    if (pendingVideo && /chip-scroll(?:-alpha)?\.(webm|mov)/.test(url)) return new Promise((resolve, reject) => {
+    if (pendingVideo && /chip-scroll(?:-(?:alpha|lite))?\.(webm|mov)/.test(url)) return new Promise((resolve, reject) => {
       signal.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError')), { once: true });
     });
     return Promise.resolve({ ok: true, blob: async () => new Blob(['media']) });
@@ -53,6 +55,16 @@ function mountMedia(t, { slow = false, pendingVideo = false, iphone = false, low
     readyState: 0, videoWidth: 800, duration: 6, currentTime: 0, seeking: false,
     pause() {}, load() {}, hasAttribute() { return Boolean(this.src); }, removeAttribute() { this.src = ''; },
   });
+  let nextVideoFrame = 0;
+  const videoFrames = new Map();
+  if (controlledVideoFrames) {
+    video.requestVideoFrameCallback = callback => {
+      const id = ++nextVideoFrame;
+      videoFrames.set(id, callback);
+      return id;
+    };
+    video.cancelVideoFrameCallback = id => videoFrames.delete(id);
+  }
   let videoSrc;
   Object.defineProperty(video, 'src', { get: () => videoSrc, set(value) {
     videoSrc = value;
@@ -77,7 +89,18 @@ function mountMedia(t, { slow = false, pendingVideo = false, iphone = false, low
       else delete globalThis[key];
     }
   });
-  return { media, policy, frame, video, motion, requests, recoverFrames: () => { unavailableFrames = false; } };
+  return {
+    media, policy, frame, video, motion, requests,
+    presentVideoFrame: () => {
+      const entry = videoFrames.entries().next().value;
+      if (!entry) return false;
+      const [id, callback] = entry;
+      videoFrames.delete(id);
+      callback(0, {});
+      return true;
+    },
+    recoverFrames: () => { unavailableFrames = false; },
+  };
 }
 
 for (const slow of [false, true]) {
@@ -120,14 +143,44 @@ test('A video download timeout falls back to rotating frames; Reduce Motion stil
   assert.match(frame.src, /frame-113.webp$/);
 });
 
-test('Low-power desktop starts with decoded frames and does not download the VP9 scrub video', async t => {
-  const { media, frame, requests } = mountMedia(t, { lowPower: true });
+test('Low-power desktop keeps video scrubbing and downloads the lighter all-keyframe source', async t => {
+  const { media, requests } = mountMedia(t, { lowPower: true });
   await flush();
-  assert.equal(media.frameMode.value, true);
-  assert.match(frame.src, /frame-001.webp$/);
-  media.setPlayback(.25, 4); await flush();
-  assert.match(frame.src, /frame-038.webp$/);
-  assert.ok(!requests.some(url => url.endsWith('/chip-scroll.webm')));
+  assert.equal(media.frameMode.value, false);
+  assert.equal(media.videoSource.value, 'chip-scroll-lite.webm');
+  assert.ok(requests.some(url => url.endsWith('/chip-scroll-lite.webm')));
+  assert.ok(!requests.some(url => /chip-frames/.test(url)));
+});
+
+test('The reported Chrome 98 / Yandex 22 browser uses the lighter video too', async t => {
+  const { media, requests } = mountMedia(t, { legacy: true });
+  await flush();
+  assert.equal(media.frameMode.value, false);
+  assert.equal(media.videoSource.value, 'chip-scroll-lite.webm');
+  assert.ok(requests.some(url => url.endsWith('/chip-scroll-lite.webm')));
+});
+
+test('A completed seek is painted before the next scroll target begins decoding', async t => {
+  const { media, video, presentVideoFrame } = mountMedia(t, { legacy: true, controlledVideoFrames: true });
+  await flush();
+  assert.equal(presentVideoFrame(), true, 'The initial decoded frame is presented');
+  await flush();
+
+  media.setPlayback(.25, 4);
+  await flush();
+  const firstTarget = video.currentTime;
+  video.seeking = true;
+  media.setPlayback(.5, 4);
+  await flush();
+  assert.equal(video.currentTime, firstTarget, 'A seek in progress is not replaced');
+
+  video.seeking = false;
+  video.dispatchEvent(new Event('seeked'));
+  await flush();
+  assert.equal(video.currentTime, firstTarget, 'The next seek waits for the decoded frame to paint');
+  assert.equal(presentVideoFrame(), true);
+  await flush();
+  assert.ok(video.currentTime > firstTarget, 'The latest scroll target starts after presentation');
 });
 
 test('Desktop begins downloading its selected scrub video on mount', async t => {
