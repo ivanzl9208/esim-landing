@@ -571,6 +571,16 @@ a {
   transform: translateY(-50%);
 }
 
+/* iOS Safari crops Cyrillic descenders (notably «у» and «д») when a
+   transformed/filtering inline-block has a line box as tight as the glyph.
+   Expand only the composited word bounds and cancel that space in layout so
+   wrapping, line spacing and the scroll composition stay unchanged. */
+.story-benefit .soft-blur-unit {
+  overflow: visible;
+  padding-bottom: 0.18em;
+  margin-bottom: -0.18em;
+}
+
 .safety-copy {
   position: absolute;
   z-index: 4;
