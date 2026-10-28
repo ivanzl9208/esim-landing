@@ -108,7 +108,7 @@ defineExpose({ focusInput, section });
             </div>
           </div>
           <div class="checker-result-actions">
-            <button type="button" disabled>{{ selection.supportsEsim ? 'Подключить eSIM' : 'Заказать сим-карту' }}</button>
+            <button type="button" aria-disabled="true" @click.prevent>{{ selection.supportsEsim ? 'Подключить eSIM' : 'Заказать сим-карту' }}</button>
             <button class="checker-result-secondary" type="button" @click="reset">{{ typograph('У меня другое устройство') }}</button>
           </div>
         </div>

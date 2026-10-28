@@ -1389,7 +1389,7 @@ button.checker-input-action:active {
   transform: scale(0.97);
 }
 
-.checker-result-actions button:disabled {
+.checker-result-actions button[aria-disabled="true"] {
   cursor: default;
   opacity: 1;
 }
