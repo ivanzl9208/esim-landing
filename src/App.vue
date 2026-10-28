@@ -14,6 +14,7 @@ import { provideMediaConnection } from './composables/useMediaConnection.js';
 import { SCENE_BASE_HEIGHT } from './animation/timing.js';
 import { asset } from './utils/assets.js';
 import { typograph } from './utils/typography.js';
+const main = ref(null);
 const scene = ref(null);
 const media = ref(null);
 const checker = ref(null);
@@ -21,12 +22,19 @@ const progress = ref(null);
 provideMediaConnection();
 const { goToChecker, prepareCheckerResult, setScrollPosition } = useScrollScene(scene, media, checker, progress);
 provide('setScrollPosition', setScrollPosition);
+const focusMain = () => {
+  main.value?.focus({ preventScroll: true });
+  window.scrollTo({ top: 0, behavior: 'instant' });
+};
 </script>
 <template>
-  <main>
+  <nav class="skip-links" aria-label="Быстрая навигация">
+    <a class="skip-link" href="#main-content" @click.prevent="focusMain">{{ typograph('Перейти к основному содержимому') }}</a>
     <a class="skip-link" href="#device-checker" @click.prevent="goToChecker">{{ typograph('Перейти к проверке устройства') }}</a>
+  </nav>
+  <main id="main-content" ref="main" tabindex="-1">
     <div ref="scene" class="scroll-scene" :style="{ '--scene-base-height': SCENE_BASE_HEIGHT }">
-      <section class="hero-stage" aria-label="eSIM от СберМобайла">
+      <section class="hero-stage" aria-labelledby="esim-intro-title">
         <HeroIntro @check="goToChecker" />
         <StoryTranscript />
         <div class="white-curtain" aria-hidden="true">

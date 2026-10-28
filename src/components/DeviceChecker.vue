@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted, onScopeDispose, ref, useId, watch } from 'vue';
+import { computed, onMounted, onScopeDispose, ref, useId, watch } from 'vue';
 import { POPULAR_DEVICE_NAMES } from '../data/deviceDatabase.js';
 import { findPopularDevice, getFullName } from '../utils/deviceSearch.js';
 import { asset } from '../utils/assets.js';
@@ -18,6 +18,7 @@ const changingView = ref(false);
 let viewTimer;
 const uid = useId();
 const inputId = `${uid}-model`;
+const headingId = `${uid}-heading`;
 const listId = `${uid}-suggestions`;
 const hintId = `${uid}-eid`;
 const errorId = `${uid}-error`;
@@ -53,6 +54,9 @@ const prepareResult = async () => {
   await props.prepareResult?.();
 };
 const { query, state, busy, focused, selection, toastVisible, toastMessage, invalidQuery, activeIndex, statusMessage, suggestions, expanded, hideToast, runCheck, reset, choose, changeQuery, clearQuery, keydown, focusInput, blurInput, optionPointerDown, optionPointerUp, optionClick } = useDeviceChecker(input, resultHeading, prepareResult);
+const suggestionMessage = computed(() => expanded.value
+  ? `${suggestions.value.length} ${suggestions.value.length === 1 ? 'вариант' : suggestions.value.length < 5 ? 'варианта' : 'вариантов'}. Используйте стрелки вверх и вниз для выбора.`
+  : '');
 watch(focused, value => { if (value) preloadResultImages(); });
 const updateSuggestionOverflow = () => {
   const list = suggestionsScroll.value;
@@ -89,14 +93,14 @@ onScopeDispose(() => clearTimeout(viewTimer));
 defineExpose({ focusInput, section });
 </script>
 <template>
-  <section id="device-checker" ref="section" :class="['device-checker', `is-${state}`, { 'is-focused': focused }]" aria-label="Проверка поддержки eSIM">
+  <section id="device-checker" ref="section" :class="['device-checker', `is-${state}`, { 'is-focused': focused }]" :aria-labelledby="headingId">
     <div class="checker-panel" :class="{ 'is-changing': changingView }">
       <div v-if="state === 'result' && selection" class="checker-result">
         <div class="checker-result-card">
           <div class="checker-result-summary">
             <img draggable="false" class="checker-result-image" :src="resultImage(selection.supportsEsim)" width="480" height="480" decoding="async" alt="" />
             <div class="checker-result-copy">
-              <h2 ref="resultHeading" tabindex="-1">
+              <h2 :id="headingId" ref="resultHeading" tabindex="-1">
                 <span class="checker-result-model">{{ typographModelName(getFullName(selection)) }}</span>
                 <span>{{ typograph(selection.supportsEsim ? 'поддерживает eSIM' : 'не поддерживает eSIM') }}</span>
               </h2>
@@ -110,11 +114,7 @@ defineExpose({ focusInput, section });
         </div>
       </div>
       <div v-else class="checker-form-view" :aria-busy="busy">
-        <h2 class="checker-heading"><span>{{ typograph('Ваше устройство готово к eSIM?') }}</span></h2>
-        <div class="checker-popular">
-          <p>Популярные модели</p>
-          <PopularModels :items="popular" :loading="busy" @choose="choose" />
-        </div>
+        <h2 :id="headingId" class="checker-heading"><span>{{ typograph('Ваше устройство готово к eSIM?') }}</span></h2>
         <div class="checker-search-dock">
           <form class="checker-search-area" @submit.prevent="runCheck()">
             <div :id="listId" :class="['checker-suggestions', { 'is-visible': expanded, 'has-more': moreSuggestions }]" role="listbox" aria-label="Модели устройств" :aria-hidden="!expanded" :inert="!expanded" data-lenis-prevent @pointermove="$event.pointerType === 'mouse' && (activeIndex = -1)">
@@ -130,6 +130,7 @@ defineExpose({ focusInput, section });
                 autocomplete="off" :spellcheck="false" placeholder="Введите модель устройства"
                 :aria-controls="listId" :aria-expanded="expanded" aria-autocomplete="list" aria-haspopup="listbox"
                 :aria-activedescendant="expanded && activeIndex >= 0 ? optionId(activeIndex) : undefined" :aria-describedby="invalidQuery ? `${hintId} ${errorId}` : hintId"
+                :aria-errormessage="invalidQuery ? errorId : undefined"
                 :aria-invalid="invalidQuery"
                 :disabled="busy" @focus="focused = true" @blur="blurInput"
                 @input="changeQuery($event.target.value)" @keydown="keydown" />
@@ -147,14 +148,19 @@ defineExpose({ focusInput, section });
               </Transition>
             </div>
           </form>
-          <p :id="hintId" class="checker-eid-hint">{{ hint }}</p>
         </div>
+        <div class="checker-popular" role="group" :aria-labelledby="`${uid}-popular-label`">
+          <p :id="`${uid}-popular-label`">Популярные модели</p>
+          <PopularModels :items="popular" :loading="busy" @choose="choose" />
+        </div>
+        <p :id="hintId" class="checker-eid-hint">{{ hint }}</p>
       </div>
       <div :class="['checker-toast', { 'is-visible': toastVisible }]" :inert="!toastVisible">
         <div class="checker-toast-main"><img draggable="false" class="checker-toast-alert" :src="asset('esim-alert.svg')" alt="" /><span>{{ typograph(toastMessage) }}</span></div>
         <button type="button" aria-label="Закрыть уведомление" @click="hideToast"><img draggable="false" :src="asset('esim-toast-close.svg')" alt="" /></button>
       </div>
       <p class="sr-only" role="status" aria-live="polite" aria-atomic="true">{{ toastVisible ? toastMessage : statusMessage }}</p>
+      <p class="sr-only" role="status" aria-live="polite" aria-atomic="true">{{ suggestionMessage }}</p>
       <p v-if="invalidQuery" :id="errorId" class="sr-only">{{ toastMessage }}</p>
     </div>
   </section>

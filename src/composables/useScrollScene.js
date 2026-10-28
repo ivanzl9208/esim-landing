@@ -397,7 +397,7 @@ export function useScrollScene(sceneRef, mediaRef, checkerRef, progressRef) {
           finish();
         }
       });
-      navigate = () => {
+      navigate = (immediate = false) => {
         if (!active) return;
         const target = checkerRef.value.section.getBoundingClientRect().top + window.scrollY;
         focusDelay?.kill();
@@ -412,9 +412,9 @@ export function useScrollScene(sceneRef, mediaRef, checkerRef, progressRef) {
           // desktop story follower after arriving at the checker.
           settleStoryMotion();
           previousScrollY = window.scrollY;
-          focusDelay = gsap.delayedCall(reduced ? 0 : 0.35, () => { if (active) checkerRef.value?.focusInput(); });
+          focusDelay = gsap.delayedCall(reduced || immediate ? 0 : 0.35, () => { if (active) checkerRef.value?.focusInput(); });
         };
-        if (lenis) lenis.scrollTo(target, { duration: 1.2, onComplete: focus });
+        if (lenis) lenis.scrollTo(target, { duration: immediate ? 0 : 1.2, immediate, force: immediate, onComplete: focus });
         else {
           window.scrollTo({ top: target, behavior: 'instant' });
           ScrollTrigger.update();
@@ -452,5 +452,9 @@ export function useScrollScene(sceneRef, mediaRef, checkerRef, progressRef) {
     };
   });
   onScopeDispose(() => { disposed = true; cleanup(); });
-  return { goToChecker: () => navigate(), prepareCheckerResult: () => anchorResult(), setScrollPosition: top => positionViewport(top) };
+  return {
+    goToChecker: () => navigate(),
+    prepareCheckerResult: () => anchorResult(),
+    setScrollPosition: top => positionViewport(top),
+  };
 }

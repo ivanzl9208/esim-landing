@@ -6,6 +6,6 @@ import { typograph } from '../utils/typography.js';
   <aside class="transfer-banner" aria-label="Перенос номера в СберМобайл">
     <img draggable="false" class="transfer-banner-image" :src="asset('ending/2gb.webp')" width="540" height="531" alt="" loading="lazy" />
     <div class="transfer-banner-copy"><h3>Перенести номер</h3><p>{{ typograph('Удваиваем Гб каждый месяц за перенос номера в СберМобайл') }}</p></div>
-    <button class="ending-button ending-button-orange" type="button">Перенести номер</button>
+    <a class="ending-button ending-button-orange" href="https://sbermobile.ru/mnp/">Перенести номер</a>
   </aside>
 </template>

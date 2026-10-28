@@ -5,36 +5,43 @@ import mobileLogo from '../assets/site-chrome/logo-mobile.svg?raw';
 import mobileMenu from '../assets/site-chrome/menu.svg?raw';
 import mobileBonus from '../assets/site-chrome/spasibo.svg?raw';
 
-const navigation = ['Связь', 'Услуги и сервисы', 'Оплата', 'Помощь', 'Компания', 'Кабинет абонента'];
+const navigation = [
+  { label: 'Связь', href: 'https://sbermobile.ru/' },
+  { label: 'Услуги и сервисы', href: 'https://sbermobile.ru/services/' },
+  { label: 'Оплата', href: 'https://sbermobile.ru/payment/pay/' },
+  { label: 'Помощь', href: '#esim-faq' },
+  { label: 'Компания', href: 'https://sbermobile.ru/about/' },
+  { label: 'Кабинет абонента', href: 'https://lk.sbermobile.ru/' },
+];
 </script>
 
 <template>
   <header class="site-header">
     <div class="site-header-container">
       <div class="site-header-brand">
-        <span class="brand-logo">
+        <a class="brand-logo" href="#main-content" aria-label="СберМобайл, в начало страницы">
           <picture>
             <source media="(max-width: 1279px)" :srcset="asset('site-chrome/logo-mobile.svg')" />
-            <img draggable="false" :src="asset('site-chrome/logo.svg')" width="115" height="54" alt="СберМобайл — выгоднее с Прайм" />
+            <img draggable="false" :src="asset('site-chrome/logo.svg')" width="115" height="54" alt="" />
           </picture>
-          <span class="phone-header-art phone-brand-art" role="img" aria-label="СберМобайл — выгоднее с Прайм" v-html="mobileLogo" />
-        </span>
+          <span class="phone-header-art phone-brand-art" aria-hidden="true" v-html="mobileLogo" />
+        </a>
         <span class="location">
           <img draggable="false" :src="asset('location-pin.svg')" width="12" height="12" alt="" /><span>Москва</span>
         </span>
       </div>
       <div class="site-header-actions">
-        <div class="desktop-nav" aria-label="Разделы сайта">
-          <span v-for="item in navigation" :key="item">{{ typograph(item) }}</span>
-        </div>
+        <nav class="desktop-nav" aria-label="Основная навигация">
+          <a v-for="item in navigation" :key="item.label" :href="item.href">{{ typograph(item.label) }}</a>
+        </nav>
         <div class="header-account">
-          <span class="header-bonus">Бонусы<img :src="asset('site-chrome/spasibo.svg')" draggable="false" width="16" height="16" alt="" /><span class="phone-header-art phone-bonus-art" aria-hidden="true" v-html="mobileBonus" /></span>
-          <span class="header-login">Войти</span>
+          <a class="header-bonus" href="https://sbermobile.ru/about/spasibo/">Бонусы<img :src="asset('site-chrome/spasibo.svg')" draggable="false" width="16" height="16" alt="" /><span class="phone-header-art phone-bonus-art" aria-hidden="true" v-html="mobileBonus" /></a>
+          <a class="header-login" href="https://lk.sbermobile.ru/entry">Войти</a>
         </div>
-        <span class="mobile-menu" role="img" aria-label="Меню">
+        <a class="mobile-menu" href="https://sbermobile.ru/" aria-label="Открыть меню СберМобайла">
           <img draggable="false" :src="asset('site-chrome/menu.svg')" width="32" height="32" alt="" />
           <span class="phone-header-art phone-menu-art" aria-hidden="true" v-html="mobileMenu" />
-        </span>
+        </a>
       </div>
     </div>
   </header>
@@ -51,10 +58,11 @@ const navigation = ['Связь', 'Услуги и сервисы', 'Оплат�
 .location img { flex: 0 0 12px; }
 .site-header-actions { display: flex; align-items: center; gap: 10px; }
 .desktop-nav { display: flex; align-items: center; }
-.desktop-nav > span { display: flex; padding: 12px 10px; border-radius: 100px; font: 600 14px/16px "SB Sans Display", Arial, sans-serif; letter-spacing: -.42px; white-space: nowrap; }
+.desktop-nav > a { display: flex; padding: 12px 10px; border-radius: 100px; color: inherit; font: 600 14px/16px "SB Sans Display", Arial, sans-serif; letter-spacing: -.42px; text-decoration: none; white-space: nowrap; }
+.desktop-nav > a:hover { background: rgba(255,255,255,.14); }
 .header-account { display: flex; align-items: center; gap: 4px; }
-.header-bonus { display: flex; align-items: center; gap: 6px; height: 34px; padding: 0 10px; border-radius: 17px 17px 17px 0; background: linear-gradient(94deg,#9ddb10 4.38%,#32ba23 30.09%,#1db565 66.42%,#0d9fb0); color: #fff; font: 600 16px/16px "SB Sans Display", Arial, sans-serif; }
-.header-login { display: flex; align-items: center; height: 36px; padding: 0 16px; border-radius: 48px; background: #fff; color: #fa5f05; font: 600 14px/16px "SB Sans Display", Arial, sans-serif; letter-spacing: -.42px; }
+.header-bonus { display: flex; align-items: center; gap: 6px; height: 34px; padding: 0 10px; border-radius: 17px 17px 17px 0; background: linear-gradient(94deg,#9ddb10 4.38%,#32ba23 30.09%,#1db565 66.42%,#0d9fb0); color: #fff; font: 600 16px/16px "SB Sans Display", Arial, sans-serif; text-decoration: none; }
+.header-login { display: flex; align-items: center; height: 36px; padding: 0 16px; border-radius: 48px; background: #fff; color: #fa5f05; font: 600 14px/16px "SB Sans Display", Arial, sans-serif; letter-spacing: -.42px; text-decoration: none; }
 .mobile-menu { display: none; width: 32px; height: 32px; }
 .mobile-menu img { display: block; width: 100%; height: 100%; }
 .phone-header-art { display: none; }

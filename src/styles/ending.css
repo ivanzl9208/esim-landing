@@ -89,7 +89,8 @@
 .footer-link-group h3 { margin: 0; font: 600 18px/22px "SB Sans Display", Arial, sans-serif; letter-spacing: -.5px; }
 .footer-link-group h3 img { display: none; }
 .footer-link-group ul { display: flex; flex-direction: column; gap: 12px; margin: 20px 0 0; padding: 0; list-style: none; }
-.footer-link-group li span { font-family: "SB Sans Text", Arial, sans-serif; color: var(--ending-secondary); font-size: 15px; line-height: 18px; letter-spacing: -.5px; text-decoration: none; }
+.footer-link-group li a { font-family: "SB Sans Text", Arial, sans-serif; color: var(--ending-secondary); font-size: 15px; line-height: 18px; letter-spacing: -.5px; text-decoration: none; }
+.footer-link-group li a:hover { color: var(--ending-text); }
 
 .footer-utilities { display: flex; flex-direction: column; gap: 16px; }
 .footer-app { padding: 24px 48px; border-radius: 24px; background: #fff; }
@@ -111,9 +112,8 @@
 .footer-privacy { flex: 1; }
 .footer-privacy span { color: inherit; text-decoration: underline; text-underline-offset: 3px; }
 .footer-social { display: flex; gap: 16px; }
-.footer-social > span { display: block; width: 32px; height: 32px; }
-.site-footer .ending-button { cursor: default; }
-.site-footer .ending-button-orange:hover { background: var(--ending-orange); }
+.footer-social > a { display: block; width: 32px; height: 32px; }
+.site-footer .ending-button { cursor: pointer; }
 @media (min-width: 701px) and (max-width: 1199px) {
   .connect-cta { height: 560px; }
   .connect-cta h2 { font-size: 56px; line-height: 56px; max-width: 680px; }
@@ -159,7 +159,7 @@
   .footer-link-group h3 { padding-top: 8px; font-size: 17px; line-height: 20px; letter-spacing: -.35px; }
   .footer-link-group { padding-bottom: 20px; border-bottom: 1px solid rgba(189,194,197,.32); }
   .footer-link-group ul { display: flex; padding: 8px 12px; gap: 12px; }
-  .footer-link-group li span { font-size: 14px; line-height: 16px; letter-spacing: -.42px; }
+  .footer-link-group li a { font-size: 14px; line-height: 16px; letter-spacing: -.42px; }
   .footer-contact { order: 1; margin-top: 32px; gap: 20px; }
   .footer-phone { font-size: 20px; line-height: 22px; letter-spacing: -.6px; }
   .footer-contact br { display: none; }

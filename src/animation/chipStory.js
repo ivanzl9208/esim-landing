@@ -4,6 +4,7 @@ import { storyComposition, STORY_ENTER_END, STORY_EXIT_START } from './storyComp
 import { featureReadingProgress, featureWindow } from './featureReading.js';
 import { TRACKS } from './timing.js';
 import { chipZoomFrame } from './chipZoom.js';
+import { setRegionInteractive } from '../utils/interactiveRegion.js';
 
 export function createChipStoryRenderer(scene, media) {
   const select = selector => scene.querySelector(selector);
@@ -72,9 +73,7 @@ export function createChipStoryRenderer(scene, media) {
     button.tabIndex = interactive ? 0 : -1;
     button.style.pointerEvents = interactive ? 'auto' : 'none';
     const heroCovered = state.curtain > 0.01;
-    if (heroSurface.inert !== heroCovered) {
-      heroSurface.inert = heroCovered;
-    }
+    if (heroSurface.inert !== heroCovered) setRegionInteractive(heroSurface, !heroCovered);
     if (!transitionIsActive) {
       if (isMobile) {
         const curtainTop = (1 - state.curtain) * geometry.height;

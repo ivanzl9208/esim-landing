@@ -1,4 +1,5 @@
 import { clamp, cubicBezierValue } from './math.js';
+import { setRegionInteractive } from '../utils/interactiveRegion.js';
 
 export function checkerEntranceFrame(progress, { height, scale }, reduced = false) {
   const reveal = clamp(progress);
@@ -23,7 +24,7 @@ export function createCheckerEntrance(section) {
       panel.style.transform = `translate3d(0, ${frame.y.toFixed(2)}px, 0)`;
       panel.style.opacity = String(frame.opacity);
       panel.style.visibility = frame.visible ? 'visible' : 'hidden';
-      panel.inert = !frame.interactive;
+      setRegionInteractive(panel, frame.interactive);
     },
     clear() {
       delete section.dataset.entering;
@@ -31,7 +32,7 @@ export function createCheckerEntrance(section) {
       panel.style.removeProperty('transform');
       panel.style.removeProperty('opacity');
       panel.style.removeProperty('visibility');
-      panel.inert = false;
+      setRegionInteractive(panel, true);
     },
   };
 }

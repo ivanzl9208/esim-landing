@@ -1,4 +1,8 @@
 /* Keep the reference palette and standard viewport geometry. */
+:root {
+  --focus-ring-color: #005fcc;
+}
+
 .sr-only {
   position: absolute;
   width: 1px;
@@ -12,23 +16,49 @@
 }
 button:disabled { opacity: 1; }
 :where(a, button, input, [tabindex]):focus-visible {
-  outline: 3px solid #0b0c0d;
-  outline-offset: 4px;
-  box-shadow: 0 0 0 6px #fff;
+  outline: 2px solid var(--focus-ring-color) !important;
+  outline-offset: 0 !important;
+  box-shadow: none;
 }
-.checker-result-copy h2:focus {
+:where(a, button, input, [tabindex]):where(:not([class])):focus-visible,
+.brand-logo:focus-visible,
+.mobile-menu:focus-visible,
+.footer-phone:focus-visible,
+.faq-item h3 button:focus-visible {
+  border-radius: 8px;
+}
+.footer-social > a:focus-visible { border-radius: 50%; }
+.checker-result-copy h2:focus:not(:focus-visible),
+#main-content:focus {
   outline: none;
   box-shadow: none;
 }
-.skip-link {
+.checker-input-shell:focus-within {
+  outline: 2px solid var(--focus-ring-color);
+  outline-offset: 0;
+  box-shadow: none;
+}
+.checker-input-shell input:focus-visible {
+  outline: 0 !important;
+  box-shadow: none;
+}
+.skip-links {
   position: fixed;
-  z-index: 100;
+  z-index: 101;
   top: 8px;
   left: 8px;
+}
+.skip-link {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: max-content;
+  max-width: calc(100vw - 16px);
   padding: 12px 20px;
   border-radius: 12px;
   background: #fff;
   color: #0b0c0d;
+  text-decoration: none;
   transform: translateY(-160%);
 }
 .skip-link:focus { transform: none; }
@@ -44,6 +74,24 @@ button:disabled { opacity: 1; }
   .hero-stage { min-height: 100vh; }
 }
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { transition-duration: 0s !important; }
+  html { scroll-behavior: auto !important; }
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    transition-delay: 0s !important;
+  }
   .chip-gradient { filter: none; }
+}
+@media (prefers-contrast: more) {
+  .checker-eid-hint { color: #fff; }
+  .checker-popular button { background: rgba(0, 0, 0, .28); }
+  .checker-result-model { color: #fff3b8; text-decoration: underline; text-decoration-thickness: .08em; }
+}
+@media (forced-colors: active) {
+  :where(a, button, input, [tabindex]):focus-visible {
+    outline-color: Highlight !important;
+    box-shadow: none;
+  }
+  .checker-input-shell:focus-within { outline: 2px solid Highlight; box-shadow: none; }
+  .checker-loader { border-color: CanvasText; border-top-color: Highlight; }
 }

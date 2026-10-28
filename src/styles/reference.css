@@ -1482,17 +1482,16 @@ button.checker-input-action:active {
   .checker-form-view::after { content: ''; order: 2; height: calc(157px * var(--layout-scale)); }
   .checker-search-dock {
     position: absolute;
-    bottom: calc(24px * var(--layout-scale) + env(safe-area-inset-bottom));
+    /* The hint follows the popular-model controls in the DOM, while these
+       terms preserve its original visual space below the input. */
+    bottom: calc(52px * var(--layout-scale) + 16px + env(safe-area-inset-bottom));
     left: 50%;
     z-index: 4;
     display: flex;
-    flex-direction: column;
-    gap: 16px;
     width: min(calc(328px * var(--layout-scale)), calc(100vw - 32px * var(--layout-scale)));
     transform: translateX(-50%);
   }
   .checker-search-dock .checker-search-area { order: 0; width: 100%; margin: 0; }
-  .checker-search-dock .checker-eid-hint { position: static; width: 100%; transform: none; }
   .checker-heading {
     width: min(calc(328px * var(--layout-scale)), calc(100vw - 32px * var(--layout-scale)));
     font-size: calc(36px * var(--layout-scale));

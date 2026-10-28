@@ -18,6 +18,16 @@ test('Imports and server-renders the complete app without browser globals', asyn
     assert.match(html, /role="tablist"/);
     assert.match(html, /Подключайтесь/);
     assert.match(html, /<footer/);
+    assert.match(html, /class="skip-link" href="#main-content"/);
+    assert.match(html, /class="skip-link" href="#device-checker"/);
+    assert.match(html, /class="hero-stage" aria-labelledby="esim-intro-title"/);
+    assert.doesNotMatch(html, /data-story-stop/);
+    assert.doesNotMatch(html, /<(?:h[1-6]|p|section|article|li)[^>]*tabindex="0"/);
+    assert.match(html, /class="desktop-nav" aria-label="Основная навигация"/);
+    assert.match(html, /href="tel:901"/);
+    assert.match(html, /href="tel:\+74996514444"/);
+    assert.doesNotMatch(html, /role="progressbar"/);
+    assert.doesNotMatch(html, /role="tabpanel"[^>]*tabindex=/);
     const introGroups = [...html.matchAll(/class="intro-text-group">([\s\S]*?)<\/div>/g)]
       .map(match => [...match[1].matchAll(/class="intro-text-line">([^<]*)<\/span>/g)].map(line => line[1]));
     assert.deepEqual(introGroups, [

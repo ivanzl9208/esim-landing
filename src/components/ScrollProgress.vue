@@ -3,7 +3,6 @@ import { onMounted, onScopeDispose, ref } from 'vue';
 import { clamp, smoothstep } from '../animation/math.js';
 
 const root = ref(null);
-const fills = ref([]);
 const percent = ref(0);
 const keyboardOpen = ref(false);
 const visible = ref(false);
@@ -38,9 +37,14 @@ onMounted(() => {
     const reveal = clamp(sceneState.reveal);
     const left = clamp((sceneWidth * (1 - reveal) / 2 - bounds.left) / bounds.width);
     const right = clamp((bounds.right - sceneWidth * (1 + reveal) / 2) / bounds.width);
+    const whiteStart = left;
+    const whiteEnd = Math.max(whiteStart, 1 - right);
     const grey = clamp(sceneState.background * (1 - sceneState.returnGradient));
-    root.value.style.setProperty('--white-progress-inset', `0 ${right * 100}% 0 ${left * 100}%`);
+    root.value.style.setProperty('--white-progress-start', `${whiteStart * 100}%`);
+    root.value.style.setProperty('--white-progress-end', `${whiteEnd * 100}%`);
+    root.value.style.setProperty('--white-progress-inset', `0 ${(1 - whiteEnd) * 100}% 0 ${whiteStart * 100}%`);
     root.value.style.setProperty('--white-progress-opacity', String(1 - grey));
+    root.value.style.setProperty('--dark-progress-center-opacity', String(grey));
   };
   setScene = (state, geometry) => {
     sceneState = state;
@@ -60,9 +64,9 @@ onMounted(() => {
     }
     if (bounds.width <= 0) { present(); return; }
     const progress = range > 0 ? Math.min(Math.max(window.scrollY / range, 0), 1) : 0;
-    // Only the thin fill changes each frame. The Vue label updates at whole
-    // percentages; document layout is measured on resize/content changes.
-    fills.value.forEach(fill => { fill.style.transform = `scaleX(${progress})`; });
+    // One inherited property updates both colour layers. Width (rather than
+    // scaleX) preserves the circular end cap at every progress value.
+    root.value.style.setProperty('--scroll-progress', String(progress));
     percent.value = Math.round(progress * 100);
     present();
   };
@@ -92,13 +96,11 @@ onScopeDispose(() => cleanup());
 </script>
 
 <template>
-  <div ref="root" class="scroll-progress" :aria-hidden="!visible"
-    role="progressbar" aria-label="Прогресс прокрутки страницы"
-    aria-valuemin="0" aria-valuemax="100" :aria-valuenow="percent">
+  <div ref="root" class="scroll-progress" aria-hidden="true">
     <div v-for="tone in ['dark', 'white']" :key="tone" class="scroll-progress-content"
       :class="`scroll-progress-${tone}`" aria-hidden="true">
       <span class="scroll-progress-label">Дальше</span>
-      <span class="scroll-progress-track"><span ref="fills" class="scroll-progress-fill" /></span>
+      <span class="scroll-progress-track"><span class="scroll-progress-fill" /></span>
       <span class="scroll-progress-percent">{{ percent }}%</span>
     </div>
   </div>
@@ -127,8 +129,19 @@ onScopeDispose(() => cleanup());
   font-weight: 500;
   line-height: 20px;
 }
-.scroll-progress[aria-hidden="true"] { visibility: hidden; }
 .scroll-progress-content { display: flex; align-items: center; gap: 14px; }
+.scroll-progress-dark {
+  /* Remove the dark copy below the orange/white copy. Without this mask two
+     25% tracks blend together and neither endpoint has the specified colour. */
+  -webkit-mask-image: linear-gradient(to right,
+    #000 0 var(--white-progress-start, 50%),
+    rgba(0, 0, 0, var(--dark-progress-center-opacity, 0)) var(--white-progress-start, 50%) var(--white-progress-end, 50%),
+    #000 var(--white-progress-end, 50%) 100%);
+  mask-image: linear-gradient(to right,
+    #000 0 var(--white-progress-start, 50%),
+    rgba(0, 0, 0, var(--dark-progress-center-opacity, 0)) var(--white-progress-start, 50%) var(--white-progress-end, 50%),
+    #000 var(--white-progress-end, 50%) 100%);
+}
 .scroll-progress-white {
   position: absolute;
   inset: 0;
@@ -140,21 +153,24 @@ onScopeDispose(() => cleanup());
 .scroll-progress-track {
   position: relative;
   flex: 1;
-  height: 1px;
+  height: 2px;
+  overflow: hidden;
+  border-radius: 999px;
 }
 .scroll-progress-track::before {
   content: '';
   position: absolute;
   inset: 0;
-  background: currentColor;
-  opacity: .25;
+  border-radius: inherit;
 }
+.scroll-progress-dark .scroll-progress-track::before { background: rgba(48, 51, 52, .25); }
+.scroll-progress-white .scroll-progress-track::before { background: rgba(255, 255, 255, .25); }
 .scroll-progress-fill {
   position: absolute;
-  inset: 0;
+  inset: 0 auto 0 0;
+  width: calc(var(--scroll-progress, 0) * 100%);
   background: currentColor;
-  transform: scaleX(0);
-  transform-origin: left center;
+  border-radius: inherit;
 }
 .scroll-progress-percent {
   width: 4ch;
@@ -162,6 +178,15 @@ onScopeDispose(() => cleanup());
   font-variant-numeric: tabular-nums;
 }
 @media (max-width: 700px) {
-  .scroll-progress { display: none; }
+  .scroll-progress {
+    right: 4px;
+    bottom: 4px;
+    left: 4px;
+    width: auto;
+  }
+  .scroll-progress-content { display: block; }
+  .scroll-progress-label,
+  .scroll-progress-percent { display: none; }
+  .scroll-progress-track { display: block; width: 100%; height: 2px; }
 }
 </style>

@@ -91,7 +91,7 @@ const keydown = (event, index) => {
           @click="select(item)" @keydown="keydown($event, index)">{{ typograph(item.label) }}</button>
       </div>
     </div>
-    <div v-for="item in faqCategories" :id="`${uid}-panel-${item.id}`" :key="item.id" role="tabpanel" :aria-labelledby="`${uid}-tab-${item.id}`" :hidden="active !== item.id" tabindex="0" class="faq-panel">
+    <div v-for="item in faqCategories" :id="`${uid}-panel-${item.id}`" :key="item.id" role="tabpanel" :aria-labelledby="`${uid}-tab-${item.id}`" :hidden="active !== item.id" class="faq-panel">
       <FaqAccordionItem v-for="question in item.questions" :id="`${uid}-${question.id}`" :key="question.id" :item="question" :open="openQuestions[item.id] === question.id"
         @toggle="toggleQuestion(item.id, question.id, $event)" />
     </div>
