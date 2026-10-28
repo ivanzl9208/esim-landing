@@ -7,6 +7,7 @@ import { useDeviceChecker } from '../composables/useDeviceChecker.js';
 import { useKeyboardViewport } from '../composables/useKeyboardViewport.js';
 import PopularModels from './PopularModels.vue';
 import { typograph, typographModelName } from '../utils/typography.js';
+import { observeTabNavigation } from '../utils/tabNavigation.js';
 
 const props = defineProps({ prepareResult: Function });
 const section = ref(null);
@@ -15,6 +16,10 @@ const suggestionsScroll = ref(null);
 const moreSuggestions = ref(false);
 const resultHeading = ref(null);
 const changingView = ref(false);
+const tabNavigation = ref(false);
+let stopTabNavigation;
+onMounted(() => { stopTabNavigation = observeTabNavigation(document, value => { tabNavigation.value = value; }); });
+onScopeDispose(() => stopTabNavigation?.());
 let viewTimer;
 const uid = useId();
 const inputId = `${uid}-model`;
@@ -124,7 +129,7 @@ defineExpose({ focusInput, section });
                   @pointerdown="optionPointerDown($event, device)" @pointerup="optionPointerUp" @click="optionClick($event, device)">{{ getFullName(device) }}</div>
               </div>
             </div>
-            <div class="checker-input-shell">
+            <div class="checker-input-shell" :class="{ 'is-tab-focus': tabNavigation }">
               <label class="sr-only" :for="inputId">Модель устройства</label>
               <input :id="inputId" ref="input" :value="query" type="search" role="combobox" enterkeyhint="search"
                 autocomplete="off" :spellcheck="false" placeholder="Введите модель устройства"

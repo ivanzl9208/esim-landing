@@ -1,0 +1,30 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { observeTabNavigation } from '../src/utils/tabNavigation.js';
+
+test('The checker ring follows Tab/Shift+Tab, not taps, text entry or programmatic focus', () => {
+  const target = new EventTarget();
+  let keyboard = false;
+  const stop = observeTabNavigation(target, value => { keyboard = value; });
+  const key = (key, extras = {}) => target.dispatchEvent(Object.assign(new Event('keydown'), { key, ...extras }));
+  target.dispatchEvent(new Event('touchstart'));
+  key('a');
+  assert.equal(keyboard, false);
+  target.dispatchEvent(new Event('focusin'));
+  assert.equal(keyboard, false);
+  key('Tab');
+  assert.equal(keyboard, true);
+  key('a');
+  assert.equal(keyboard, true, 'Typing retains the ring after Tab entry');
+  target.dispatchEvent(new Event('pointerdown'));
+  assert.equal(keyboard, false, 'Clicking an already focused field also clears the ring');
+  key('Tab', { shiftKey: true });
+  assert.equal(keyboard, true);
+  target.dispatchEvent(new Event('touchstart'));
+  assert.equal(keyboard, false);
+  key('Tab', { metaKey: true });
+  assert.equal(keyboard, false, 'Browser/OS tab shortcuts do not enable the field ring');
+  stop();
+  key('Tab');
+  assert.equal(keyboard, false, 'Unmount removes the listeners');
+});

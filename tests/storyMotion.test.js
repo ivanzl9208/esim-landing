@@ -4,7 +4,7 @@ import { gsap } from 'gsap';
 import { storyMotionFrame, advanceStoryMotion, STORY_SIDE_SPEED } from '../src/animation/storyMotion.js';
 import { storyComposition } from '../src/animation/storyComposition.js';
 import { chipZoomFrame } from '../src/animation/chipZoom.js';
-import { TRACKS } from '../src/animation/timing.js';
+import { TRACKS, DEFINITION_HANDOFF_ADVANCE } from '../src/animation/timing.js';
 
 function position(time, mobile) {
   const frame = storyMotionFrame(time);
@@ -145,6 +145,21 @@ test('A shared visual playhead never combines the definition screen with gray th
       assert.equal(frame.definition, 1);
       assert.equal(frame.background, 1);
     }
+  }
+});
+
+test('The first thesis starts exactly as the definition exits, with a completed front pose and no blank hold', () => {
+  assert.equal(TRACKS.story[0], TRACKS.definition[1]);
+  assert.ok(Math.abs(TRACKS.definition[1] - TRACKS.playback[1] - DEFINITION_HANDOFF_ADVANCE) < 1e-10);
+  assert.ok(Math.abs(TRACKS.story[1] - TRACKS.story[0] - 8.4) < 1e-10,
+    'All four reading/entrance/exit windows retain their lengths');
+  for (const offset of [.0001, .01, .05, .1]) {
+    const incoming = storyMotionFrame(TRACKS.definition[1] + offset);
+    assert.ok(incoming.story > 0, 'No additional scroll is spent on an empty gray stage');
+    assert.equal(incoming.definition, 1);
+    assert.equal(incoming.playback, TRACKS.playback[2]);
+    const outgoing = storyMotionFrame(TRACKS.definition[1] - offset);
+    assert.equal(outgoing.story, 0, 'Reverse scroll clears the thesis before the heading returns');
   }
 });
 

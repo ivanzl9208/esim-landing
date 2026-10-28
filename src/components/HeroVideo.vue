@@ -21,6 +21,9 @@ let failed = false;
 let playbackBlocked = false;
 let retryTimer;
 let failures = 0;
+let surface;
+let coverageObserver;
+const sceneCovered = () => surface?.hasAttribute('data-media-covered');
 const cancelPresentation = () => {
   clearTimeout(loadDeadline);
   if (frameCallback !== undefined) video.value?.cancelVideoFrameCallback?.(frameCallback);
@@ -70,6 +73,13 @@ const markPresented = () => {
 const syncPlayback = () => {
   const element = video.value;
   if (!element || disposed) return;
+  if (sceneCovered() && !reduced.value && !avoidVideo.value && !document.hidden) {
+    // Keep src, the decoded frame and presented state. Resume on reverse scroll
+    // without another download or poster swap; don't decode a hidden loop.
+    element.pause();
+    cancelPresentation();
+    return;
+  }
   if (failed || reduced.value || avoidVideo.value || document.hidden) {
     element.pause();
     cancelPresentation();
@@ -94,6 +104,7 @@ const recoverPlayback = () => {
   syncPlayback();
 };
 const gesturePlayback = () => {
+  if (sceneCovered()) return;
   if (presented.value && !video.value?.paused) return;
   // A real touch/click permits playback when iOS initially rejected autoplay.
   playbackBlocked = false;
@@ -106,6 +117,9 @@ const syncSource = () => {
 watch([reduced, avoidVideo], syncSource, { flush: 'post' });
 onMounted(() => {
   mounted = true;
+  surface = video.value.closest('.hero-surface');
+  coverageObserver = new MutationObserver(syncPlayback);
+  if (surface) coverageObserver.observe(surface, { attributes: true, attributeFilter: ['data-media-covered'] });
   video.value.defaultMuted = true;
   video.value.muted = true;
   video.value.playsInline = true;
@@ -119,6 +133,7 @@ onMounted(() => {
 const visibilityPlayback = () => document.hidden ? syncPlayback() : recoverPlayback();
 onScopeDispose(() => {
   disposed = true;
+  coverageObserver?.disconnect();
   clearTimeout(retryTimer);
   cancelPresentation();
   video.value?.pause();

@@ -39,7 +39,8 @@ export function createChipStoryRenderer(scene, media) {
   let preludeLayout;
   let measuredLayout;
   let measurements;
-  let renderedSafetyReveal;
+  let safetyFill;
+  let controlsFrame;
   const setButtonPalette = (background, color) => {
     if (geometry.mobile) {
       // Keep the same clipped label throughout the curtain and chip scenes.
@@ -165,10 +166,7 @@ export function createChipStoryRenderer(scene, media) {
         );
         const isExiting = exitProgress > 0;
         const opacity = isExiting ? 1 - exit : enter;
-        // Per-word filters force a separate raster surface for every word in
-        // mobile Safari. Keep the same stagger, opacity and vertical motion on
-        // phones, but reserve the blur rasterization for larger devices.
-        const blur = reduced || geometry.mobile ? 0 : isExiting
+        const blur = reduced ? 0 : isExiting
           ? blurDistance * exit
           : blurDistance * (1 - enter);
         const y = reduced ? 0 : isExiting
@@ -176,9 +174,16 @@ export function createChipStoryRenderer(scene, media) {
           : 9.28 * layoutScale * (1 - enter);
 
         motionElement.style.opacity = opacity.toFixed(4);
-        motionElement.style.filter = geometry.mobile ? 'none' : `blur(${blur.toFixed(3)}px)`;
-        motionElement.style.transform =
-          `translate3d(0, ${y.toFixed(3)}px, 0)`;
+        const moving = opacity > 0 && opacity < 1 && !reduced;
+        // blur(0) still creates a filter surface in WebKit; translate3d(0)
+        // keeps it composited too. Release both on the readable/static frame
+        // so tight line boxes cannot crop Cyrillic descenders after settling.
+        motionElement.style.filter = moving && blur > .0001 ? `blur(${blur.toFixed(3)}px)` : 'none';
+        // Keep soft blur, but don't reserve a GPU surface for every word of
+        // every hidden/settled card throughout the long sticky scene.
+        motionElement.style.willChange = moving
+          ? 'transform, opacity, filter' : 'auto';
+        motionElement.style.transform = moving ? `translate3d(0, ${y.toFixed(3)}px, 0)` : 'none';
       };
 
       applySoftBlur(icon, 0, 8);
@@ -210,7 +215,11 @@ export function createChipStoryRenderer(scene, media) {
       };
       measuredLayout = layoutKey;
     }
-    renderControls(state);
+    const nextControls = `${layoutKey}:${state.curtain}:${state.buttonReveal}:${state.reveal}:${state.background}:${state.story}:${state.safety}:${state.returnGradient}:${state.outro}`;
+    if (controlsFrame !== nextControls) {
+      renderControls(state);
+      controlsFrame = nextControls;
+    }
     // During the curtain only the controls change. Initialize/reset hidden
     // chip content once; don't read its layout and rewrite every blur unit on
     // every frame of the opening scroll. Re-entering the prelude resets it.
@@ -346,20 +355,18 @@ export function createChipStoryRenderer(scene, media) {
       safetyCopy.style.transform =
         `translate3d(-50%, ${(safetyStartOffset + safetyEntranceOffset - safetyTravel * safetyExitProgress).toFixed(2)}px, 0)`;
       const safetyCharacterCount = Math.max(safetyCharacters.length - 1, 1);
-      if (renderedSafetyReveal !== safetyReveal) {
-        renderedSafetyReveal = safetyReveal;
-        safetyCharacters.forEach((character, index) => {
-          const threshold = index / safetyCharacterCount;
-          const active = smoothstep(
-            threshold - safetyFillFeather,
-            threshold + safetyFillFeather,
-            safetyReveal,
-          );
-          const opacity = mix(0.1, 0.86, active);
-          character.style.color =
-            `rgba(11, 12, 13, ${opacity.toFixed(4)})`;
-        });
-      }
+      if (safetyFill !== safetyReveal) safetyCharacters.forEach((character, index) => {
+        const threshold = index / safetyCharacterCount;
+        const active = smoothstep(
+          threshold - safetyFillFeather,
+          threshold + safetyFillFeather,
+          safetyReveal,
+        );
+        const opacity = mix(0.1, 0.86, active);
+        character.style.color =
+          `rgba(11, 12, 13, ${opacity.toFixed(4)})`;
+      });
+      safetyFill = safetyReveal;
 
       media.setPlayback(currentPlayback, playbackEndTurns);
       if (currentDefinition >= .9 || currentStory > 0) media.prepareStill?.();

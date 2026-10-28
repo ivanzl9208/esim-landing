@@ -15,7 +15,7 @@ const flush = async () => { for (let i = 0; i < 150; i++) await nextTick(); };
 
 // Exercise the real Vue lifecycle, shared hero policy, loader and still decode.
 // Browser downloads/events are controlled; no copy of the media state machine.
-function mountMedia(t, { slow = false, pendingVideo = false, iphone = false, lowPower = false, legacy = false, controlledVideoFrames = false, unavailableFrames = false } = {}) {
+function mountMedia(t, { slow = false, pendingVideo = false, iphone = false, lowPower = false, legacy = false, controlledVideoFrames = false, unavailableFrames = false, prime = false, rejectPrime = false, pendingPrime = false } = {}) {
   const previous = new Map();
   const replace = (key, value) => {
     previous.set(key, Object.getOwnPropertyDescriptor(globalThis, key));
@@ -55,15 +55,15 @@ function mountMedia(t, { slow = false, pendingVideo = false, iphone = false, low
     readyState: 0, videoWidth: 800, duration: 6, currentTime: 0, seeking: false,
     pause() {}, load() {}, hasAttribute() { return Boolean(this.src); }, removeAttribute() { this.src = ''; },
   });
+  let primeCalls = 0;
+  if (prime) video.play = () => {
+    primeCalls++;
+    return pendingPrime ? new Promise(() => {}) : rejectPrime
+      ? Promise.reject(new Error('NotAllowedError')) : Promise.resolve();
+  };
   let nextVideoFrame = 0;
   const videoFrames = new Map();
   if (controlledVideoFrames) {
-    let currentTime = 0;
-    Object.defineProperty(video, 'currentTime', {
-      configurable: true,
-      get: () => currentTime,
-      set: value => { currentTime = value; video.seeking = true; },
-    });
     video.requestVideoFrameCallback = callback => {
       const id = ++nextVideoFrame;
       videoFrames.set(id, callback);
@@ -97,6 +97,7 @@ function mountMedia(t, { slow = false, pendingVideo = false, iphone = false, low
   });
   return {
     media, policy, frame, video, motion, requests,
+    primeCalls: () => primeCalls,
     presentVideoFrame: () => {
       const entry = videoFrames.entries().next().value;
       if (!entry) return false;
@@ -175,7 +176,6 @@ test('A completed seek is painted before the next scroll target begins decoding'
   media.setPlayback(.25, 4);
   await flush();
   const firstTarget = video.currentTime;
-  assert.ok(firstTarget <= 6 * 3 / 149 + .001, 'A slow decoder never receives a large first pose jump');
   video.seeking = true;
   media.setPlayback(.5, 4);
   await flush();
@@ -188,22 +188,6 @@ test('A completed seek is painted before the next scroll target begins decoding'
   assert.equal(presentVideoFrame(), true);
   await flush();
   assert.ok(video.currentTime > firstTarget, 'The latest scroll target starts after presentation');
-});
-
-test('iPhone MOV completes a lagging rotation and settles on the front frame', async t => {
-  const { media, video } = mountMedia(t, { iphone: true, controlledVideoFrames: true });
-  await flush();
-  media.setPlayback(4, 4);
-  await flush();
-
-  for (let seek = 0; seek < 60 && video.currentTime < video.duration - .05; seek += 1) {
-    video.seeking = false;
-    video.dispatchEvent(new Event('seeked'));
-    await flush();
-  }
-
-  assert.ok(video.currentTime >= video.duration - .05,
-    'The transparent MOV reaches its exact final/front pose without a video-frame callback');
 });
 
 test('Desktop begins downloading its selected scrub video on mount', async t => {
@@ -275,4 +259,44 @@ test('iPhone uses the transparent MOV, seeks in both directions and blends the s
   assert.equal(media.stillOpacity.value, 1);
   media.setPlayback(.5, 4); await flush();
   assert.equal(media.stillOpacity.value, 0);
+});
+
+test('Paused iPhone MOV never waits for a missing video-frame callback or traverses obsolete targets', async t => {
+  const { media, video, presentVideoFrame } = mountMedia(t, { iphone: true, controlledVideoFrames: true });
+  await flush();
+  assert.equal(presentVideoFrame(), false, 'WebKit MOV does not depend on rVFC');
+  media.setPlayback(.2, 4); await flush();
+  const first = video.currentTime;
+  video.seeking = true;
+  media.setPlayback(.8, 4);
+  media.setPlayback(.35, 4); await flush();
+  assert.equal(video.currentTime, first);
+  video.seeking = false;
+  video.dispatchEvent(new Event('seeked')); await flush();
+  assert.ok(Math.abs(video.currentTime - .35 * 5.96) < 1e-8,
+    'The first display tick seeks to the latest reversed target, not .8');
+  media.setPlayback(.3525, 4); await flush();
+  assert.ok(Math.abs(video.currentTime - .3525 * 5.96) < 1e-8,
+    'Video time is not snapped to the 150-frame image fallback grid');
+  media.setPlayback(4, 4); await flush();
+  assert.equal(video.currentTime, 5.96, 'The exact final front pose is retained');
+});
+
+for (const rejectPrime of [false, true]) test(`MOV decode warm-up cannot block scrolling (autoplay ${rejectPrime ? 'rejected' : 'allowed'})`, async t => {
+  const { media, video, primeCalls } = mountMedia(t, { iphone: true, prime: true, rejectPrime });
+  await flush();
+  assert.equal(primeCalls(), 1);
+  media.setPlayback(.6, 4); await flush();
+  assert.ok(Math.abs(video.currentTime - .6 * 5.96) < 1e-8);
+  video.dispatchEvent(new Event('loadedmetadata')); await flush();
+  assert.equal(primeCalls(), 1, 'Warm-up is one-shot per source');
+});
+
+test('A never-settled autoplay promise has a bounded warm-up, not a frozen chip', async t => {
+  const { media, video } = mountMedia(t, { iphone: true, prime: true, pendingPrime: true });
+  await flush();
+  media.setPlayback(.6, 4); await flush();
+  t.mock.timers.tick(500); await flush();
+  assert.ok(Math.abs(video.currentTime - .6 * 5.96) < 1e-8);
+  assert.equal(media.frameMode.value, false, 'No false video failure or WebM substitution');
 });

@@ -84,7 +84,7 @@ const inspect = () => {
   const fallback = document.querySelector('.hero-video-fallback');
   const frame = document.querySelector('.chip-scroll-frame');
   report.textContent = JSON.stringify({ fixtureLoadedAt, resizeEvents, motionTrace, mounted: Boolean(app), triggers: ScrollTrigger.getAll().length,
-    progress: ScrollTrigger.getAll()[0]?.progress, renderedChecker: document.querySelector('.device-checker')?.getAttribute('data-in-view'), curtain: document.querySelector('.white-curtain')?.style.getPropertyValue('--curtain-y'),
+    progress: ScrollTrigger.getAll()[0]?.progress, renderedChecker: document.querySelector('.device-checker')?.getAttribute('data-in-view'), curtain: document.querySelector('.white-curtain')?.style.transform,
     ownedTickerCallbacks: ticks.size,
     activeTweens: gsap.globalTimeline.getChildren(true, true, true).filter(tween => tween.isActive()).length,
     ownedAnimations: gsap.globalTimeline.getChildren(true, true, true).filter(tween => !baselineAnimations.has(tween)).length,

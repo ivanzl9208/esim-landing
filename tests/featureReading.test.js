@@ -54,8 +54,9 @@ test('Every orange feature stays fully legible while the actual chip track advan
         assert.equal(features[index].style.visibility, 'visible');
         for (const unit of words[index]) {
           assert.equal(unit.style.opacity, '1.0000');
-          assert.equal(unit.style.filter, mobile ? 'none' : 'blur(0.000px)');
-          assert.match(unit.style.transform, /^translate3d\(0, -?0\.000px, 0\)$/u);
+          assert.equal(unit.style.filter, 'none', 'Readable text must leave the WebKit filter surface');
+          assert.equal(unit.style.transform, 'none');
+          assert.equal(unit.style.willChange, 'auto');
         }
       }
       return playback;

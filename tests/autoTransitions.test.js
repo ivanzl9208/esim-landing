@@ -218,6 +218,20 @@ test('Direct restoration retains the original video phase when no early handoff 
   assert.equal(motion.advance(1), false);
 });
 
+test('Definition exit immediately triggers the first thesis, with no timed or scroll hold before its entrance', () => {
+  for (const mobile of [false, true]) for (const fps of [30, 60, 120]) {
+    const motion = createAutoTransitions(mobile);
+    const end = TRACKS.definition[1];
+    motion.update(end, 0, true);
+    assert.equal(motion.frame().playback, TRACKS.playback[2]);
+    motion.update(end + .001, .001 / (TRACKS.story[1] - TRACKS.story[0]));
+    motion.advance(1 / fps);
+    assert.ok(motion.frame().storyText[0] > 0, 'The first display tick starts revealing words');
+    assert.equal(motion.frame().playback, TRACKS.playback[2]);
+    assert.deepEqual(motion.frame().storyText.slice(1), [0, 0, 0]);
+  }
+});
+
 test('Opening during continued scroll anchors the heading when the curtain actually finishes', () => {
   const motion = createAutoTransitions(false);
   motion.update(0, 0, true);

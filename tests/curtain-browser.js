@@ -52,7 +52,7 @@ const measure = async (reverse = false, simulateResize = false) => {
     const current = trigger();
     if (current && !ids.has(current)) ids.set(current, ++serial);
     samples.push({ time: Math.round(elapsed), y: scrollY, width: innerWidth, height: innerHeight, id: ids.get(current),
-      curtain: parseFloat(document.querySelector('.white-curtain').style.getPropertyValue('--curtain-y')),
+      curtain: parseFloat(document.querySelector('.white-curtain').style.transform.match(/translate3d\(0, ([\d.-]+)%/)?.[1] ?? 0),
       playhead: current?.animation.time(), progress: current?.progress, end: current?.end,
       duration: current?.animation.duration(), sceneHeight: scene().offsetHeight });
     if (elapsed < duration + 800) requestAnimationFrame(sample);

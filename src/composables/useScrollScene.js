@@ -11,6 +11,7 @@ import { captureScenePosition, restoreScenePosition } from '../animation/scenePo
 import { storyComposition } from '../animation/storyComposition.js';
 import { storyMotionFrame, advanceStoryMotion } from '../animation/storyMotion.js';
 import { STORY_BENEFITS } from '../data/story.js';
+import { createFrameCommit } from '../animation/frameCommit.js';
 
 /** One native sticky stage. ScrollTrigger supplies progress; Lenis only smooths desktop wheel input. */
 export function useScrollScene(sceneRef, mediaRef, checkerRef, progressRef) {
@@ -62,7 +63,6 @@ export function useScrollScene(sceneRef, mediaRef, checkerRef, progressRef) {
       let trigger;
       let resizeTimer;
       let resizeFrame;
-      let sceneRenderFrame;
       let revealDelay;
       let buttonTween;
       let focusDelay;
@@ -78,7 +78,14 @@ export function useScrollScene(sceneRef, mediaRef, checkerRef, progressRef) {
       let advanceMotion = () => {};
       const autoTransitions = createAutoTransitions(mobile, reduced);
       const checkerEntrance = createCheckerEntrance(checkerRef.value.section);
-      const tick = (time, delta) => { lenis?.raf(time * 1000); advanceMotion(delta / 1000); };
+      const frameCommit = createFrameCommit();
+      const tick = (time, delta) => {
+        lenis?.raf(time * 1000);
+        advanceMotion(delta / 1000);
+        // Native scroll, scrub and automatic card clocks share one DOM commit.
+        // No additional rAF/timeout, and no lagging queue of older scene states.
+        frameCommit.flush();
+      };
       if (!reduced) gsap.ticker.add(tick);
       if (!reduced && fine && !mobile) {
         import('lenis').then(({ default: Lenis }) => {
@@ -141,10 +148,9 @@ export function useScrollScene(sceneRef, mediaRef, checkerRef, progressRef) {
           scrollUnit = window.innerHeight;
         }
         const oldButtonProgress = timeline?.data?.buttonReveal ?? 0;
+        frameCommit.clear();
         revealDelay?.kill(); revealDelay = undefined;
         buttonTween?.kill(); buttonTween = undefined;
-        cancelAnimationFrame(sceneRenderFrame);
-        sceneRenderFrame = undefined;
         sceneContext?.revert();
         // Preserve preceding animation distances, then hold the finished checker
         // briefly within this same stage before the document-flow handoff.
@@ -184,7 +190,6 @@ export function useScrollScene(sceneRef, mediaRef, checkerRef, progressRef) {
           progressRef?.value?.setScene(renderedState, geometry);
           renderEntrance();
         };
-        let queueChipRender = renderChipFrame;
         advanceMotion = seconds => {
           if (!active || initializing || reduced) return;
           let changed = autoTransitions.advance(seconds);
@@ -196,17 +201,20 @@ export function useScrollScene(sceneRef, mediaRef, checkerRef, progressRef) {
               changed = true;
             }
           }
-          if (changed) queueChipRender();
+          if (changed) {
+            if (nativeTouch) frameCommit.request(renderChipFrame);
+            else renderChipFrame();
+          }
         };
         let rendering = false;
-        const renderNow = () => {
+        const render = () => {
           if (!active || rendering) return;
           rendering = true;
           if (mobile) state.buttonReveal = 1;
           else if (state.curtain >= 0.999 && state.buttonReveal < 0.999 && !revealDelay && !buttonTween) {
             revealDelay = gsap.delayedCall(reduced ? 0 : 1, () => {
               revealDelay = undefined;
-              buttonTween = gsap.to(state, { buttonReveal: 1, duration: reduced ? 0 : 0.32, ease: 'power2.out', onUpdate: renderScene });
+              buttonTween = gsap.to(state, { buttonReveal: 1, duration: reduced ? 0 : 0.32, ease: 'power2.out', onUpdate: render });
             });
           } else if (!mobile && state.curtain < 0.999) {
             revealDelay?.kill(); revealDelay = undefined;
@@ -238,38 +246,6 @@ export function useScrollScene(sceneRef, mediaRef, checkerRef, progressRef) {
           renderChipFrame();
           rendering = false;
         };
-        let pendingFullRender = false;
-        let pendingChipRender = false;
-        const flushSceneRender = () => {
-          sceneRenderFrame = undefined;
-          const full = pendingFullRender;
-          const chip = pendingChipRender;
-          pendingFullRender = pendingChipRender = false;
-          if (full) renderNow();
-          else if (chip) renderChipFrame();
-        };
-        const scheduleSceneRender = () => {
-          if (sceneRenderFrame === undefined) sceneRenderFrame = requestAnimationFrame(flushSceneRender);
-        };
-        const render = (immediate = false) => {
-          if (!nativeTouch || initializing || immediate) {
-            pendingFullRender = pendingChipRender = false;
-            cancelAnimationFrame(sceneRenderFrame);
-            sceneRenderFrame = undefined;
-            renderNow();
-            return;
-          }
-          pendingFullRender = true;
-          scheduleSceneRender();
-        };
-        queueChipRender = (immediate = false) => {
-          if (!nativeTouch || initializing || immediate) {
-            renderChipFrame(immediate);
-            return;
-          }
-          pendingChipRender = true;
-          scheduleSceneRender();
-        };
         renderScene = render;
         settleStoryMotion = () => {
           followStory?.tween.pause();
@@ -281,7 +257,10 @@ export function useScrollScene(sceneRef, mediaRef, checkerRef, progressRef) {
             duration: 0.75, ease: 'power2.out',
             onUpdate: () => { if (active && !initializing) renderChipFrame(); },
           });
-          timeline = gsap.timeline({ paused: true, onUpdate: render, data: state });
+          timeline = gsap.timeline({ paused: true, onUpdate: () => {
+            if (nativeTouch && !initializing && !reduced) frameCommit.request(render, 1);
+            else render();
+          }, data: state });
           const units = Math.max((scene.offsetHeight - geometry.height) / scrollUnit, 1);
           timeline.to({ hold: 0 }, { hold: 1, duration: units, ease: 'none' }, 0);
           for (const [key, [start, end, value, ease]] of Object.entries(TRACKS)) {
@@ -341,7 +320,6 @@ export function useScrollScene(sceneRef, mediaRef, checkerRef, progressRef) {
       const resize = () => {
         clearTimeout(resizeTimer);
         cancelAnimationFrame(resizeFrame);
-        cancelAnimationFrame(sceneRenderFrame);
         // Follow Safari's live toolbar height once per frame. A 120ms debounce
         // left the composition at its old centre, then moved it in one step.
         if (nativeTouch && geometry?.width === window.innerWidth) {
@@ -460,6 +438,7 @@ export function useScrollScene(sceneRef, mediaRef, checkerRef, progressRef) {
       };
       return () => {
         active = false;
+        frameCommit.clear();
         finishResultAnchor?.();
         clearTimeout(resizeTimer);
         cancelAnimationFrame(resizeFrame);

@@ -367,11 +367,6 @@ a {
   will-change: opacity;
   /* Sum the two weighted alpha layers inside an isolated group: ordinary
      source-over would thin translucent contacts/edges halfway through. */
-  mix-blend-mode: normal;
-}
-.chip-media-wrapper[data-blending="true"] .chip-scroll-video,
-.chip-media-wrapper[data-blending="true"] .chip-scroll-frame,
-.chip-media-wrapper[data-blending="true"] .chip-scroll-still {
   mix-blend-mode: plus-lighter;
 }
 .chip-scroll-video { z-index: 0; }
@@ -503,7 +498,7 @@ a {
   opacity: 0;
   filter: blur(12px);
   transform: translate3d(0, calc(9.28px * var(--layout-scale)), 0);
-  will-change: transform, opacity, filter;
+  will-change: auto;
 }
 
 .chip-feature-icon-motion {
@@ -517,6 +512,15 @@ a {
 
 .soft-blur-word {
   white-space: nowrap;
+}
+
+/* Give WebKit's filtered word surfaces room for accents and descenders.
+   Cancel the padding in flow: line wrapping, baselines and card spacing stay
+   unchanged. This is shared by orange headings/body copy AND gray theses. */
+.soft-blur-unit {
+  overflow: visible;
+  padding-block: 0.18em;
+  margin-block: -0.18em;
 }
 
 .soft-blur-space {
@@ -574,16 +578,6 @@ a {
   line-height: 1.08;
   letter-spacing: calc(-1.4px * var(--layout-scale));
   transform: translateY(-50%);
-}
-
-/* iOS Safari crops Cyrillic descenders (notably «у» and «д») when a
-   transformed/filtering inline-block has a line box as tight as the glyph.
-   Expand only the composited word bounds and cancel that space in layout so
-   wrapping, line spacing and the scroll composition stay unchanged. */
-.story-benefit .soft-blur-unit {
-  overflow: visible;
-  padding-bottom: 0.18em;
-  margin-bottom: -0.18em;
 }
 
 .safety-copy {
@@ -723,20 +717,8 @@ a {
     bottom: var(--safe-bottom);
     left: 0;
     height: calc(120px * var(--layout-scale));
-    /* The exported gradient already supplies the fade. A live backdrop blur
-       over the full viewport width competes with HEVC alpha decoding on iOS. */
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
-  }
-
-  .chip-gradient[data-revealing="true"] {
-    filter: none;
-  }
-
-  .chip-feature-icon-motion,
-  .soft-blur-unit {
-    filter: none;
-    will-change: transform, opacity;
+    -webkit-backdrop-filter: blur(calc(8px * var(--layout-scale)));
+    backdrop-filter: blur(calc(8px * var(--layout-scale)));
   }
 
   .roulette-bottom-svg-layer img {
@@ -1492,17 +1474,6 @@ button.checker-input-action:active {
   }
 }
 
-@keyframes checker-view-in-mobile {
-  from {
-    opacity: 0;
-    transform: translate3d(0, 12px, 0);
-  }
-  to {
-    opacity: 1;
-    transform: translate3d(0, 0, 0);
-  }
-}
-
 @keyframes checker-loader-spin {
   to {
     transform: translateY(-50%) rotate(360deg);
@@ -1510,13 +1481,6 @@ button.checker-input-action:active {
 }
 
 @media (max-width: 700px) {
-  .checker-panel.is-changing .checker-heading > span,
-  .checker-panel.is-changing .checker-popular > *,
-  .checker-panel.is-changing .checker-search-area,
-  .checker-panel.is-changing .checker-result-card {
-    animation-name: checker-view-in-mobile;
-  }
-
   /* Preserve the original 97px gap + 60px field in the centered composition. */
   .scroll-scene { margin-bottom: -100dvh; }
   .device-checker { height: 100svh; height: 100dvh; }
@@ -1640,7 +1604,7 @@ button.checker-input-action:active {
   .device-checker.is-focused[data-keyboard-open="true"] .checker-heading {
     position: absolute;
     opacity: 0;
-    filter: none;
+    filter: blur(6px);
   }
 
   .device-checker.is-focused[data-keyboard-open="true"] .checker-popular,

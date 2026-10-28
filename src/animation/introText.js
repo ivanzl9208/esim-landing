@@ -11,7 +11,11 @@ export function createIntroTextRenderer(scene) {
   let signature;
   let measurements;
   let bottom;
+  let lastFrame;
   return (state, geometry, reduced) => {
+    const frameKey = `${geometry.width}:${geometry.height}:${geometry.scale}:${state.curtain}:${state.introText}:${reduced}`;
+    if (lastFrame === frameKey) return;
+    lastFrame = frameKey;
     // Layout is read only when geometry/fonts change, never during scrolling.
     const nextSignature = `${geometry.width}:${geometry.scale}`;
     if (signature !== nextSignature) {
@@ -19,15 +23,17 @@ export function createIntroTextRenderer(scene) {
       measurements = items.map(item => ({ top: item.offsetTop, height: item.offsetHeight }));
       bottom = measurements.at(-1).top + measurements.at(-1).height;
     }
-    const curtainY = curtainOffset(state.curtain);
-    curtain.style.setProperty('--curtain-y', `${curtainY}%`);
+    // Write to the composited layer directly. An inherited custom property
+    // invalidates the entire text subtree on each scroll tick in WebKit.
+    curtain.style.transform = reduced ? 'none' : `translate3d(0, ${curtainOffset(state.curtain)}%, 0)`;
     curtain.style.opacity = reduced ? (state.curtain >= .8 ? '1' : '0') : '';
-    // Writing the compositor transform directly avoids invalidating a custom
-    // property across the full-screen curtain on every iOS scroll frame.
-    curtain.style.transform = reduced ? 'none' : `translate3d(0, ${curtainY.toFixed(4)}%, 0)`;
     // The white curtain rises over the stationary hero, rather than pushing it
     // upwards. Keep the text's opacity animation on the same scroll playhead.
     hero.style.transform = '';
+    // The sticky hero still intersects the viewport under this panel. Tell
+    // its player when it is actually occluded, not merely offscreen.
+    const covered = state.curtain >= .9999;
+    if (hero.hasAttribute?.('data-media-covered') !== covered) hero.toggleAttribute?.('data-media-covered', covered);
     const y = introPanelColumnY(state.introText, state.curtain, geometry.height, bottom);
     const panelOffset = reduced ? 0 : curtainOffset(state.curtain) / 100 * geometry.height;
     column.style.transform = `translate3d(0, ${y.toFixed(3)}px, 0)`;
@@ -41,11 +47,7 @@ export function createIntroTextRenderer(scene) {
         - (isFinale ? .05 * geometry.height : 0);
       const frame = introFadeFrame(fadeTop, geometry.height, isFinale, reduced);
       item.style.opacity = frame.opacity.toFixed(4);
-      // Re-rasterizing several large text layers while Safari is moving the
-      // full-screen panel causes visible stepping. On mobile the vertical
-      // travel and opacity carry the transition; keep glyphs at native scale.
-      const scale = geometry.mobile ? 1 : frame.scale;
-      item.style.transform = `${isFinale ? 'translateX(-50%) ' : ''}scale(${scale.toFixed(5)})`;
+      item.style.transform = `${isFinale ? 'translateX(-50%) ' : ''}scale(${frame.scale.toFixed(5)})`;
     });
   };
 }

@@ -26,8 +26,6 @@ export function useChipMedia(videoRef, frameRef, stillRef) {
   let requestedTurns = 0;
   let endTurns = 1;
   let displayedTurns = 0;
-  let committedTurns = 0;
-  let inflightTurns;
   let pendingTime = 0;
   let frameIndex = 0;
   let mediaRequested = false;
@@ -42,6 +40,9 @@ export function useChipMedia(videoRef, frameRef, stillRef) {
   let revealFrame;
   let seekFrame;
   let videoFrameCallback;
+  let priming = false;
+  let primed = false;
+  let primeDeadline;
   let revealEnvelope = 1;
   let revealSharpen = 1;
   let wasRenderable = false;
@@ -115,9 +116,6 @@ export function useChipMedia(videoRef, frameRef, stillRef) {
     if (mounted && !disposed && !isStatic()) stillLoader.prepare();
   };
   const setZoomQuality = quality => {
-    if (quality.width === zoomQuality.width && quality.zoom === zoomQuality.zoom &&
-      quality.scale === zoomQuality.scale && quality.dpr === zoomQuality.dpr &&
-      quality.safety === zoomQuality.safety) return;
     zoomQuality = quality;
     updateStill();
   };
@@ -127,12 +125,14 @@ export function useChipMedia(videoRef, frameRef, stillRef) {
   };
   const releaseVideo = () => {
     clearTimeout(loadDeadline); clearTimeout(seekDeadline);
+    clearTimeout(primeDeadline);
     cancelAnimationFrame(seekFrame);
     seekFrame = undefined;
     if (videoFrameCallback !== undefined && video?.cancelVideoFrameCallback) {
       video.cancelVideoFrameCallback(videoFrameCallback);
     }
     videoFrameCallback = undefined;
+    priming = primed = false;
     fetchController?.abort(); fetchController = undefined;
     videoReady.value = false;
     if (video?.hasAttribute('src')) {
@@ -221,61 +221,34 @@ export function useChipMedia(videoRef, frameRef, stillRef) {
     loadMedia();
   };
   const flush = () => {
-    if (disposed || isStatic() || document.hidden || frameMode.value || !blobUrl || video.readyState < 2 || video.seeking) return;
-    const isFinalFront = Math.abs(requestedTurns - endTurns) < .0005;
-    if (isFinalFront && requestedTurns - committedTurns > 1) {
-      // Complete turns have the same visual pose. If Safari fell behind during
-      // a fast scroll, discard only those invisible whole loops and keep the
-      // current phase. The remaining (at most one) turn still plays through
-      // the bounded seek queue and lands on the exact front frame.
-      const phase = ((committedTurns % 1) + 1) % 1;
-      committedTurns = Math.max(requestedTurns - 1 + phase, requestedTurns - 1);
-    }
-    const remaining = requestedTurns - committedTurns;
-    if (Math.abs(remaining) > .0005) {
-      // A paused all-keyframe video can still take more than one display frame
-      // to seek on iOS. Jumping straight to the newest scroll target makes the
-      // chip visibly teleport whenever decoding falls behind. Advance at most
-      // three source frames per presented frame instead: slow scroll remains
-      // exact, fast gestures keep their direction and finish on the existing
-      // inertial tail without ever exposing a large pose jump.
-      const maxStep = 3 / Math.max(CHIP_FRAME_COUNT - 1, 1);
-      inflightTurns = committedTurns + Math.max(-maxStep, Math.min(remaining, maxStep));
-      const phase = Math.abs(inflightTurns - endTurns) < .0005
-        ? 1
-        : ((inflightTurns % 1) + 1) % 1;
-      pendingTime = phase * Math.max(duration - .04, .001);
+    if (disposed || priming || isStatic() || document.hidden || frameMode.value || !blobUrl || video.readyState < 2 || video.seeking) return;
+    if (Math.abs(video.currentTime - pendingTime) > .012) {
       // Don't clear the latest desired time until a completed seek has been
       // observed. A new scroll update during decoding is flushed by seeked.
       video.currentTime = pendingTime;
-      // Test doubles and a few engines can apply a seek synchronously. In that
-      // case there is no `seeked` event to advance the queue, so settle the
-      // requested pose immediately; real Safari flips `seeking` synchronously.
-      if (!video.seeking) {
-        committedTurns = requestedTurns;
-        inflightTurns = undefined;
-        const settledPhase = Math.abs(requestedTurns - endTurns) < .0005
-          ? 1
-          : ((requestedTurns % 1) + 1) % 1;
-        pendingTime = settledPhase * Math.max(duration - .04, .001);
-        video.currentTime = pendingTime;
-      }
       clearTimeout(seekDeadline);
       seekDeadline = setTimeout(fallback, MEDIA_LOAD_DEADLINE);
     }
   };
   const scheduleFlushAfterPaint = () => {
+    // A paused HEVC/alpha video on WebKit can emit seeked without delivering
+    // another rVFC. Never make the latest scroll target depend on that callback.
+    // One display tick coalesces targets, without a bounded catch-up seek queue.
+    if (videoSource.value.endsWith('.mov')) {
+      if (seekFrame !== undefined) return;
+      seekFrame = requestAnimationFrame(() => {
+        seekFrame = undefined;
+        flush();
+      });
+      return;
+    }
     cancelAnimationFrame(seekFrame);
     seekFrame = undefined;
     if (videoFrameCallback !== undefined && video?.cancelVideoFrameCallback) {
       video.cancelVideoFrameCallback(videoFrameCallback);
     }
     videoFrameCallback = undefined;
-    // A paused transparent MOV on iOS may not emit another video-frame
-    // callback when it is registered from `seeked`: the sought frame has
-    // already been presented. Two display frames provide the same paint gap
-    // and, crucially, keep the bounded seek queue moving to the front pose.
-    if (!videoSource.value.endsWith('.mov') && video?.requestVideoFrameCallback) {
+    if (video?.requestVideoFrameCallback) {
       videoFrameCallback = video.requestVideoFrameCallback(() => {
         videoFrameCallback = undefined;
         flush();
@@ -301,33 +274,46 @@ export function useChipMedia(videoRef, frameRef, stillRef) {
     if (frameMode.value) {
       if (mediaRequested) loader?.request(index);
     } else {
-      pendingTime = index / (CHIP_FRAME_COUNT - 1) * Math.max(duration - .04, .001);
-      flush();
+      // Quantization belongs only to the emergency image sequence. The video
+      // decoder must receive continuous time, including tiny reverse gestures.
+      pendingTime = phase * Math.max(duration - .04, .001);
+      if (videoSource.value.endsWith('.mov')) scheduleFlushAfterPaint();
+      else flush();
     }
     updateStill();
   };
   const setPlayback = (progress, turns = 1) => {
-    const nextTurns = Math.max(0, Math.min(progress, turns));
-    const changed = nextTurns !== requestedTurns || turns !== endTurns;
-    requestedTurns = nextTurns;
+    requestedTurns = Math.max(0, Math.min(progress, turns));
     endTurns = turns;
     if (progress > 0 && !mediaRequested) prepare();
     if (!mounted) return;
     if (isStatic()) showFront();
-    else if (changed) draw(requestedTurns);
+    else draw(requestedTurns);
   };
   const metadata = () => {
     if (Number.isFinite(video.duration) && video.duration > 0) duration = video.duration;
     video.pause();
+    // Warm WebKit's playback/decode path while frame 001 still covers the
+    // video. A rejected autoplay promise (e.g. Low Power Mode) is harmless;
+    // neither priming nor rVFC is allowed to block subsequent scroll seeks.
+    if (!primed && videoSource.value.endsWith('.mov') && typeof video.play === 'function') {
+      primed = priming = true;
+      const warmingSource = blobUrl;
+      const finish = () => {
+        if (disposed || !priming || warmingSource !== blobUrl) return;
+        clearTimeout(primeDeadline);
+        priming = false;
+        video.pause();
+        draw(displayedTurns);
+      };
+      primeDeadline = setTimeout(finish, 500);
+      Promise.resolve().then(() => video.play()).then(finish, finish);
+    }
     draw(displayedTurns);
   };
-  const decoded = event => {
+  const decoded = () => {
     if (disposed || isStatic() || frameMode.value || video.readyState < 2) return;
     clearTimeout(loadDeadline); clearTimeout(seekDeadline);
-    if (event?.type === 'seeked' && inflightTurns !== undefined) {
-      committedTurns = inflightTurns;
-      inflightTurns = undefined;
-    }
     videoReady.value = true;
     // `seeked` fires before the decoded frame is necessarily painted. Starting
     // another seek synchronously drops that frame and looks like a large jump

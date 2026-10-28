@@ -85,14 +85,22 @@ test('Renderer only measures layout on resize and clears the column by the end o
     return groups;
   }, querySelector: () => finale };
   const curtain = { style: { setProperty(key, value) { this[key] = value; } } };
-  const hero = { style: {} };
+  let coverageWrites = 0;
+  let covered = false;
+  const hero = { style: {}, hasAttribute: () => covered, toggleAttribute: (name, value) => {
+    assert.equal(name, 'data-media-covered');
+    covered = value; coverageWrites++;
+  } };
   const nodes = { '.intro-text-column': column, '.white-curtain': curtain, '.hero-surface': hero };
   const render = createIntroTextRenderer({ querySelector: key => nodes[key] });
   let geometry = { width: 430, height: 932, scale: 1.1944 };
   const sample = progress => render({ curtain: 1, introText: progress }, geometry, false);
   sample(0);
+  assert.equal(covered, true, 'Fully covered hero can release its active decoder');
+  assert.equal(coverageWrites, 1);
   const initialReads = reads;
   for (let i = 0; i <= 100; i++) sample(i / 100);
+  assert.equal(coverageWrites, 1, 'Coverage is not re-announced for every scroll tick');
   assert.equal(reads, initialReads);
   assert.ok([...groups, finale].every(node => Number(node.style.opacity) === 0));
   assert.match(finale.style.transform, /^translateX\(-50%\) scale\(/,
@@ -106,4 +114,8 @@ test('Renderer only measures layout on resize and clears the column by the end o
   geometry = { width: 932, height: 430, scale: .72 };
   sample(.5);
   assert.ok(reads > initialReads, 'Orientation change remeasures the flowing text');
+  render({ curtain: .8, introText: 0 }, geometry, false);
+  assert.equal(covered, false, 'Reverse scroll resumes the hero before it is uncovered');
+  assert.match(curtain.style.transform, /^translate3d\(0, [\d.]+%, 0\)$/);
+  assert.equal(curtain.style['--curtain-y'], undefined, 'No per-frame inherited property invalidation');
 });
