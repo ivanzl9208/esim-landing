@@ -58,6 +58,12 @@ function mountMedia(t, { slow = false, pendingVideo = false, iphone = false, low
   let nextVideoFrame = 0;
   const videoFrames = new Map();
   if (controlledVideoFrames) {
+    let currentTime = 0;
+    Object.defineProperty(video, 'currentTime', {
+      configurable: true,
+      get: () => currentTime,
+      set: value => { currentTime = value; video.seeking = true; },
+    });
     video.requestVideoFrameCallback = callback => {
       const id = ++nextVideoFrame;
       videoFrames.set(id, callback);
@@ -169,6 +175,7 @@ test('A completed seek is painted before the next scroll target begins decoding'
   media.setPlayback(.25, 4);
   await flush();
   const firstTarget = video.currentTime;
+  assert.ok(firstTarget <= 6 * 3 / 149 + .001, 'A slow decoder never receives a large first pose jump');
   video.seeking = true;
   media.setPlayback(.5, 4);
   await flush();
@@ -181,6 +188,22 @@ test('A completed seek is painted before the next scroll target begins decoding'
   assert.equal(presentVideoFrame(), true);
   await flush();
   assert.ok(video.currentTime > firstTarget, 'The latest scroll target starts after presentation');
+});
+
+test('iPhone MOV completes a lagging rotation and settles on the front frame', async t => {
+  const { media, video } = mountMedia(t, { iphone: true, controlledVideoFrames: true });
+  await flush();
+  media.setPlayback(4, 4);
+  await flush();
+
+  for (let seek = 0; seek < 60 && video.currentTime < video.duration - .05; seek += 1) {
+    video.seeking = false;
+    video.dispatchEvent(new Event('seeked'));
+    await flush();
+  }
+
+  assert.ok(video.currentTime >= video.duration - .05,
+    'The transparent MOV reaches its exact final/front pose without a video-frame callback');
 });
 
 test('Desktop begins downloading its selected scrub video on mount', async t => {

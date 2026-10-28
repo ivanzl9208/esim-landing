@@ -19,9 +19,12 @@ export function createIntroTextRenderer(scene) {
       measurements = items.map(item => ({ top: item.offsetTop, height: item.offsetHeight }));
       bottom = measurements.at(-1).top + measurements.at(-1).height;
     }
-    curtain.style.setProperty('--curtain-y', `${curtainOffset(state.curtain)}%`);
+    const curtainY = curtainOffset(state.curtain);
+    curtain.style.setProperty('--curtain-y', `${curtainY}%`);
     curtain.style.opacity = reduced ? (state.curtain >= .8 ? '1' : '0') : '';
-    curtain.style.transform = reduced ? 'none' : '';
+    // Writing the compositor transform directly avoids invalidating a custom
+    // property across the full-screen curtain on every iOS scroll frame.
+    curtain.style.transform = reduced ? 'none' : `translate3d(0, ${curtainY.toFixed(4)}%, 0)`;
     // The white curtain rises over the stationary hero, rather than pushing it
     // upwards. Keep the text's opacity animation on the same scroll playhead.
     hero.style.transform = '';
@@ -38,7 +41,11 @@ export function createIntroTextRenderer(scene) {
         - (isFinale ? .05 * geometry.height : 0);
       const frame = introFadeFrame(fadeTop, geometry.height, isFinale, reduced);
       item.style.opacity = frame.opacity.toFixed(4);
-      item.style.transform = `${isFinale ? 'translateX(-50%) ' : ''}scale(${frame.scale.toFixed(5)})`;
+      // Re-rasterizing several large text layers while Safari is moving the
+      // full-screen panel causes visible stepping. On mobile the vertical
+      // travel and opacity carry the transition; keep glyphs at native scale.
+      const scale = geometry.mobile ? 1 : frame.scale;
+      item.style.transform = `${isFinale ? 'translateX(-50%) ' : ''}scale(${scale.toFixed(5)})`;
     });
   };
 }

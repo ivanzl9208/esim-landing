@@ -59,7 +59,7 @@ test('Settled words do not receive repeated style writes; reverse and Reduce Mot
   const reverse = render(.1, .1, 0, true);
   assert.notDeepEqual(reverse, settled);
   assert.deepEqual(render(.5, .5, 0, true), settled);
-  assert.equal(render(.1, .1, 0, true, true)[0].filter, 'blur(0.000px)');
+  assert.equal(render(.1, .1, 0, true, true)[0].filter, 'none');
   assert.deepEqual(render(.1, .1, 0, true), reverse);
 });
 
@@ -79,7 +79,7 @@ test('All four gray theses reuse the orange heading word effect and keep their r
       for (const local of [STORY_ENTER_END, .5, STORY_EXIT_START]) {
         for (const unit of render(local, .5, index, mobile)) {
           assert.equal(unit.opacity, '1.0000');
-          assert.equal(unit.filter, 'blur(0.000px)');
+          assert.equal(unit.filter, mobile ? 'none' : 'blur(0.000px)');
           assert.match(unit.transform, /^translate3d\(0, -?0\.000px, 0\)$/u);
         }
       }
@@ -88,7 +88,7 @@ test('All four gray theses reuse the orange heading word effect and keep their r
       render(1, 1, index, mobile);
       assert.equal(stories[index].style.visibility, 'hidden');
       for (const unit of render(.08, .2, index, mobile, true)) {
-        assert.equal(unit.filter, 'blur(0.000px)');
+        assert.equal(unit.filter, mobile ? 'none' : 'blur(0.000px)');
         assert.equal(unit.transform, 'translate3d(0, 0.000px, 0)');
       }
     }

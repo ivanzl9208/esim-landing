@@ -39,6 +39,7 @@ export function createChipStoryRenderer(scene, media) {
   let preludeLayout;
   let measuredLayout;
   let measurements;
+  let renderedSafetyReveal;
   const setButtonPalette = (background, color) => {
     if (geometry.mobile) {
       // Keep the same clipped label throughout the curtain and chip scenes.
@@ -164,7 +165,10 @@ export function createChipStoryRenderer(scene, media) {
         );
         const isExiting = exitProgress > 0;
         const opacity = isExiting ? 1 - exit : enter;
-        const blur = reduced ? 0 : isExiting
+        // Per-word filters force a separate raster surface for every word in
+        // mobile Safari. Keep the same stagger, opacity and vertical motion on
+        // phones, but reserve the blur rasterization for larger devices.
+        const blur = reduced || geometry.mobile ? 0 : isExiting
           ? blurDistance * exit
           : blurDistance * (1 - enter);
         const y = reduced ? 0 : isExiting
@@ -172,7 +176,7 @@ export function createChipStoryRenderer(scene, media) {
           : 9.28 * layoutScale * (1 - enter);
 
         motionElement.style.opacity = opacity.toFixed(4);
-        motionElement.style.filter = `blur(${blur.toFixed(3)}px)`;
+        motionElement.style.filter = geometry.mobile ? 'none' : `blur(${blur.toFixed(3)}px)`;
         motionElement.style.transform =
           `translate3d(0, ${y.toFixed(3)}px, 0)`;
       };
@@ -342,17 +346,20 @@ export function createChipStoryRenderer(scene, media) {
       safetyCopy.style.transform =
         `translate3d(-50%, ${(safetyStartOffset + safetyEntranceOffset - safetyTravel * safetyExitProgress).toFixed(2)}px, 0)`;
       const safetyCharacterCount = Math.max(safetyCharacters.length - 1, 1);
-      safetyCharacters.forEach((character, index) => {
-        const threshold = index / safetyCharacterCount;
-        const active = smoothstep(
-          threshold - safetyFillFeather,
-          threshold + safetyFillFeather,
-          safetyReveal,
-        );
-        const opacity = mix(0.1, 0.86, active);
-        character.style.color =
-          `rgba(11, 12, 13, ${opacity.toFixed(4)})`;
-      });
+      if (renderedSafetyReveal !== safetyReveal) {
+        renderedSafetyReveal = safetyReveal;
+        safetyCharacters.forEach((character, index) => {
+          const threshold = index / safetyCharacterCount;
+          const active = smoothstep(
+            threshold - safetyFillFeather,
+            threshold + safetyFillFeather,
+            safetyReveal,
+          );
+          const opacity = mix(0.1, 0.86, active);
+          character.style.color =
+            `rgba(11, 12, 13, ${opacity.toFixed(4)})`;
+        });
+      }
 
       media.setPlayback(currentPlayback, playbackEndTurns);
       if (currentDefinition >= .9 || currentStory > 0) media.prepareStill?.();

@@ -367,6 +367,11 @@ a {
   will-change: opacity;
   /* Sum the two weighted alpha layers inside an isolated group: ordinary
      source-over would thin translucent contacts/edges halfway through. */
+  mix-blend-mode: normal;
+}
+.chip-media-wrapper[data-blending="true"] .chip-scroll-video,
+.chip-media-wrapper[data-blending="true"] .chip-scroll-frame,
+.chip-media-wrapper[data-blending="true"] .chip-scroll-still {
   mix-blend-mode: plus-lighter;
 }
 .chip-scroll-video { z-index: 0; }
@@ -718,8 +723,20 @@ a {
     bottom: var(--safe-bottom);
     left: 0;
     height: calc(120px * var(--layout-scale));
-    -webkit-backdrop-filter: blur(calc(8px * var(--layout-scale)));
-    backdrop-filter: blur(calc(8px * var(--layout-scale)));
+    /* The exported gradient already supplies the fade. A live backdrop blur
+       over the full viewport width competes with HEVC alpha decoding on iOS. */
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+
+  .chip-gradient[data-revealing="true"] {
+    filter: none;
+  }
+
+  .chip-feature-icon-motion,
+  .soft-blur-unit {
+    filter: none;
+    will-change: transform, opacity;
   }
 
   .roulette-bottom-svg-layer img {
@@ -1475,6 +1492,17 @@ button.checker-input-action:active {
   }
 }
 
+@keyframes checker-view-in-mobile {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 12px, 0);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
 @keyframes checker-loader-spin {
   to {
     transform: translateY(-50%) rotate(360deg);
@@ -1482,6 +1510,13 @@ button.checker-input-action:active {
 }
 
 @media (max-width: 700px) {
+  .checker-panel.is-changing .checker-heading > span,
+  .checker-panel.is-changing .checker-popular > *,
+  .checker-panel.is-changing .checker-search-area,
+  .checker-panel.is-changing .checker-result-card {
+    animation-name: checker-view-in-mobile;
+  }
+
   /* Preserve the original 97px gap + 60px field in the centered composition. */
   .scroll-scene { margin-bottom: -100dvh; }
   .device-checker { height: 100svh; height: 100dvh; }
@@ -1605,7 +1640,7 @@ button.checker-input-action:active {
   .device-checker.is-focused[data-keyboard-open="true"] .checker-heading {
     position: absolute;
     opacity: 0;
-    filter: blur(6px);
+    filter: none;
   }
 
   .device-checker.is-focused[data-keyboard-open="true"] .checker-popular,

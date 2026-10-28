@@ -179,14 +179,22 @@ onScopeDispose(() => cleanup());
 }
 @media (max-width: 700px) {
   .scroll-progress {
-    right: 4px;
-    bottom: 4px;
-    left: 4px;
+    z-index: 80;
+    right: 0;
+    bottom: 0;
+    left: 0;
     width: auto;
   }
   .scroll-progress-content { display: block; }
   .scroll-progress-label,
   .scroll-progress-percent { display: none; }
-  .scroll-progress-track { display: block; width: 100%; height: 2px; }
+  .scroll-progress-track {
+    display: block;
+    width: 100%;
+    height: 4px;
+    border-radius: 0;
+  }
+  .scroll-progress-track::before { border-radius: 0; }
+  .scroll-progress-fill { border-radius: 0; }
 }
 </style>

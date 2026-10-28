@@ -9,7 +9,7 @@ const { frameMode, videoSource, videoReady, reduced, stillOpacity, stillFilter, 
 defineExpose({ prepare, setPlayback, prepareStill, setZoomQuality });
 </script>
 <template>
-  <div class="chip-media-wrapper">
+  <div class="chip-media-wrapper" :data-blending="stillOpacity > 0.001 ? 'true' : 'false'">
   <video ref="video" class="chip-scroll-video" :poster="asset('chip-frames/frame-001.webp')"
     :data-video-format="reduced ? 'static' : frameMode ? 'frames' : videoSource.endsWith('.mov') ? 'mov' : 'webm'" :style="{ opacity: videoReady && !frameMode && !reduced ? 1 - stillOpacity : 0 }"
     muted playsinline preload="none" aria-hidden="true" />
