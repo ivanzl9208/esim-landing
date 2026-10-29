@@ -54,15 +54,15 @@ const navigation = [
 .site-header-brand { display: flex; align-items: center; gap: 16px; }
 .brand-logo { display: block; flex: 0 0 115px; width: 115px; height: 54px; }
 .brand-logo img { display: block; width: 100%; height: 100%; object-fit: contain; }
-.location { display: flex; align-items: center; gap: 8px; height: 36px; max-width: 204px; padding: 0 16px; border-radius: 100px; color: rgba(11,12,13,.86); background: #fff; font: 600 14px/16px "SB Sans Display", Arial, sans-serif; letter-spacing: -.42px; }
+.location { display: flex; align-items: center; gap: 8px; height: 36px; max-width: 204px; padding: 0 16px; border-radius: 100px; color: rgba(11,12,13,.86); background: #fff; font: 600 14px/16px "SB Sans Text", Arial, sans-serif; letter-spacing: -.42px; }
 .location img { flex: 0 0 12px; }
 .site-header-actions { display: flex; align-items: center; gap: 10px; }
 .desktop-nav { display: flex; align-items: center; }
-.desktop-nav > a { display: flex; padding: 12px 10px; border-radius: 100px; color: inherit; font: 600 14px/16px "SB Sans Display", Arial, sans-serif; letter-spacing: -.42px; text-decoration: none; white-space: nowrap; }
+.desktop-nav > a { display: flex; padding: 12px 10px; border-radius: 100px; color: inherit; font: 600 14px/16px "SB Sans Text", Arial, sans-serif; letter-spacing: -.42px; text-decoration: none; white-space: nowrap; }
 .desktop-nav > a:hover { background: rgba(255,255,255,.14); }
 .header-account { display: flex; align-items: center; gap: 4px; }
-.header-bonus { display: flex; align-items: center; gap: 6px; height: 34px; padding: 0 10px; border-radius: 17px 17px 17px 0; background: linear-gradient(94deg,#9ddb10 4.38%,#32ba23 30.09%,#1db565 66.42%,#0d9fb0); color: #fff; font: 600 16px/16px "SB Sans Display", Arial, sans-serif; text-decoration: none; }
-.header-login { display: flex; align-items: center; height: 36px; padding: 0 16px; border-radius: 48px; background: #fff; color: #fa5f05; font: 600 14px/16px "SB Sans Display", Arial, sans-serif; letter-spacing: -.42px; text-decoration: none; }
+.header-bonus { display: flex; align-items: center; gap: 6px; height: 34px; padding: 0 10px; border-radius: 17px 17px 17px 0; background: linear-gradient(94deg,#9ddb10 4.38%,#32ba23 30.09%,#1db565 66.42%,#0d9fb0); color: #fff; font: 600 16px/16px "SB Sans Text", Arial, sans-serif; text-decoration: none; }
+.header-login { display: flex; align-items: center; height: 36px; padding: 0 16px; border-radius: 48px; background: #fff; color: #fa5f05; font: 600 14px/16px "SB Sans Text", Arial, sans-serif; letter-spacing: -.42px; text-decoration: none; }
 .mobile-menu { display: none; width: 32px; height: 32px; }
 .mobile-menu img { display: block; width: 100%; height: 100%; }
 .phone-header-art { display: none; }
