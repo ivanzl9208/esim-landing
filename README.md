@@ -2,6 +2,16 @@
 
 Лендинг СберМобайла на Vue 3, Vite и GSAP. Единственное приложение находится в корне репозитория.
 
+## Актуальная версия и публикация
+
+Единственная рабочая и production-ветка — `main`. Прежняя `codex/improvements` объединена с ней; старые состояния доступны только в истории Git.
+
+- Исходники: https://github.com/ivanzl9208/esim-landing
+- Production: https://esim-landing-next.layero.app/
+- GitHub Pages: https://ivanzl9208.github.io/esim-landing/
+
+Layero автоматически собирает push в `main` и публикует успешную сборку. GitHub Pages обновляется workflow `Deploy to GitHub Pages` из этой же ветки после тестов и сборки. Репозиторий `esim-landing-next` содержит только workflow дополнительного Pages-адреса, а не отдельную копию исходников.
+
 ## Структура
 
 - `src/components/` — Vue-компоненты интерфейса.

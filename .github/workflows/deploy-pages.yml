@@ -38,6 +38,10 @@ jobs:
       - name: Build
         run: npm run build
 
+      - name: Record published source
+        run: |
+          node --input-type=module -e "import {writeFileSync} from 'node:fs'; import {execFileSync} from 'node:child_process'; const commit=execFileSync('git',['rev-parse','HEAD'],{encoding:'utf8'}).trim(); writeFileSync('dist/deployment.json',JSON.stringify({repository:'ivanzl9208/esim-landing',sourceCommit:commit})+'\n');"
+
       - name: Configure Pages
         uses: actions/configure-pages@v5
 
