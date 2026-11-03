@@ -25,7 +25,6 @@ export default defineConfig({
   plugins: [reloadScrollScene, vue()],
   optimizeDeps: { entries: ['index.html', 'tests/*.html'] },
   server: {
-    watch: { ignored: ['**/archive/**'] },
-    fs: { deny: ['.env', '.env.*', '*.{crt,pem}', '**/.git/**', '**/archive/**'] },
+    fs: { deny: ['.env', '.env.*', '*.{crt,pem}', '**/.git/**', '**/.codex/**'] },
   },
 });

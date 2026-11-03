@@ -2,13 +2,6 @@ export const clamp = (value, min = 0, max = 1) => Math.min(Math.max(value, min),
 export const mix = (from, to, progress) => from + (to - from) * progress;
 export const smoothstep = (start, end, value) => { const t = clamp((value - start) / (end - start)); return t * t * (3 - 2 * t); };
 export const mixRgb = (from, to, t) => 'rgb(' + from.map((v, i) => Math.round(mix(v, to[i], t))).join(', ') + ')';
-export function sampleKeyframes(frames, value) {
-  if (value <= frames[0].at) return frames[0];
-  if (value >= frames.at(-1).at) return frames.at(-1);
-  const next = frames.findIndex(frame => frame.at >= value);
-  const a = frames[next - 1], b = frames[next], t = (value - a.at) / (b.at - a.at);
-  return Object.fromEntries(['top', 'fontSize', 'lineHeight', 'opacity'].map(key => [key, mix(a[key], b[key], t)]));
-}
 export const cubicBezierValue = (progress, x1, y1, x2, y2) => {
   const targetX = clamp(progress);
   let parameter = targetX;

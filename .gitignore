@@ -5,4 +5,5 @@ dist/
 .env*
 
 .qa/
-archive/local/
+local-preview/
+.codex/
