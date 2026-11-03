@@ -27,6 +27,27 @@ function fixture() {
   return { node, benefits, characters, render, get playback() { return playback; } };
 }
 
+test('The advantages heading exits the viewport without fading its trailing letters on desktop or mobile', () => {
+  for (const mobile of [false, true]) {
+    const media = fixture();
+    const width = mobile ? 430 : 1440;
+    const layout = { mobile, width, height: 900, scale: 1 };
+    const state = { ...Object.fromEntries(Object.keys(TRACKS).map(key => [key, 0])), reveal: 1, chip: 1, buttonReveal: 1 };
+    const sample = marquee => {
+      media.render({ ...state, marquee }, layout, false);
+      const node = media.node('.advantages-marquee');
+      assert.equal(node.style.opacity, '1.0000');
+      return parseFloat(node.style['--advantages-text-x']);
+    };
+    const progress = [.8, .94, .97, .99, 1];
+    const positions = progress.map(sample);
+    for (let i = 1; i < positions.length; i++) assert.ok(positions[i] < positions[i - 1]);
+    assert.ok(width / 2 + positions.at(-1) + media.node('.advantages-marquee').offsetWidth / 2 <= .01,
+      'The last letter leaves the left viewport edge geometrically');
+    assert.deepEqual([...progress].reverse().map(sample), [...positions].reverse());
+  }
+});
+
 test('Safety copy enters grey, fills its first phrase early and reverses continuously', () => {
   for (const mobile of [false, true]) {
     const media = fixture();

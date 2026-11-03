@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { checkerEntranceFrame } from '../src/animation/checkerEntrance.js';
+import { checkerEntranceFrame, createCheckerEntrance } from '../src/animation/checkerEntrance.js';
 import { smoothstep } from '../src/animation/math.js';
 import { TRACKS, getLayout } from '../src/animation/timing.js';
 import { storyMotionFrame } from '../src/animation/storyMotion.js';
@@ -12,7 +12,7 @@ test('Checker retains the original entrance duration and desktop/mobile displace
     for (const index of [0, 1, 2, 3, 4, 3, 2, 1, 0]) {
       const frame = checkerEntranceFrame(smoothstep(0, 1, index / 4), geometry);
       assert.equal(frame.y, offsets[index]);
-      assert.equal(frame.interactive, index === 4);
+      assert.equal(frame.interactive, index !== 0);
       assert.equal(frame.visible, index !== 0);
       if (index === 0 || index === 4) assert.equal(frame.opacity, index / 4);
     }
@@ -25,7 +25,30 @@ test('Reduced motion has no checker translation or fading', () => {
     assert.equal(frame.y, 0);
     assert.equal(frame.opacity, 1);
     assert.equal(frame.visible, progress === 1);
+    assert.equal(frame.interactive, frame.visible);
   }
+});
+
+test('Visible entrance keeps the field usable before completion and on reverse, while hidden form stays inert', () => {
+  const attributes = new Map();
+  const input = {
+    getAttribute: key => attributes.get(key) ?? null,
+    setAttribute: (key, value) => attributes.set(key, value),
+    removeAttribute: key => attributes.delete(key),
+  };
+  const panel = { style: { removeProperty(key) { delete this[key]; } }, querySelectorAll: () => [input],
+    setAttribute() {}, removeAttribute() {} };
+  const section = { dataset: {}, querySelector: () => panel };
+  const entrance = createCheckerEntrance(section);
+  for (const progress of [0, .2, .8, 1, .8, .2, 0]) {
+    entrance.render(progress, getLayout(1440, 900), false, true);
+    const visible = panel.style.visibility === 'visible';
+    assert.equal(panel.inert, !visible);
+    assert.equal(input.getAttribute('tabindex'), visible ? null : '-1');
+  }
+  entrance.clear();
+  assert.equal(panel.inert, false);
+  assert.equal(input.getAttribute('tabindex'), null);
 });
 
 test('Shared handoff clock retains checker/background easing and the matching safety position in either direction', () => {

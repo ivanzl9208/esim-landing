@@ -28,7 +28,12 @@ button:disabled { opacity: 1; }
   border-radius: 8px;
 }
 .footer-social > a:focus-visible { border-radius: 50%; }
-.checker-result-copy h2:focus:not(:focus-visible),
+/* The result heading receives programmatic focus for screen readers, never
+   via Tab. Typing in the preceding input can carry :focus-visible to it. */
+.checker-result-copy h2:focus {
+  outline: none !important;
+  box-shadow: none;
+}
 #main-content:focus {
   outline: none;
   box-shadow: none;

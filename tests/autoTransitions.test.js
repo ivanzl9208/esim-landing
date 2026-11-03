@@ -156,7 +156,7 @@ test('Automatic curtain and card clocks leave chip rotation and heading movement
   }
 });
 
-test('The next scroll after opening moves the heading immediately; parking does not autoplay it', () => {
+test('The next scroll after opening starts the heading follower on the next tick; parking never advances its destination', () => {
   for (const mobile of [false, true]) for (const fps of [30, 60, 120]) {
     const motion = createAutoTransitions(mobile);
     const opening = TRACKS.reveal[0] + .01;
@@ -164,18 +164,22 @@ test('The next scroll after opening moves the heading immediately; parking does 
     finish(motion, opening, 0, fps);
     assert.equal(motion.frame().marquee, 0);
     motion.update(opening + .2, 0);
+    motion.advance(1 / fps);
     const moved = motion.frame();
     assert.ok(moved.marquee > 0, 'No remaining curtain scroll distance should delay the text');
     assert.ok(moved.playback > 0, 'Rotation must share the immediate scroll handoff');
     assert.equal(moved.reveal, 1);
-    assert.deepEqual(finish(motion, opening + .2, 0, fps, 4), moved);
+    const settled = finish(motion, opening + .2, 0, fps, 4);
+    assert.ok(settled.marquee > moved.marquee, 'The heading coasts to the scroll destination after input stops');
+    assert.deepEqual(finish(motion, opening + .2, 0, fps, 4), settled, 'Parking never autoplays the rest of the heading');
     motion.update(opening + .1, 0);
-    assert.ok(motion.frame().marquee > 0 && motion.frame().marquee < moved.marquee);
+    motion.advance(1 / fps);
+    assert.ok(motion.frame().marquee > 0 && motion.frame().marquee < settled.marquee);
     assert.ok(motion.frame().playback > 0 && motion.frame().playback < moved.playback);
     assert.equal(finish(motion, opening + .1, 0, fps).reveal, 1, 'Reverse text movement must not close the shutter early');
     assert.ok(motion.frame().featureText.every(value => value === 0));
     motion.update(TRACKS.features[0], 0);
-    assert.equal(motion.frame().marquee, 1, 'The heading still ends before cards start');
+    assert.equal(finish(motion, TRACKS.features[0], 0, fps).marquee, 1, 'The heading finishes before cards appear');
     motion.update(0, 0);
     assert.equal(motion.frame().marquee, 0);
     assert.equal(motion.frame().playback, 0);
@@ -244,6 +248,7 @@ test('Opening during continued scroll anchors the heading when the curtain actua
   assert.ok(motion.frame().marquee > 0);
   const before = motion.frame();
   motion.update(opening + 1.05, 0);
+  motion.advance(1 / 60);
   assert.ok(motion.frame().marquee > before.marquee);
   assert.equal(motion.frame().reveal, 1);
   const restored = createAutoTransitions(false);

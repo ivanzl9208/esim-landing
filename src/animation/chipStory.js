@@ -197,7 +197,7 @@ export function createChipStoryRenderer(scene, media) {
     };
 
 
-  return (state, layout, reduceMotion) => {
+  const render = (state, layout, reduceMotion) => {
     geometry = layout; reduced = reduceMotion;
     const { reveal: currentReveal, chip: currentChip, marquee: currentMarquee, features: currentVideo, playback: currentPlayback, definition: currentDefinition, definitionVisibility: currentDefinitionVisibility, background: currentBackground, story: currentStory, safety: currentSafety, returnGradient: currentReturnGradient, outro: currentOutro } = state;
     const layoutKey = `${geometry.width}:${geometry.height}:${geometry.scale}:${reduced}`;
@@ -313,9 +313,8 @@ export function createChipStoryRenderer(scene, media) {
         "--advantages-text-x",
         `${marqueeOffset.toFixed(2)}px`,
       );
-      marquee.style.opacity = (
-        1 - smoothstep(0.94, 1, currentMarquee)
-      ).toFixed(4);
+      // Exit by travelling beyond the viewport, never by fading the last letters.
+      marquee.style.opacity = '1.0000';
       definitionMarquee.style.setProperty(
         "--definition-text-x",
         `${definitionOffset.toFixed(2)}px`,
@@ -391,4 +390,6 @@ export function createChipStoryRenderer(scene, media) {
       }
 
   };
+  render.invalidateMeasurements = () => { measurements = measuredLayout = preludeLayout = undefined; };
+  return render;
 }

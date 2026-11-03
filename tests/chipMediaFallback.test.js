@@ -15,7 +15,7 @@ const flush = async () => { for (let i = 0; i < 150; i++) await nextTick(); };
 
 // Exercise the real Vue lifecycle, shared hero policy, loader and still decode.
 // Browser downloads/events are controlled; no copy of the media state machine.
-function mountMedia(t, { slow = false, pendingVideo = false, iphone = false, lowPower = false, legacy = false, controlledVideoFrames = false, unavailableFrames = false, prime = false, rejectPrime = false, pendingPrime = false } = {}) {
+function mountMedia(t, { slow = false, pendingVideo = false, iphone = false, lowPower = false, legacy = false, controlledVideoFrames = false, controlledPaint = false, unavailableFrames = false, prime = false, rejectPrime = false, pendingPrime = false } = {}) {
   const previous = new Map();
   const replace = (key, value) => {
     previous.set(key, Object.getOwnPropertyDescriptor(globalThis, key));
@@ -35,8 +35,9 @@ function mountMedia(t, { slow = false, pendingVideo = false, iphone = false, low
     connection: Object.assign(new EventTarget(), { effectiveType: slow ? '3g' : '4g' }),
   });
   let clock = 0;
-  replace('requestAnimationFrame', callback => { const id = ++clock; queueMicrotask(() => callback(id * 16)); return id; });
-  replace('cancelAnimationFrame', () => {});
+  const paintFrames = new Map();
+  replace('requestAnimationFrame', callback => { const id = ++clock; if (controlledPaint) paintFrames.set(id, callback); else queueMicrotask(() => callback(id * 16)); return id; });
+  replace('cancelAnimationFrame', id => paintFrames.delete(id));
   const requests = [];
   replace('fetch', (url, { signal } = {}) => {
     requests.push(url);
@@ -97,6 +98,7 @@ function mountMedia(t, { slow = false, pendingVideo = false, iphone = false, low
   });
   return {
     media, policy, frame, video, motion, requests,
+    paint: () => { const callbacks = [...paintFrames.values()]; paintFrames.clear(); callbacks.forEach(callback => callback(++clock * 16)); },
     primeCalls: () => primeCalls,
     presentVideoFrame: () => {
       const entry = videoFrames.entries().next().value;
@@ -256,6 +258,7 @@ test('iPhone uses the transparent MOV, seeks in both directions and blends the s
   assert.equal(video.currentTime, quarter);
   media.prepareStill(); media.setPlayback(4, 4);
   media.setZoomQuality({ width: 1400, scale: 2, dpr: 2, zoom: 1 }); await flush();
+  video.dispatchEvent(new Event('seeked')); await flush();
   assert.equal(media.stillOpacity.value, 1);
   media.setPlayback(.5, 4); await flush();
   assert.equal(media.stillOpacity.value, 0);
@@ -276,10 +279,59 @@ test('Paused iPhone MOV never waits for a missing video-frame callback or traver
   assert.ok(Math.abs(video.currentTime - .35 * 5.96) < 1e-8,
     'The first display tick seeks to the latest reversed target, not .8');
   media.setPlayback(.3525, 4); await flush();
+  assert.ok(Math.abs(video.currentTime - .35 * 5.96) < 1e-8,
+    'A sub-frame change does not decode the exact same MOV image twice');
+  media.setPlayback(.36, 4); await flush();
+  assert.ok(Math.abs(video.currentTime - .36 * 5.96) < 1e-8,
+    'The next source frame uses continuous video time, not an image-sequence timestamp');
+  media.setPlayback(.3525, 4); await flush();
   assert.ok(Math.abs(video.currentTime - .3525 * 5.96) < 1e-8,
-    'Video time is not snapped to the 150-frame image fallback grid');
+    'A tiny reversal across a source-frame boundary still updates immediately');
   media.setPlayback(4, 4); await flush();
-  assert.equal(video.currentTime, 5.96, 'The exact final front pose is retained');
+  assert.equal(video.currentTime, 5.98, 'Seek inside the final frame, not its ambiguous timestamp boundary');
+});
+
+test('MOV deduplication preserves final-pose correction and requests across the loop seam', async t => {
+  const { media, video } = mountMedia(t, { iphone: true });
+  await flush();
+  media.setPlayback(.999, 4); await flush();
+  const late = video.currentTime;
+  media.setPlayback(1.001, 4); await flush();
+  assert.ok(late > 5.9 && video.currentTime < .02);
+  media.setPlayback(.999, 4); await flush();
+  assert.ok(video.currentTime > 5.9, 'Reverse across the seam also seeks');
+  video.currentTime = 5.97;
+  media.setPlayback(4, 4); await flush();
+  assert.equal(video.currentTime, 5.98, 'Matching source-frame index cannot bypass the precise final front pose');
+});
+
+for (const iphone of [true, false]) test(`The high-res still cannot blend with an unpainted or preceding video frame (${iphone ? 'MOV' : 'WebM'})`, async t => {
+  const { media, video, paint } = mountMedia(t, { iphone, controlledPaint: true });
+  await flush();
+  media.prepareStill();
+  media.setPlayback(3.8, 4);
+  paint(); await flush();
+  media.setPlayback(4, 4);
+  paint(); await flush();
+  assert.equal(video.currentTime, 5.98);
+  media.setZoomQuality({ width: 600, scale: 1, dpr: 2, zoom: .19 });
+  assert.equal(media.stillOpacity.value, 0, 'A time assignment is not proof of a presented frame');
+  video.currentTime = 5.96;
+  video.dispatchEvent(new Event('seeked'));
+  paint(); paint(); await flush();
+  assert.equal(media.stillOpacity.value, 0, 'The previous frame boundary must not unlock the blend');
+  media.setZoomQuality({ width: 600, scale: 1, dpr: 2, zoom: 0 });
+  video.currentTime = 5.98;
+  video.dispatchEvent(new Event('seeked'));
+  paint(); await flush();
+  media.setZoomQuality({ width: 600, scale: 1, dpr: 2, zoom: .19 });
+  assert.equal(media.stillOpacity.value, 0, 'seeked and the first paint retain only video');
+  media.setZoomQuality({ width: 600, scale: 1, dpr: 2, zoom: 0 });
+  paint(); await flush();
+  media.setZoomQuality({ width: 600, scale: 1, dpr: 2, zoom: .19 });
+  assert.ok(Math.abs(media.stillOpacity.value - .5) < .001, 'The matched frame permits a continuous crossfade');
+  media.setPlayback(3.8, 4);
+  assert.equal(media.stillOpacity.value, 0, 'Reverse immediately removes the static layer before rotation');
 });
 
 for (const rejectPrime of [false, true]) test(`MOV decode warm-up cannot block scrolling (autoplay ${rejectPrime ? 'rejected' : 'allowed'})`, async t => {

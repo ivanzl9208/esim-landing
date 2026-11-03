@@ -3,13 +3,17 @@ import { setRegionInteractive } from '../utils/interactiveRegion.js';
 
 export function checkerEntranceFrame(progress, { height, scale }, reduced = false) {
   const reveal = clamp(progress);
+  const visible = reveal > (reduced ? .96 : .001);
   return {
     // Original checker translation (7e9ba25), on the original smoothstep track.
     y: reduced ? 0 : (1 - reveal) * (height + 48 * scale),
     // The former checker-view-in opacity easing, now reversible with the scroll.
     opacity: reduced ? 1 : cubicBezierValue(reveal, .22, 1, .36, 1),
-    visible: reveal > (reduced ? .96 : .001),
-    interactive: reveal > .96,
+    visible,
+    // The form is already usable while sliding into view. Waiting until 96%
+    // left a visible input inert (and blocked pointer events) on either scroll
+    // direction, including when returning to an already entered query.
+    interactive: visible,
   };
 }
 

@@ -12,8 +12,9 @@ export function createIntroTextRenderer(scene) {
   let measurements;
   let bottom;
   let lastFrame;
-  return (state, geometry, reduced) => {
-    const frameKey = `${geometry.width}:${geometry.height}:${geometry.scale}:${state.curtain}:${state.introText}:${reduced}`;
+  let panelHeight;
+  const render = (state, geometry, reduced) => {
+    const frameKey = `${geometry.width}:${geometry.mobile ? 'stable' : geometry.height}:${geometry.scale}:${state.curtain}:${state.introText}:${reduced}`;
     if (lastFrame === frameKey) return;
     lastFrame = frameKey;
     // Layout is read only when geometry/fonts change, never during scrolling.
@@ -22,7 +23,11 @@ export function createIntroTextRenderer(scene) {
       signature = nextSignature;
       measurements = items.map(item => ({ top: item.offsetTop, height: item.offsetHeight }));
       bottom = measurements.at(-1).top + measurements.at(-1).height;
+      // The mobile panel uses a stable large viewport, not Safari's changing
+      // toolbar height. Parent translation and child text must share that size.
+      panelHeight = geometry.mobile ? curtain.offsetHeight || geometry.height : geometry.height;
     }
+    const height = geometry.mobile ? panelHeight : geometry.height;
     // Write to the composited layer directly. An inherited custom property
     // invalidates the entire text subtree on each scroll tick in WebKit.
     curtain.style.transform = reduced ? 'none' : `translate3d(0, ${curtainOffset(state.curtain)}%, 0)`;
@@ -34,8 +39,8 @@ export function createIntroTextRenderer(scene) {
     // its player when it is actually occluded, not merely offscreen.
     const covered = state.curtain >= .9999;
     if (hero.hasAttribute?.('data-media-covered') !== covered) hero.toggleAttribute?.('data-media-covered', covered);
-    const y = introPanelColumnY(state.introText, state.curtain, geometry.height, bottom);
-    const panelOffset = reduced ? 0 : curtainOffset(state.curtain) / 100 * geometry.height;
+    const y = introPanelColumnY(state.introText, state.curtain, height, bottom);
+    const panelOffset = reduced ? 0 : curtainOffset(state.curtain) / 100 * height;
     column.style.transform = `translate3d(0, ${y.toFixed(3)}px, 0)`;
     items.forEach((item, index) => {
       const isFinale = item === finale;
@@ -44,10 +49,12 @@ export function createIntroTextRenderer(scene) {
       // Keep the opening single line's existing opacity window.
       const centreOffset = index === 0 ? 0 : measurements[index].height / 2;
       const fadeTop = panelOffset + y + measurements[index].top + centreOffset
-        - (isFinale ? .05 * geometry.height : 0);
-      const frame = introFadeFrame(fadeTop, geometry.height, isFinale, reduced);
+        - (isFinale ? .05 * height : 0);
+      const frame = introFadeFrame(fadeTop, height, isFinale, reduced);
       item.style.opacity = frame.opacity.toFixed(4);
       item.style.transform = `${isFinale ? 'translateX(-50%) ' : ''}scale(${frame.scale.toFixed(5)})`;
     });
   };
+  render.invalidateMeasurements = () => { signature = lastFrame = undefined; };
+  return render;
 }

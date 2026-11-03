@@ -20,7 +20,7 @@ let keyboardInset = 0;
 const viewport = new EventTarget();
 Object.defineProperties(viewport, {
   height: { get: () => innerHeight - keyboardInset }, width: { get: () => innerWidth },
-  offsetTop: { value: 0 }, offsetLeft: { value: 0 }, scale: { value: 1 },
+  offsetTop: { get: () => params.has('pan') && keyboard ? 180 : 0 }, offsetLeft: { value: 0 }, scale: { value: 1 },
 });
 if (params.has('keyboard')) Object.defineProperty(window, 'visualViewport', { configurable: true, value: viewport });
 const app = createApp(App);
@@ -33,7 +33,21 @@ const report = document.getElementById('report');
 const read = () => {
   const section = checker();
   const field = input();
-  const result = { query: field?.value,
+  const fieldRect = field?.getBoundingClientRect();
+  const visible = window.visualViewport;
+  const visibleTop = visible?.offsetTop ?? 0;
+  const visibleBottom = visibleTop + (visible?.height ?? innerHeight);
+  const components = Object.fromEntries(['checker-heading', 'checker-popular', 'checker-search-dock', 'checker-eid-hint'].map(name => {
+    const element = section.querySelector(`.${name}`);
+    const rect = element?.getBoundingClientRect();
+    const style = element && getComputedStyle(element);
+    return [name, { top: rect?.top, bottom: rect?.bottom, display: style?.display, opacity: style?.opacity,
+      visible: Boolean(rect && rect.top >= visibleTop && rect.bottom <= visibleBottom && style.display !== 'none' && style.opacity !== '0') }];
+  }));
+  const result = { fieldVisible: Boolean(fieldRect && fieldRect.top >= visibleTop && fieldRect.bottom <= visibleBottom),
+    components,
+    fieldTop: fieldRect?.top, fieldBottom: fieldRect?.bottom, visibleTop, visibleBottom,
+    keyboardOpen: section.dataset.keyboardOpen, query: field?.value,
     state: section.className, expanded: field?.getAttribute('aria-expanded'),
     top: section.getBoundingClientRect().top, internalScroll: section.scrollTop,
     focused: document.activeElement?.tagName, heading: section.querySelector('.checker-result-copy h2')?.textContent,
@@ -42,7 +56,17 @@ const read = () => {
     lenis: document.documentElement.classList.contains('lenis'),
   };
   report.textContent = JSON.stringify({ events, ...result });
-  document.getElementById('summary').textContent = JSON.stringify(result);
+  const form = section.querySelector('.checker-form-view');
+  document.getElementById('summary').textContent = params.has('native') ? JSON.stringify({
+    viewport: [innerHeight, visible?.offsetTop, visible?.height, visible?.pageTop], y: scrollY,
+    documentTop: document.documentElement.getBoundingClientRect().top,
+    panel: section.querySelector('.checker-panel').getBoundingClientRect().top,
+    panelStyle: section.querySelector('.checker-panel').getAttribute('style'),
+    form: form && [form.getBoundingClientRect().top, form.getBoundingClientRect().height, form.scrollTop],
+    field: [fieldRect?.top, fieldRect?.bottom], root: section.scrollTop,
+    keyboardOpen: section.dataset.keyboardOpen, state: section.className,
+    vars: [section.style.getPropertyValue('--checker-keyboard-top'), section.style.getPropertyValue('--checker-keyboard-height')],
+  }, null, 1) : JSON.stringify(result);
 };
 for (const name of ['pointerdown', 'touchstart', 'pointerup', 'touchend', 'pointercancel', 'mousedown', 'mouseup', 'click', 'blur']) {
   checker().addEventListener(name, event => {
@@ -70,16 +94,25 @@ if (params.has('keyboard')) {
     }, 300);
   });
 }
-document.getElementById('start').onclick = async () => {
+const start = async () => {
   events.length = 0;
-  window.scrollTo({ top: checker().getBoundingClientRect().top + scrollY + 100, behavior: 'instant' });
+  window.scrollTo({ top: checker().getBoundingClientRect().top + scrollY +
+    (params.has('sticky') ? -innerHeight : params.has('edge') ? innerHeight * .45 : 100), behavior: 'instant' });
   // Let the existing scroll entrance release inert before focusing the field.
   await new Promise(resolve => setTimeout(resolve, 350));
-  input().focus({ preventScroll: true });
-  input().value = 'Айфон';
-  input().dispatchEvent(new Event('input', { bubbles: true }));
+  if ((!params.has('native') && !params.has('tap')) || params.has('focus')) input().focus({ preventScroll: true });
+  input().value = params.has('empty') ? '' : 'Айфон';
+  if (!params.has('native')) input().dispatchEvent(new Event('input', { bubbles: true }));
+  await nextTick();
+  await new Promise(requestAnimationFrame);
   read();
 };
+document.getElementById('start').onclick = start;
+if (params.has('native')) {
+  setTimeout(start, 700);
+  window.visualViewport?.addEventListener('resize', () => setTimeout(read, 850));
+  window.visualViewport?.addEventListener('scroll', () => setTimeout(read, 850));
+}
 const touch = async cancel => {
   const option = checker().querySelector('.checker-option');
   const rect = option.getBoundingClientRect();

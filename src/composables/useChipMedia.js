@@ -46,6 +46,35 @@ export function useChipMedia(videoRef, frameRef, stillRef) {
   let revealEnvelope = 1;
   let revealSharpen = 1;
   let wasRenderable = false;
+  let frontPresented = false;
+  let frontPaintFrame;
+  let frontPaintVersion = 0;
+  // The source is 25fps. Seek inside its last frame, not exactly on 5.96s:
+  // WebKit can resolve that boundary to the preceding, differently angled frame.
+  const finalVideoTime = () => Math.max(duration - .02, .001);
+  const videoAtFront = () => !video.seeking && video.readyState >= 2 &&
+    Math.abs(video.currentTime - finalVideoTime()) < .008;
+  const cancelFrontPresentation = () => {
+    frontPresented = false;
+    frontPaintVersion++;
+    cancelAnimationFrame(frontPaintFrame);
+    frontPaintFrame = undefined;
+  };
+  const confirmFrontPresentation = () => {
+    if (frontPresented || frontPaintFrame !== undefined || !videoAtFront()) return;
+    const version = frontPaintVersion;
+    // seeked describes decoding, not compositing. Keep the video alone through
+    // the next paint before allowing its matching high-resolution still to mix.
+    frontPaintFrame = requestAnimationFrame(() => {
+      if (disposed || version !== frontPaintVersion) return;
+      frontPaintFrame = requestAnimationFrame(() => {
+        frontPaintFrame = undefined;
+        if (disposed || version !== frontPaintVersion || !videoAtFront()) return;
+        frontPresented = true;
+        updateStill();
+      });
+    });
+  };
   const releaseStill = () => {
     stillReady.value = false;
     stillOpacity.value = 0;
@@ -61,7 +90,7 @@ export function useChipMedia(videoRef, frameRef, stillRef) {
     if (!mounted || disposed) return;
     const useVideo = videoReady.value && !frameMode.value && !isStatic();
     const frontReady = Math.abs(requestedTurns - endTurns) < .0005 && !isStatic() &&
-      (useVideo ? !video.seeking && video.readyState >= 2 && Math.abs(video.currentTime - pendingTime) <= .012
+      (useVideo ? frontPresented && videoAtFront()
         : frameIndex === CHIP_FRAME_COUNT - 1 && frameRef.value.complete && frameRef.value.naturalWidth > 0);
     const renderable = stillReady.value && frontReady;
     if (renderable && !wasRenderable) {
@@ -124,6 +153,7 @@ export function useChipMedia(videoRef, frameRef, stillRef) {
     if (frameIndex !== 0) { frameRef.value.src = frameUrl(0); frameIndex = 0; }
   };
   const releaseVideo = () => {
+    cancelFrontPresentation();
     clearTimeout(loadDeadline); clearTimeout(seekDeadline);
     clearTimeout(primeDeadline);
     cancelAnimationFrame(seekFrame);
@@ -222,7 +252,21 @@ export function useChipMedia(videoRef, frameRef, stillRef) {
   };
   const flush = () => {
     if (disposed || priming || isStatic() || document.hidden || frameMode.value || !blobUrl || video.readyState < 2 || video.seeking) return;
-    if (Math.abs(video.currentTime - pendingTime) > .012) {
+    if (videoSource.value.endsWith('.mov') && pendingTime !== finalVideoTime()) {
+      // This supplied MOV contains 150 constant-rate frames over six seconds.
+      // Keep the target timestamp continuous, but don't ask WebKit to decode
+      // the same image repeatedly for sub-frame scroll movements. A crossed
+      // frame (including reverse / loop) still seeks to the exact latest target.
+      const position = video.currentTime * CHIP_FRAME_COUNT / duration;
+      const next = pendingTime * CHIP_FRAME_COUNT / duration;
+      // Boundary seeks can resolve to the preceding image in WebKit. Allow
+      // the following in-frame target to correct it, as with the final pose.
+      const insideFrame = Math.abs(position - Math.round(position)) > .001;
+      if (insideFrame && Math.floor(position) === Math.floor(next)) return;
+    }
+    const needsFront = pendingTime === finalVideoTime() && !videoAtFront();
+    if (Math.abs(video.currentTime - pendingTime) > .012 || needsFront) {
+      cancelFrontPresentation();
       // Don't clear the latest desired time until a completed seek has been
       // observed. A new scroll update during decoding is flushed by seeked.
       video.currentTime = pendingTime;
@@ -276,7 +320,7 @@ export function useChipMedia(videoRef, frameRef, stillRef) {
     } else {
       // Quantization belongs only to the emergency image sequence. The video
       // decoder must receive continuous time, including tiny reverse gestures.
-      pendingTime = phase * Math.max(duration - .04, .001);
+      pendingTime = phase === 1 ? finalVideoTime() : phase * Math.max(duration - .04, .001);
       if (videoSource.value.endsWith('.mov')) scheduleFlushAfterPaint();
       else flush();
     }
@@ -315,6 +359,7 @@ export function useChipMedia(videoRef, frameRef, stillRef) {
     if (disposed || isStatic() || frameMode.value || video.readyState < 2) return;
     clearTimeout(loadDeadline); clearTimeout(seekDeadline);
     videoReady.value = true;
+    confirmFrontPresentation();
     // `seeked` fires before the decoded frame is necessarily painted. Starting
     // another seek synchronously drops that frame and looks like a large jump
     // on slow decoders. Continue only after one frame has been presented.

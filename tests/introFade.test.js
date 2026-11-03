@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { introFadeFrame, introColumnY, introPanelColumnY, INTRO_TEXT_TRACK } from '../src/animation/introFade.js';
 import { createIntroTextRenderer } from '../src/animation/introText.js';
 import { TRACKS } from '../src/animation/timing.js';
+import { readFile } from 'node:fs/promises';
 
 test('Intro phrases fade from transparent to solid and back as they cross the screen', () => {
   for (const height of [568, 780, 932, 1194]) {
@@ -118,4 +119,52 @@ test('Renderer only measures layout on resize and clears the column by the end o
   assert.equal(covered, false, 'Reverse scroll resumes the hero before it is uncovered');
   assert.match(curtain.style.transform, /^translate3d\(0, [\d.]+%, 0\)$/);
   assert.equal(curtain.style['--curtain-y'], undefined, 'No per-frame inherited property invalidation');
+});
+
+test('Safari toolbar height changes do not move the mobile curtain text at the same scroll pose', () => {
+  let reads = 0;
+  const groups = [{ style: {}, offsetTop: 0, offsetHeight: 52 }, { style: {}, offsetTop: 160, offsetHeight: 104 }];
+  const finale = { style: {}, offsetTop: 680, offsetHeight: 280 };
+  const column = { style: {}, querySelectorAll: () => groups, querySelector: () => finale };
+  const curtain = { style: {}, get offsetHeight() { reads++; return 844; } };
+  const hero = { style: {} };
+  const nodes = { '.intro-text-column': column, '.white-curtain': curtain, '.hero-surface': hero };
+  const render = createIntroTextRenderer({ querySelector: key => nodes[key] });
+  for (const state of [{ curtain: .45, introText: 0 }, { curtain: .95, introText: 0 }, { curtain: 1, introText: .3 }]) {
+    let before;
+    for (const height of [695, 710, 755, 780, 695]) {
+      render(state, { width: 393, height, scale: 1, mobile: true }, false);
+      const current = JSON.stringify([curtain.style, column.style, groups.map(group => group.style), finale.style]);
+      if (before) assert.equal(current, before, 'Toolbar collapse/expansion cannot change text position or opacity');
+      before = current;
+    }
+  }
+  assert.equal(reads, 1, 'Stable panel height is measured once, not on each touch frame');
+  assert.equal(column.style.transform, `translate3d(0, ${introColumnY(.3, 844, 960).toFixed(3)}px, 0)`);
+});
+
+test('Late font completion remeasures the current pose without rebuilding or resetting the scroll animation', async () => {
+  const groups = [{ style: {}, offsetTop: 0, offsetHeight: 52 }];
+  const finale = { style: {}, offsetTop: 680, offsetHeight: 280 };
+  const column = { style: {}, querySelectorAll: () => groups, querySelector: () => finale };
+  const curtain = { style: {}, offsetHeight: 844 };
+  const nodes = { '.intro-text-column': column, '.white-curtain': curtain, '.hero-surface': { style: {} } };
+  const render = createIntroTextRenderer({ querySelector: key => nodes[key] });
+  const state = { curtain: 1, introText: .3 };
+  const geometry = { width: 393, height: 695, scale: 1, mobile: true };
+  render(state, geometry, false);
+  const previous = column.style.transform;
+  finale.offsetTop = 720;
+  render.invalidateMeasurements();
+  render(state, geometry, false);
+  assert.notEqual(column.style.transform, previous, 'New glyph metrics are measured');
+  assert.equal(column.style.transform, `translate3d(0, ${introColumnY(.3, 844, 1000).toFixed(3)}px, 0)`);
+  assert.equal(curtain.style.transform, 'translate3d(0, 0%, 0)', 'The curtain retains the current pose');
+  assert.deepEqual(state, { curtain: 1, introText: .3 });
+  const source = await readFile(new URL('../src/composables/useScrollScene.js', import.meta.url), 'utf8');
+  const ready = source.match(/const fontsReady = \(\) => \{([^}]+)\}/)?.[1];
+  assert.match(ready, /invalidateMeasurements\(\)/);
+  assert.doesNotMatch(ready, /rebuild|progress|totalProgress|scrollTo/);
+  const css = await readFile(new URL('../src/styles/reference.css', import.meta.url), 'utf8');
+  assert.match(css, /@media \(max-width: 700px\)\s*\{\s*\.hero-stage > \.white-curtain\s*\{[^}]*height: 100lvh;/);
 });

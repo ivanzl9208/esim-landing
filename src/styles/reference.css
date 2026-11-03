@@ -199,6 +199,14 @@ a {
   overflow: hidden;
 }
 
+@media (max-width: 700px) {
+  .hero-stage > .white-curtain {
+    bottom: auto;
+    height: 100vh;
+    height: 100lvh;
+  }
+}
+
 .intro-text-viewport {
   position: absolute;
   z-index: 23;
@@ -896,7 +904,8 @@ a {
 }
 
 .device-checker {
-  --checker-keyboard-offset: 0px;
+  --checker-keyboard-top: 0px;
+  --checker-keyboard-height: 0px;
   --layout-scale: 1;
   position: relative;
   z-index: 40;
@@ -1590,31 +1599,25 @@ button.checker-input-action:active {
     letter-spacing: calc(-0.12px * var(--layout-scale));
   }
 
-  .device-checker.is-focused[data-keyboard-open="true"] .checker-heading {
-    position: absolute;
-    opacity: 0;
-    filter: blur(6px);
+  .device-checker.is-focused[data-keyboard-open="true"] {
+    /* During editing only Safari's document/visual viewport may pan. Keeping
+       an internal scroll container here lets caret reveal scroll the parent
+       against our form translation and clip the field at the FAQ boundary. */
+    overflow: visible;
+    overflow: clip;
+    min-height: var(--checker-keyboard-cover-height, var(--checker-keyboard-layout-height));
   }
 
-  .device-checker.is-focused[data-keyboard-open="true"] .checker-popular,
-  .device-checker.is-focused[data-keyboard-open="true"] .checker-search-dock {
-    position: absolute;
-    left: 50%;
-    margin: 0;
-    transform: translateX(-50%);
+  .device-checker.is-focused[data-keyboard-open="true"] .checker-form-view {
+    top: var(--checker-keyboard-top);
+    /* Preserve the closed-keyboard grid, gaps and absolute input / hint.
+       Only translate this unchanged composition up with the visible viewport. */
+    height: var(--checker-keyboard-layout-height);
+    min-height: var(--checker-keyboard-layout-height);
   }
 
-  .device-checker.is-focused[data-keyboard-open="true"] .checker-popular {
-    top: calc(8px * var(--layout-scale));
-  }
-
-  .device-checker.is-focused[data-keyboard-open="true"] .checker-search-dock {
-    top: auto;
-    bottom: calc(var(--checker-keyboard-offset) + 16px * var(--layout-scale) + env(safe-area-inset-bottom));
-  }
-
-  .device-checker.is-focused[data-keyboard-open="true"] .checker-eid-hint {
-    display: none;
+  .device-checker.is-focused[data-keyboard-open="true"] .checker-suggestions {
+    max-height: min(calc(262px * var(--layout-scale)), var(--checker-suggestions-space, 262px));
   }
 
   .checker-result-card {

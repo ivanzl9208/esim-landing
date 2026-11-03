@@ -12,6 +12,7 @@ import { storyComposition } from '../animation/storyComposition.js';
 import { storyMotionFrame, advanceStoryMotion } from '../animation/storyMotion.js';
 import { STORY_BENEFITS } from '../data/story.js';
 import { createFrameCommit } from '../animation/frameCommit.js';
+import { createKeyboardViewportState } from '../utils/keyboardViewport.js';
 
 /** One native sticky stage. ScrollTrigger supplies progress; Lenis only smooths desktop wheel input. */
 export function useScrollScene(sceneRef, mediaRef, checkerRef, progressRef) {
@@ -74,6 +75,7 @@ export function useScrollScene(sceneRef, mediaRef, checkerRef, progressRef) {
       let positionGeometry;
       let renderEntrance = () => {};
       let renderScene = () => {};
+      let invalidateMeasurements = () => {};
       let settleStoryMotion = () => {};
       let advanceMotion = () => {};
       const autoTransitions = createAutoTransitions(mobile, reduced);
@@ -103,10 +105,8 @@ export function useScrollScene(sceneRef, mediaRef, checkerRef, progressRef) {
         });
       }
 
-      const keyboardIsOpen = () => {
-        const viewport = window.visualViewport;
-        return viewport && window.innerHeight - viewport.height - viewport.offsetTop > 100;
-      };
+      const keyboardViewport = createKeyboardViewportState();
+      const keyboardIsOpen = () => keyboardViewport.update(window.visualViewport, window.innerHeight, window.innerWidth);
       const updateGeometry = () => {
         // Keep typography and the scroll unit stable while mobile browser
         // chrome changes the live stage height. Width changes reset scrollUnit.
@@ -159,6 +159,11 @@ export function useScrollScene(sceneRef, mediaRef, checkerRef, progressRef) {
         updateGeometry();
         const renderIntroText = createIntroTextRenderer(scene);
         const renderChip = createChipStoryRenderer(scene, mediaRef.value);
+        invalidateMeasurements = () => {
+          renderIntroText.invalidateMeasurements();
+          renderChip.invalidateMeasurements();
+          renderScene();
+        };
         const state = { ...Object.fromEntries(Object.keys(TRACKS).map(key => [key, 0])), buttonReveal: oldButtonProgress };
         const storyMotion = { time: 0 };
         let displayedStoryTime = 0;
@@ -173,16 +178,19 @@ export function useScrollScene(sceneRef, mediaRef, checkerRef, progressRef) {
         renderEntrance = () => checkerEntrance.render(checkerProgress, geometry, reduced, window.scrollY < checkerTop);
         const renderChipFrame = (immediate = false) => {
           const motion = motionFrame();
-          autoTransitions.update(visualTime(), motion.story, immediate || initializing || reduced);
+          const nativeTime = (window.scrollY - positionGeometry.sceneTop) / scrollUnit;
+          autoTransitions.update(visualTime(), motion.story, immediate || initializing || reduced, nativeTime);
           const side = storyComposition(motion.story, STORY_BENEFITS.length, reduced, motion.storyCenter).side;
           const renderedState = { ...state, ...motion, ...autoTransitions.frame(), storySide: side };
-          // Only video rotation gets the approved 1.2s tail. Read native scroll
-          // rather than stacking it after the timeline and geometry followers.
-          // Gray copy/zoom use a fixed front pose, including their reverse exit.
-          const nativeTime = (window.scrollY - positionGeometry.sceneTop) / scrollUnit;
+          // Rotation and horizontal headings follow native scroll with the
+          // same 1.2s inertia, not another layer after the geometry followers.
+          // Gray copy/zoom target the front pose, including their reverse exit.
+          // Do not snap the follower at this boundary: a fast gesture can leave
+          // rotation behind the playhead. Let its existing tail finish while
+          // the first thesis enters, then keep the completed pose stationary.
           const fixedPose = visualTime() >= TRACKS.playback[1];
           const turns = fixedPose ? TRACKS.playback[2] : autoTransitions.playbackAt(nativeTime);
-          chipRotation.update(turns, immediate || initializing || reduced || fixedPose || renderedState.reveal === 0);
+          chipRotation.update(turns, immediate || initializing || reduced || renderedState.reveal === 0);
           renderedState.playback = chipRotation.value();
           // The checker entrance follows the same playhead as the chip and copy.
           checkerProgress = renderedState.outro;
@@ -258,6 +266,11 @@ export function useScrollScene(sceneRef, mediaRef, checkerRef, progressRef) {
             onUpdate: () => { if (active && !initializing) renderChipFrame(); },
           });
           timeline = gsap.timeline({ paused: true, onUpdate: () => {
+            // invalidateOnRefresh temporarily rewinds the timeline to zero.
+            // That is measurement, not a reverse gesture: feeding it into the
+            // shared follower hides the checker for several seconds after FAQ.
+            // onRefresh commits the restored playhead once measurement ends.
+            if (ScrollTrigger.isRefreshing) return;
             if (nativeTouch && !initializing && !reduced) frameCommit.request(render, 1);
             else render();
           }, data: state });
@@ -326,11 +339,14 @@ export function useScrollScene(sceneRef, mediaRef, checkerRef, progressRef) {
           resizeFrame = requestAnimationFrame(() => rebuild());
         } else resizeTimer = setTimeout(() => rebuild(), 120);
       };
-      const fontsReady = () => { if (active && !disposed) rebuild(true); };
+      // Late fonts invalidate dimensions, not animation state. Rebuilding here
+      // discarded the live scrub/clock and snapped a partly opened curtain.
+      const fontsReady = () => { if (active && !disposed) invalidateMeasurements(); };
       rebuild(true);
       window.addEventListener('resize', resize, { passive: true });
       // The fixed-to-flow handoff must also update outside the timeline's range.
       const scroll = () => {
+        if (ScrollTrigger.isRefreshing) return;
         // Ignore scroll clamping during resize until rebuild has restored the
         // checkpoint. Reading the new DOM here would lose the old scene point.
         if (signature === `${window.innerWidth}:${window.innerHeight}`) {
