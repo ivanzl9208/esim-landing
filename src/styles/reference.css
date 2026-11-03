@@ -1616,6 +1616,16 @@ button.checker-input-action:active {
     min-height: var(--checker-keyboard-layout-height);
   }
 
+  /* The software keyboard already covers the home-indicator safe area.
+     Don't reserve the closed-screen bottom inset a second time above it. */
+  .device-checker.is-focused[data-keyboard-open="true"] .checker-eid-hint {
+    bottom: 8px;
+  }
+
+  .device-checker.is-focused[data-keyboard-open="true"] .checker-search-dock {
+    bottom: calc(8px + var(--checker-eid-hint-height, calc(28px * var(--layout-scale))) + 12px);
+  }
+
   .device-checker.is-focused[data-keyboard-open="true"] .checker-suggestions {
     max-height: min(calc(262px * var(--layout-scale)), var(--checker-suggestions-space, 262px));
   }

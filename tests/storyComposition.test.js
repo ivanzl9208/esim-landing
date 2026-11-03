@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { storyComposition, STORY_ENTER_END, STORY_EXIT_START } from '../src/animation/storyComposition.js';
-import { TRACKS, CHIP_CENTER_RETURN_EXTENSION } from '../src/animation/timing.js';
+import { TRACKS } from '../src/animation/timing.js';
 
 test('the object alternates opposite the four theses and rejoins adjacent scenes at the centre', () => {
   assert.deepEqual(storyComposition(0, 4), { side: 0, presence: 0 });
@@ -37,18 +37,17 @@ test('reduced motion uses stationary columns without scaling or intermediate tra
   }
 });
 
-test('Final return fits the shorter post-thesis handoff without changing previous columns or the growth zone', () => {
+test('Final return completes during the last text exit, with no empty interval before growth', () => {
   const [start, end] = TRACKS.storyCenter;
   const duration = end - start;
   const previousDuration = (TRACKS.story[1] - TRACKS.story[0]) / 4 * (1 - STORY_EXIT_START);
-  assert.ok(Math.abs(duration - previousDuration - CHIP_CENTER_RETURN_EXTENSION) < 1e-10);
-  assert.ok(Math.abs(TRACKS.chipZoom[0] - end - .25) < 1e-10);
+  assert.ok(Math.abs(duration - previousDuration) < 1e-10);
+  assert.equal(TRACKS.chipZoom[0], end);
   assert.equal(TRACKS.chipZoom[1] - TRACKS.chipZoom[0], 2);
   const sample = time => storyComposition((time - TRACKS.story[0]) / (TRACKS.story[1] - TRACKS.story[0]),
     4, false, (time - start) / duration);
   assert.equal(sample(start).side, 1);
-  assert.ok(sample(TRACKS.story[1]).side > 0 && sample(TRACKS.story[1]).side < .5,
-    'The return continues smoothly after the copy ends, then finishes before zoom');
+  assert.equal(sample(TRACKS.story[1]).side, 0, 'The chip is centred when the copy ends');
   assert.equal(sample(end).side, 0);
   const forward = Array.from({ length: 101 }, (_, index) => sample(start + duration * index / 100));
   for (let index = 1; index < forward.length; index++) {

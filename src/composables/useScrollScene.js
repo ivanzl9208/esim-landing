@@ -13,6 +13,7 @@ import { storyMotionFrame, advanceStoryMotion } from '../animation/storyMotion.j
 import { STORY_BENEFITS } from '../data/story.js';
 import { createFrameCommit } from '../animation/frameCommit.js';
 import { createKeyboardViewportState } from '../utils/keyboardViewport.js';
+import { chipViewportTarget, advanceChipViewport } from '../animation/chipViewport.js';
 
 /** One native sticky stage. ScrollTrigger supplies progress; Lenis only smooths desktop wheel input. */
 export function useScrollScene(sceneRef, mediaRef, checkerRef, progressRef) {
@@ -78,11 +79,23 @@ export function useScrollScene(sceneRef, mediaRef, checkerRef, progressRef) {
       let invalidateMeasurements = () => {};
       let settleStoryMotion = () => {};
       let advanceMotion = () => {};
+      let renderViewport = () => {};
+      let viewportOffset = 0;
+      let viewportTarget = 0;
+      const viewportIsCovered = () => Boolean(
+        document.activeElement?.matches?.('input, textarea, [contenteditable="true"]') ||
+        (window.visualViewport && window.innerHeight - window.visualViewport.height > 100),
+      );
       const autoTransitions = createAutoTransitions(mobile, reduced);
       const checkerEntrance = createCheckerEntrance(checkerRef.value.section);
       const frameCommit = createFrameCommit();
       const tick = (time, delta) => {
         lenis?.raf(time * 1000);
+        if (geometry && viewportOffset !== viewportTarget && !viewportIsCovered()) {
+          viewportOffset = advanceChipViewport(viewportOffset, viewportTarget, delta / 1000);
+          geometry.chipViewportOffset = viewportOffset;
+          frameCommit.request(renderViewport);
+        }
         advanceMotion(delta / 1000);
         // Native scroll, scrub and automatic card clocks share one DOM commit.
         // No additional rAF/timeout, and no lagging queue of older scene states.
@@ -112,7 +125,10 @@ export function useScrollScene(sceneRef, mediaRef, checkerRef, progressRef) {
         // chrome changes the live stage height. Width changes reset scrollUnit.
         geometry = { ...getLayout(window.innerWidth, nativeTouch ? scrollUnit : window.innerHeight),
           height: window.innerHeight, motionHeight: mobile ? scrollUnit : window.innerHeight,
+          chipViewportOffset: viewportOffset,
           dpr: window.devicePixelRatio || 1 };
+        viewportTarget = chipViewportTarget(geometry);
+        if (reduced) geometry.chipViewportOffset = viewportOffset = viewportTarget;
         scene.style.height = `${Math.ceil(SCENE_SCROLL_END * scrollUnit) + geometry.height}px`;
         scene.style.marginBottom = `-${geometry.height}px`;
         scene.style.setProperty('--layout-scale', geometry.scale.toFixed(5));
@@ -148,6 +164,7 @@ export function useScrollScene(sceneRef, mediaRef, checkerRef, progressRef) {
         if (scrollWidth !== window.innerWidth) {
           scrollWidth = window.innerWidth;
           scrollUnit = window.innerHeight;
+          viewportOffset = 0;
         }
         const oldButtonProgress = timeline?.data?.buttonReveal ?? 0;
         frameCommit.clear();
@@ -200,6 +217,7 @@ export function useScrollScene(sceneRef, mediaRef, checkerRef, progressRef) {
           progressRef?.value?.setScene(renderedState, geometry);
           renderEntrance();
         };
+        renderViewport = renderChipFrame;
         advanceMotion = seconds => {
           if (!active || initializing || reduced) return;
           let changed = autoTransitions.advance(seconds);
@@ -335,6 +353,16 @@ export function useScrollScene(sceneRef, mediaRef, checkerRef, progressRef) {
       const resize = () => {
         clearTimeout(resizeTimer);
         cancelAnimationFrame(resizeFrame);
+        // A large toolbar expansion can exceed the timeline's conservative
+        // keyboard-height threshold. This visual-only offset still follows
+        // the live edge unless an input / actual keyboard covers the viewport.
+        if (mobile && geometry?.width === window.innerWidth && !viewportIsCovered()) {
+          viewportTarget = chipViewportTarget({ ...geometry, height: window.innerHeight });
+          if (reduced) {
+            geometry.chipViewportOffset = viewportOffset = viewportTarget;
+            renderViewport();
+          }
+        }
         // Follow Safari's live toolbar height once per frame. A 120ms debounce
         // left the composition at its old centre, then moved it in one step.
         if (nativeTouch && geometry?.width === window.innerWidth) {

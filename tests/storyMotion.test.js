@@ -40,16 +40,16 @@ test('Fast jumps through the final return never combine lateral movement with gr
   }
 });
 
-test('Shared motion preserves scroll distances, centred hold, geometry and forward/reverse sampling', () => {
+test('Shared motion joins the centred return directly to growth and preserves forward/reverse geometry', () => {
   for (const mobile of [false, true]) {
     assert.equal(position(TRACKS.storyCenter[0], mobile).scale, 1);
     const centre = position(TRACKS.storyCenter[1], mobile);
-    for (let step = 0; step <= 10; step++) {
-      const held = position(TRACKS.storyCenter[1] + step / 10 * (TRACKS.chipZoom[0] - TRACKS.storyCenter[1]), mobile);
-      assert.equal(held.x, centre.x);
-      assert.equal(held.y, centre.y);
-      assert.equal(held.scale, centre.scale);
-    }
+    assert.equal(centre.x, 0);
+    assert.equal(centre.scale, 1);
+    const next = position(TRACKS.storyCenter[1] + .0001, mobile);
+    assert.equal(next.x, 0);
+    assert.ok(next.scale > centre.scale, 'No stationary scroll interval follows the completed return');
+    assert.ok(next.y < centre.y);
     const start = TRACKS.storyCenter[0];
     const duration = TRACKS.safety[1] - start;
     const forward = Array.from({ length: 1001 }, (_, index) => position(start + duration * index / 1000, mobile));

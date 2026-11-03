@@ -52,6 +52,14 @@ export function useKeyboardViewport(section) {
     const documentTop = correcting ? document.documentElement?.getBoundingClientRect().top : undefined;
     const visibleTop = correcting ? keyboardVisibleTop(viewport, documentTop) : 0;
     if (correcting) {
+      // Keep the keyboard dock compact without assuming that the EID hint
+      // always wraps to two lines (font size / narrow phones can change it).
+      const hint = section.value.querySelector('.checker-eid-hint');
+      if (hint) {
+        const hintHeight = `${hint.offsetHeight.toFixed(2)}px`;
+        if (section.value.style.getPropertyValue('--checker-eid-hint-height') !== hintHeight)
+          section.value.style.setProperty('--checker-eid-hint-height', hintHeight);
+      }
       // WebKit may pan the document again while revealing the caret. Keep
       // the SAME orange section behind the full visible keyboard viewport;
       // don't chase that native pan with repeated scrollTo calls. The form's

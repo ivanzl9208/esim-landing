@@ -133,6 +133,15 @@ export function createAutoTransitions(mobile, reduced = false) {
       });
       stories.forEach((motion, index) => {
         const local = clamp(story * stories.length - index);
+        // The last exit shares the zoom boundary instead of finishing early
+        // on a timer and leaving an empty, stationary chip for more scrolling.
+        // Keep the same soft-blur effect, now sampled from the shared playhead
+        // in both directions; earlier cards and this card's entrance retain
+        // their existing automatic clocks.
+        if (!reduced && index === stories.length - 1 && local >= STORY_EXIT_START) {
+          request(motion, local, 0, true);
+          return;
+        }
         requestText(motion, textTarget(local, reverseStory, STORY_ENTER_END, STORY_EXIT_START),
           STORY_ENTER_END, STORY_EXIT_START, immediate || reduced || local === 0 || local === 1);
       });

@@ -7,10 +7,9 @@ import { FEATURE_READING_EXTENSION } from './featureReading.js';
 // Four theses use 2.1 viewports each, retaining entrance and exit distances.
 // Later tracks shift without being compressed.
 const STORY_EXTENSION = 1.2;
-// After the last thesis, halve the former .775-viewport wait before zoom.
-// Keep the final centre return inside that handoff, ahead of any growth.
-export const POST_STORY_ZOOM_GAP = (.525 + .25) / 2;
-export const CHIP_CENTER_RETURN_EXTENSION = POST_STORY_ZOOM_GAP - .25;
+// The final thesis fades out while the chip returns to centre. Growth starts
+// at that same boundary, without spending scroll distance on an empty stage.
+export const POST_STORY_ZOOM_GAP = 0;
 // Scroll space for the first zoom and the simultaneous safety-copy entrance.
 export const CENTERED_CHIP_HOLD = 2;
 const CHIP_INTRO_PAUSE_REDUCTION = .4;
@@ -46,16 +45,17 @@ export const TRACKS = Object.fromEntries(Object.entries(BASE_TRACKS).map(([key, 
   const [start, end, value, ease] = track;
   if (start < BASE_TRACKS.reveal[0]) return [key, track];
   const introReduction = start >= BASE_TRACKS.marquee[0] ? CHIP_INTRO_PAUSE_REDUCTION : 0;
-  const centreExtension = start > BASE_TRACKS.story[1] ? CHIP_CENTER_RETURN_EXTENSION : 0;
+  const postStoryShift = start > BASE_TRACKS.story[1]
+    ? POST_STORY_ZOOM_GAP - (BASE_TRACKS.chipZoom[0] - BASE_TRACKS.story[1]) : 0;
   // Move the entire following sequence, keeping each card's entrance,
   // reading hold, exit and all later handoffs the same length.
   const definitionAdvance = start >= BASE_TRACKS.story[0] ? DEFINITION_HANDOFF_ADVANCE : 0;
-  const shift = INTRO_SCROLL_EXTENSION - INTRO_HANDOFF_ADVANCE - introReduction + centreExtension - definitionAdvance;
+  const shift = INTRO_SCROLL_EXTENSION - INTRO_HANDOFF_ADVANCE - introReduction + postStoryShift - definitionAdvance;
   return [key, [Number((start + shift).toFixed(4)), Number((end + shift).toFixed(4)), value, ease]];
 }));
 TRACKS.storyCenter = [
   TRACKS.story[1] - .525,
-  TRACKS.story[1] + CHIP_CENTER_RETURN_EXTENSION,
+  TRACKS.story[1],
   1, 'none',
 ];
 // Give the fully revealed checker two viewports of reading/selection space

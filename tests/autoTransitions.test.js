@@ -4,6 +4,7 @@ import { createAutoTransitions, SHUTTER_DURATION } from '../src/animation/autoTr
 import { TRACKS } from '../src/animation/timing.js';
 import { featureWindow, FEATURE_SCROLL_DISTANCE, FEATURE_READING_EXTENSION } from '../src/animation/featureReading.js';
 import { STORY_ENTER_END, STORY_EXIT_START } from '../src/animation/storyComposition.js';
+import { storyMotionFrame } from '../src/animation/storyMotion.js';
 
 const featureTime = (index, local, mobile) => {
   const { start, end } = featureWindow(index, mobile);
@@ -54,7 +55,7 @@ test('Stopping during any text entrance or exit settles the complete card on des
   }
 });
 
-test('Gray text blocks also finish their entrance/exit after scroll stops', () => {
+test('Gray text entrances and the first three exits finish after scroll stops; the last exit follows scroll into zoom', () => {
   for (const mobile of [false, true]) {
     for (let index = 0; index < 4; index++) {
       const motion = createAutoTransitions(mobile);
@@ -62,7 +63,36 @@ test('Gray text blocks also finish their entrance/exit after scroll stops', () =
       const story = (index + .05) / 4;
       const visible = finish(motion, TRACKS.story[0] + 1, story).storyText[index];
       assert.ok(visible >= STORY_ENTER_END && visible <= STORY_EXIT_START);
-      assert.equal(finish(motion, TRACKS.story[0] + 2, (index + .95) / 4).storyText[index], 1);
+      assert.ok(Math.abs(finish(motion, TRACKS.story[0] + 2, (index + .95) / 4).storyText[index] - (index === 3 ? .95 : 1)) < 1e-10);
+    }
+  }
+});
+
+test('The last thesis cannot finish fading on its own and leave an idle chip before scroll zoom, including reverse', () => {
+  const distance = TRACKS.story[1] - TRACKS.story[0];
+  for (const mobile of [false, true]) for (const fps of [30, 60, 120]) {
+    const motion = createAutoTransitions(mobile);
+    finish(motion, TRACKS.story[0] + distance * .875, .875, fps);
+    for (const local of [.75, .8, .9, .99, .999]) {
+      const story = (3 + local) / 4;
+      const time = TRACKS.story[0] + distance * story;
+      const frame = finish(motion, time, story, fps);
+      assert.ok(Math.abs(frame.storyText[3] - local) < 1e-10,
+        'Stopping does not finish the final exit ahead of its zoom boundary');
+      assert.equal(storyMotionFrame(time).chipZoom, 0);
+      assert.ok(frame.storyText[3] < 1, 'Some outgoing words remain before growth begins');
+    }
+    for (const offset of [.0001, .01, .1]) {
+      const time = TRACKS.story[1] + offset;
+      const frame = finish(motion, time, 1, fps);
+      assert.equal(frame.storyText[3], 1);
+      assert.ok(storyMotionFrame(time).chipZoom > 0, 'The next scroll immediately enlarges the centred chip');
+    }
+    for (const local of [.999, .99, .9, .8, .75]) {
+      const story = (3 + local) / 4;
+      const time = TRACKS.story[0] + distance * story;
+      assert.ok(Math.abs(finish(motion, time, story, fps).storyText[3] - local) < 1e-10);
+      assert.equal(storyMotionFrame(time).chipZoom, 0);
     }
   }
 });

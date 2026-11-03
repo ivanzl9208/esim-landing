@@ -57,7 +57,7 @@ test('Equal scroll distances grow the chip equally across the initial zoom and s
 });
 
 test('Safety copy enters from below the viewport, stays below the chip, and all media share zoom geometry', () => {
-  assert.ok(Math.abs(TRACKS.chipZoom[0] - TRACKS.storyCenter[1] - .25) < 1e-8);
+  assert.equal(TRACKS.chipZoom[0], TRACKS.storyCenter[1]);
   assert.equal(TRACKS.chipZoom[1], TRACKS.safety[0]);
   for (const [mobile, width, height, scale] of [[false, 1440, 720, 1], [false, 1762, 1130, 1762 / 1440], [true, 360, 600, 1], [true, 375, 667, 375 / 360]]) {
     const nodes = new Map();
@@ -82,6 +82,14 @@ test('Safety copy enters from below the viewport, stays below the chip, and all 
     renderer(state, layout, false);
     assert.equal(node('.safety-copy').style.visibility, 'hidden');
     assert.ok(Math.abs(copyTop() - height) < .01);
+    if (mobile) {
+      const restingY = Number(node('.chip-media-wrapper').style.transform.match(/-50% \+ ([\d.-]+)px\), 0/u)[1]);
+      renderer(state, { ...layout, height: height + 100 }, false);
+      const expandedY = Number(node('.chip-media-wrapper').style.transform.match(/-50% \+ ([\d.-]+)px\), 0/u)[1]);
+      assert.ok(Math.abs(expandedY - restingY - 50) < .01, 'Only the shared media wrapper moves down as Safari chrome retracts');
+      assert.ok(Math.abs(copyTop() - height) < .01, 'Safety text does not move with the toolbar correction');
+      renderer(state, layout, false);
+    }
     state.chipZoom = .0002;
     renderer(state, layout, false);
     assert.equal(node('.safety-copy').style.visibility, 'visible');

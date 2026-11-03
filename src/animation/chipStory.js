@@ -4,6 +4,7 @@ import { storyComposition, STORY_ENTER_END, STORY_EXIT_START } from './storyComp
 import { featureReadingProgress, featureWindow } from './featureReading.js';
 import { TRACKS } from './timing.js';
 import { chipZoomFrame } from './chipZoom.js';
+import { chipViewportOffset } from './chipViewport.js';
 import { setRegionInteractive } from '../utils/interactiveRegion.js';
 
 export function createChipStoryRenderer(scene, media) {
@@ -242,6 +243,7 @@ export function createChipStoryRenderer(scene, media) {
       const zoomFrame = reduced ? { scale: 1, y: isMobile ? 47 : 0 } : chipZoomFrame(zoomProgress, currentSafety, isMobile);
       const displayedScale = chipScale * zoomFrame.scale;
       const displayedY = chipY + (zoomFrame.y - (isMobile ? 47 : 0)) * layoutScale;
+      const viewportOffset = chipViewportOffset(geometry, { chip: currentChip, chipZoom: zoomProgress, safety: currentSafety });
       const composition = storyComposition(currentStory, STORY_BENEFITS.length, reduced, state.storyCenter);
       const storyX = isMobile ? 0 : geometry.width * .20 * (state.storySide ?? composition.side);
       gradient.style.setProperty('--chip-story-presence', composition.presence.toFixed(4));
@@ -307,12 +309,11 @@ export function createChipStoryRenderer(scene, media) {
       gradient.style.webkitClipPath = gradient.style.clipPath;
       backgroundTransition.style.opacity =
         grayStageOpacity.toFixed(4);
-      // Safari's collapsing toolbar resizes the sticky stage, independently
-      // of scroll progress. Keep chip and copy on one stable composition axis;
-      // the background and bottom CTA still fill/follow the live viewport.
+      // Only the resting chip follows the extra toolbar-free space. The
+      // timeline and the safety text retain their stable composition axis.
       mediaWrapper.style.top = `${motionHeight / 2}px`;
       mediaWrapper.style.transform =
-        `translate3d(calc(-50% + ${storyX.toFixed(2)}px), calc(-50% + ${(displayedY + safetyChipExit).toFixed(2)}px), 0) ` +
+        `translate3d(calc(-50% + ${storyX.toFixed(2)}px), calc(-50% + ${(displayedY + safetyChipExit + viewportOffset).toFixed(2)}px), 0) ` +
         `scale(${displayedScale.toFixed(5)})`;
       marquee.style.setProperty(
         "--advantages-text-x",

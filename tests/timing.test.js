@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { TRACKS, SCENE_SCROLL_END, CHECKER_HOLD, CENTERED_CHIP_HOLD, CHIP_CENTER_RETURN_EXTENSION, POST_STORY_ZOOM_GAP, INTRO_HANDOFF_ADVANCE } from '../src/animation/timing.js';
+import { TRACKS, SCENE_SCROLL_END, CHECKER_HOLD, CENTERED_CHIP_HOLD, POST_STORY_ZOOM_GAP, INTRO_HANDOFF_ADVANCE } from '../src/animation/timing.js';
 
 test('Checker holds for two viewports after its entrance without stretching earlier tracks', () => {
   assert.deepEqual(TRACKS.curtain, [0, 1, 1, 'none']);
@@ -17,22 +17,22 @@ test('Checker holds for two viewports after its entrance without stretching earl
   assert.deepEqual(TRACKS.story.slice(1), [36.5, 1, 'none']);
   assert.ok(Math.abs(TRACKS.story[1] - TRACKS.story[0] - 8.4) < 1e-10);
   assert.equal(CENTERED_CHIP_HOLD, 2);
-  assert.ok(Math.abs(TRACKS.safety[0] - TRACKS.story[1] - CHIP_CENTER_RETURN_EXTENSION - 0.25 - CENTERED_CHIP_HOLD) < 1e-10);
+  assert.ok(Math.abs(TRACKS.safety[0] - TRACKS.story[1] - POST_STORY_ZOOM_GAP - CENTERED_CHIP_HOLD) < 1e-10);
   assert.ok(Math.abs(TRACKS.safety[1] - TRACKS.safety[0] - 6) < 1e-10);
   assert.ok(Math.abs(TRACKS.returnGradient[1] - TRACKS.returnGradient[0] - 2.25) < 1e-10);
-  assert.equal(SCENE_SCROLL_END, 46.8875);
-  assert.deepEqual(TRACKS.outro, [42.6075, 44.8875, 1, 'smooth']);
-  assert.equal(Math.max(...Object.values(TRACKS).map(track => track[1])), 44.8875);
+  assert.equal(SCENE_SCROLL_END, 46.5);
+  assert.deepEqual(TRACKS.outro, [42.22, 44.5, 1, 'smooth']);
+  assert.equal(Math.max(...Object.values(TRACKS).map(track => track[1])), 44.5);
   assert.equal('resultCurtain' in TRACKS, false);
   assert.equal('faqReveal' in TRACKS, false);
 });
 
-test('The pause after the fourth thesis is halved without changing its reading time or zoom speed', () => {
-  assert.equal(POST_STORY_ZOOM_GAP, .775 / 2);
-  assert.ok(Math.abs(TRACKS.chipZoom[0] - TRACKS.story[1] - POST_STORY_ZOOM_GAP) < 1e-10);
+test('Zoom begins as the fourth thesis ends, without changing its reading time or zoom speed', () => {
+  assert.equal(POST_STORY_ZOOM_GAP, 0);
+  assert.equal(TRACKS.chipZoom[0], TRACKS.story[1]);
   assert.ok(Math.abs(TRACKS.story[1] - TRACKS.story[0] - 8.4) < 1e-10);
   assert.equal(TRACKS.chipZoom[1] - TRACKS.chipZoom[0], 2);
-  assert.ok(TRACKS.storyCenter[1] < TRACKS.chipZoom[0], 'Centre return must finish before growth');
+  assert.equal(TRACKS.storyCenter[1], TRACKS.chipZoom[0], 'Centre return finishes exactly where growth begins');
 });
 
 test('Original scroll-controlled heading and zoom retain shorter orange and gray reading holds', () => {

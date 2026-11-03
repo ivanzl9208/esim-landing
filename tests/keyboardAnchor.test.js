@@ -56,7 +56,7 @@ function mountAnchor(t) {
       if (descriptor) Object.defineProperty(globalThis, key, descriptor); else delete globalThis[key];
     }
   });
-  return { root, viewport, layout, input, form, observers, values, tasks, tick, focus, app, work, positioned,
+  return { root, viewport, layout, input, form, hint, observers, values, tasks, tick, focus, app, work, positioned,
     setSectionTop: value => { sectionTop = panelTop = value; },
     setPanelTop: value => { panelTop = value; }, setFormOrigin: value => { formOrigin = value; } };
 }
@@ -184,6 +184,21 @@ test('Compact keyboard view lifts content rather than compressing or internally 
   assert.ok(anchor.input.getBoundingClientRect().top >= 180);
   assert.ok(anchor.input.getBoundingClientRect().bottom <= 500);
   assert.equal(document.activeElement, anchor.input);
+});
+
+test('The compact keyboard dock measures the EID hint height and follows wrapping without scrolling or shrinking', t => {
+  const anchor = mountAnchor(t);
+  anchor.focus();
+  anchor.viewport.height = 484;
+  anchor.tick();
+  assert.equal(anchor.values.get('--checker-eid-hint-height'), '28.00px');
+  anchor.hint.offsetHeight = 42;
+  anchor.viewport.dispatchEvent(new Event('resize'));
+  anchor.tick();
+  assert.equal(anchor.values.get('--checker-eid-hint-height'), '42.00px');
+  assert.equal(anchor.form.getBoundingClientRect().height, 844);
+  assert.equal(anchor.form.getBoundingClientRect().bottom, 484);
+  assert.deepEqual(anchor.positioned, []);
 });
 
 test('Blur and keyboard dismissal restore the original layout without scrolling or refocusing the page', t => {
