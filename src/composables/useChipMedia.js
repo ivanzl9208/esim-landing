@@ -230,19 +230,49 @@ export function useChipMedia(videoRef, frameRef, stillRef) {
     const controller = new AbortController();
     fetchController = controller;
     const downloadDeadline = videoSource.value.endsWith('.mov') ? CHIP_MOV_LOAD_DEADLINE : MEDIA_LOAD_DEADLINE;
-    loadDeadline = setTimeout(() => { markSlow(); fallback(); }, downloadDeadline);
+    const currentDownload = () => !disposed && !isStatic() && !controller.signal.aborted && fetchController === controller;
+    const renewDeadline = () => {
+      if (!currentDownload()) return;
+      clearTimeout(loadDeadline);
+      // This is an inactivity limit, not a limit on the complete transfer.
+      // A healthy mobile download can exceed 15s without being stalled.
+      loadDeadline = setTimeout(() => {
+        if (currentDownload()) { markSlow(); fallback(); }
+      }, downloadDeadline);
+    };
+    renewDeadline();
     try {
       // A complete local Blob eliminates seeks into unbuffered HTTP ranges.
       // Keep the front image visible until decoding can actually present video.
       const response = await fetch(asset(videoSource.value), { signal: controller.signal });
       if (!response.ok) throw new Error(`Chip video HTTP ${response.status}`);
-      const blob = await response.blob();
-      if (disposed || isStatic() || controller.signal.aborted) return;
+      if (!currentDownload()) return;
+      renewDeadline();
+      let blob;
+      if (response.body?.getReader) {
+        const reader = response.body.getReader();
+        const chunks = [];
+        try {
+          while (currentDownload()) {
+            const { done, value } = await reader.read();
+            if (!currentDownload()) return;
+            if (done) break;
+            if (value?.byteLength) {
+              chunks.push(value);
+              renewDeadline();
+            }
+          }
+        } finally { reader.releaseLock(); }
+        blob = new Blob(chunks, { type: response.headers.get('Content-Type') || '' });
+      } else blob = await response.blob();
+      if (!currentDownload()) return;
+      // Decoding gets its own bounded wait after the last byte has arrived.
+      renewDeadline();
       blobUrl = URL.createObjectURL(blob);
       video.preload = 'auto';
       video.src = blobUrl;
     } catch (error) {
-      if (error.name !== 'AbortError' && !disposed && !isStatic()) fallback();
+      if (error.name !== 'AbortError' && currentDownload()) fallback();
     }
   };
   const prepare = () => {

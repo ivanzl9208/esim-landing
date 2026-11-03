@@ -15,7 +15,7 @@ const flush = async () => { for (let i = 0; i < 150; i++) await nextTick(); };
 
 // Exercise the real Vue lifecycle, shared hero policy, loader and still decode.
 // Browser downloads/events are controlled; no copy of the media state machine.
-function mountMedia(t, { slow = false, pendingVideo = false, iphone = false, lowPower = false, legacy = false, controlledVideoFrames = false, controlledPaint = false, unavailableFrames = false, prime = false, rejectPrime = false, pendingPrime = false } = {}) {
+function mountMedia(t, { slow = false, pendingVideo = false, streamedVideo = false, iphone = false, lowPower = false, legacy = false, controlledVideoFrames = false, controlledPaint = false, unavailableFrames = false, prime = false, rejectPrime = false, pendingPrime = false } = {}) {
   const previous = new Map();
   const replace = (key, value) => {
     previous.set(key, Object.getOwnPropertyDescriptor(globalThis, key));
@@ -39,8 +39,18 @@ function mountMedia(t, { slow = false, pendingVideo = false, iphone = false, low
   replace('requestAnimationFrame', callback => { const id = ++clock; if (controlledPaint) paintFrames.set(id, callback); else queueMicrotask(() => callback(id * 16)); return id; });
   replace('cancelAnimationFrame', id => paintFrames.delete(id));
   const requests = [];
+  let videoStream;
+  let streamAborted = false;
   replace('fetch', (url, { signal } = {}) => {
     requests.push(url);
+    if (streamedVideo && /chip-scroll(?:-(?:alpha|lite))?\.(webm|mov)/.test(url)) {
+      const body = new ReadableStream({ start(controller) { videoStream = controller; } });
+      signal.addEventListener('abort', () => {
+        streamAborted = true;
+        videoStream.error(new DOMException('Aborted', 'AbortError'));
+      }, { once: true });
+      return Promise.resolve(new Response(body, { headers: { 'Content-Type': iphone ? 'video/quicktime' : 'video/webm' } }));
+    }
     if (pendingVideo && /chip-scroll(?:-(?:alpha|lite))?\.(webm|mov)/.test(url)) return new Promise((resolve, reject) => {
       signal.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError')), { once: true });
     });
@@ -98,6 +108,9 @@ function mountMedia(t, { slow = false, pendingVideo = false, iphone = false, low
   });
   return {
     media, policy, frame, video, motion, requests,
+    pushVideoChunk: () => videoStream.enqueue(new Uint8Array([1, 2, 3])),
+    finishVideo: () => videoStream.close(),
+    streamAborted: () => streamAborted,
     paint: () => { const callbacks = [...paintFrames.values()]; paintFrames.clear(); callbacks.forEach(callback => callback(++clock * 16)); },
     primeCalls: () => primeCalls,
     presentVideoFrame: () => {
@@ -150,6 +163,54 @@ test('A video download timeout falls back to rotating frames; Reduce Motion stil
   assert.match(frame.src, /frame-001.webp$/);
   motion.matches = false; motion.dispatchEvent(new Event('change')); await flush();
   assert.match(frame.src, /frame-113.webp$/);
+});
+
+for (const iphone of [true, false]) test(`A progressing 24-second chip download retains ${iphone ? 'MOV' : 'WebM'} instead of switching to network frames`, async t => {
+  const { media, video, requests, pushVideoChunk, finishVideo, streamAborted } = mountMedia(t, { iphone, streamedVideo: true });
+  await flush();
+  media.setPlayback(.35, 4);
+  for (let chunk = 0; chunk < 8; chunk++) {
+    t.mock.timers.tick(3000);
+    pushVideoChunk();
+    await flush();
+    assert.equal(media.frameMode.value, false, 'Received bytes keep the same video download alive beyond its old absolute deadline');
+    assert.equal(streamAborted(), false);
+  }
+  assert.equal(media.videoReady.value, false, 'No partial Blob is passed to the decoder');
+  finishVideo(); await flush();
+  assert.equal(media.videoReady.value, true);
+  assert.equal(media.videoSource.value, iphone ? 'chip-scroll-alpha.mov' : 'chip-scroll.webm');
+  assert.ok(Math.abs(video.currentTime - .35 * 5.96) < 1e-8, 'The completed download uses the latest scroll position');
+  assert.equal(requests.some(url => url.includes('chip-frames/')), false, 'No competing 150-image queue replaces healthy video');
+});
+
+for (const iphone of [true, false]) test(`A stalled ${iphone ? 'MOV' : 'WebM'} body still aborts and falls back after inactivity`, async t => {
+  const { media, pushVideoChunk, streamAborted } = mountMedia(t, { iphone, streamedVideo: true });
+  await flush();
+  const deadline = iphone ? CHIP_MOV_LOAD_DEADLINE : MEDIA_LOAD_DEADLINE;
+  t.mock.timers.tick(deadline - 1);
+  pushVideoChunk(); await flush();
+  t.mock.timers.tick(deadline - 1); await flush();
+  assert.equal(media.frameMode.value, false, 'The deadline is measured from the last received bytes');
+  t.mock.timers.tick(1); await flush();
+  assert.equal(streamAborted(), true);
+  assert.equal(media.frameMode.value, true, 'A genuinely stalled transfer keeps the existing emergency fallback');
+});
+
+test('Aborting a streaming MOV for Reduce Motion cannot rearm its deadline or poison a fresh download', async t => {
+  const { media, video, motion, pushVideoChunk, finishVideo, streamAborted } = mountMedia(t, { iphone: true, streamedVideo: true });
+  await flush();
+  pushVideoChunk(); await flush();
+  motion.matches = true; motion.dispatchEvent(new Event('change')); await flush();
+  assert.equal(streamAborted(), true);
+  t.mock.timers.tick(CHIP_MOV_LOAD_DEADLINE * 2); await flush();
+  assert.equal(media.frameMode.value, false, 'The cancelled reader cannot activate the emergency queue');
+  motion.matches = false; motion.dispatchEvent(new Event('change')); await flush();
+  media.setPlayback(.6, 4);
+  pushVideoChunk(); finishVideo(); await flush();
+  assert.equal(media.frameMode.value, false);
+  assert.equal(media.videoReady.value, true);
+  assert.ok(Math.abs(video.currentTime - .6 * 5.96) < 1e-8);
 });
 
 test('Low-power desktop keeps video scrubbing and downloads the lighter all-keyframe source', async t => {

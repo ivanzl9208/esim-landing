@@ -76,7 +76,7 @@ test('Safety copy enters from below the viewport, stays below the chip, and all 
       setPlayback() {}, prepareStill() {}, setZoomQuality(value) { quality = value; },
     });
     const state = { ...Object.fromEntries(Object.keys(TRACKS).map(key => [key, 0])), reveal: 1, chip: 1, story: 1, storyCenter: 1, chipZoom: 0, buttonReveal: 1 };
-    const layout = { mobile, width, height, scale };
+    const layout = { mobile, width, height, scale, motionHeight: height };
     const copyTop = () => node('.safety-copy').offsetTop +
       Number(node('.safety-copy').style.transform.match(/, ([\d.-]+)px/u)[1]);
     renderer(state, layout, false);
@@ -107,6 +107,22 @@ test('Safety copy enters from below the viewport, stays below the chip, and all 
       const offset = Number(node('.safety-copy').style.transform.match(/, ([\d.-]+)px/u)[1]);
       assert.ok(Math.abs(node('.safety-copy').offsetTop + offset - top) < .01);
       assert.equal(quality.zoom, state.chipZoom);
+    }
+    if (mobile) {
+      for (const [zoom, safety] of [[.7, 0], [1, .12], [1, .3], [1, .6]]) {
+        state.chipZoom = zoom; state.safety = safety;
+        renderer(state, layout, false);
+        const previousCopy = copyTop();
+        const previousChip = node('.chip-media-wrapper').style.transform;
+        for (const liveHeight of [height + 90, height + 20, height - 40, height]) {
+          renderer(state, { ...layout, height: liveHeight }, false);
+          assert.ok(Math.abs(copyTop() - previousCopy) < .01,
+            'Safari toolbar height changes cannot push the safety copy backwards');
+          assert.equal(node('.chip-media-wrapper').style.transform, previousChip);
+          assert.equal(node('.chip-media-wrapper').style.top, `${height / 2}px`,
+            'Video and still stay on the same stable composition centre');
+        }
+      }
     }
     state.safety = 0;
     renderer(state, layout, true);

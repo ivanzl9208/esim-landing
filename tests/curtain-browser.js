@@ -9,6 +9,42 @@ import '../src/styles/reference.css';
 import '../src/styles/accessibility.css';
 
 const params = new URLSearchParams(location.search);
+// Exercise the real media lifecycle with the original bytes delivered slowly,
+// not a mock decoder. The old absolute deadline aborted this healthy stream.
+let slowDownload;
+let downloadReport;
+if (params.has('slow-media')) {
+  const originalFetch = window.fetch.bind(window);
+  window.fetch = async (url, options) => {
+    const response = await originalFetch(url, options);
+    if (!/chip-scroll(?:-(?:alpha|lite))?\.(mov|webm)$/.test(String(url))) return response;
+    const bytes = new Uint8Array(await response.arrayBuffer());
+    let finish;
+    slowDownload = new Promise(resolve => { finish = resolve; });
+    downloadReport = { bytes: 0, aborted: false, complete: false };
+    const start = performance.now();
+    const body = new ReadableStream({ start(controller) {
+      let offset = 0;
+      const cleanup = () => { clearInterval(timer); options.signal.removeEventListener('abort', abort); finish(); };
+      const abort = () => {
+        downloadReport.aborted = true;
+        cleanup(); controller.error(new DOMException('Aborted', 'AbortError'));
+      };
+      const timer = setInterval(() => {
+        const end = Math.min(bytes.length, offset + Math.ceil(bytes.length / 24));
+        controller.enqueue(bytes.subarray(offset, end)); offset = end;
+        downloadReport.bytes = offset;
+        downloadReport.elapsed = Math.round(performance.now() - start);
+        if (offset === bytes.length) {
+          downloadReport.complete = true;
+          cleanup(); controller.close();
+        }
+      }, 1000);
+      options.signal.addEventListener('abort', abort, { once: true });
+    } });
+    return new Response(body, { headers: response.headers });
+  };
+}
 let releaseFonts;
 if (params.has('late-fonts')) {
   const originalReady = document.fonts.ready;
@@ -40,6 +76,10 @@ const inspect = () => {
   const worst = jumps.reduce((result, value, index) => !result || value.delta > result.delta
     ? { ...value, before: samples[index] } : result, null);
   document.getElementById('summary').textContent = JSON.stringify({
+    download: downloadReport,
+    video: params.has('chip') ? { format: video.dataset.videoFormat, ready: video.readyState,
+      seeks: seeks.length, maxSeekGap: Math.max(0, ...seekGaps),
+      lastTime: seeks.at(-1)?.mediaTime } : undefined,
     frames: samples.length, instances: [...new Set(samples.map(sample => sample.id))],
     maxStep: Math.max(0, ...jumps.map(value => value.delta)),
     maxColumnStep: Math.max(0, ...columnSteps), maxFrameGap: Math.max(0, ...gaps),
@@ -47,9 +87,6 @@ const inspect = () => {
     p95FrameGap: sortedGaps[Math.floor(sortedGaps.length * .95)],
     maxCoordinateError: Math.max(0, ...samples.map(sample => sample.coordinateError)),
     framesOver50ms: gaps.filter(gap => gap > 50).length,
-    video: params.has('chip') ? { format: video.dataset.videoFormat, ready: video.readyState,
-      seeks: seeks.length, maxSeekGap: Math.max(0, ...seekGaps),
-      lastTime: seeks.at(-1)?.mediaTime } : undefined,
     worst: params.has('compact') ? { delta: worst?.delta, time: worst?.sample.time,
       from: worst?.before.playhead, to: worst?.sample.playhead,
       scrollFrom: worst?.before.y, scrollTo: worst?.sample.y } : undefined,
@@ -115,4 +152,11 @@ document.getElementById('reverse').onclick = () => measure(true);
 document.getElementById('resize').onclick = () => measure(false, true);
 // Native Safari QA without relying on simulator coordinate automation. The
 // diagnostic samples JS/style values, not layout, inside the measured loop.
-if (params.has('auto')) document.fonts.ready.then(() => setTimeout(() => measure(params.has('reverse'), params.has('resize')), 1200));
+if (params.has('auto')) document.fonts.ready.then(async () => {
+  if (params.has('slow-media')) {
+    // App mounting starts the fetch; let its response wrapper initialize first.
+    while (!slowDownload) await new Promise(resolve => setTimeout(resolve, 50));
+    await slowDownload;
+  }
+  setTimeout(() => measure(params.has('reverse'), params.has('resize')), 1200);
+});

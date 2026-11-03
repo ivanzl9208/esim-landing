@@ -110,7 +110,9 @@ export function useScrollScene(sceneRef, mediaRef, checkerRef, progressRef) {
       const updateGeometry = () => {
         // Keep typography and the scroll unit stable while mobile browser
         // chrome changes the live stage height. Width changes reset scrollUnit.
-        geometry = { ...getLayout(window.innerWidth, (mobile || !fine) ? scrollUnit : window.innerHeight), height: window.innerHeight, dpr: window.devicePixelRatio || 1 };
+        geometry = { ...getLayout(window.innerWidth, nativeTouch ? scrollUnit : window.innerHeight),
+          height: window.innerHeight, motionHeight: mobile ? scrollUnit : window.innerHeight,
+          dpr: window.devicePixelRatio || 1 };
         scene.style.height = `${Math.ceil(SCENE_SCROLL_END * scrollUnit) + geometry.height}px`;
         scene.style.marginBottom = `-${geometry.height}px`;
         scene.style.setProperty('--layout-scale', geometry.scale.toFixed(5));

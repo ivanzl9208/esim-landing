@@ -31,6 +31,7 @@ const inspect = () => {
   report.textContent = JSON.stringify({ innerHeight, visualHeight: visualViewport?.height,
     timeline: scene?.animation?.time(), playback: scene?.animation?.data?.playback,
     stage: rect('.hero-stage'), button: rect('.roulette-button'),
+    chip: rect('.chip-media-wrapper'), copy: rect('.safety-copy'),
     video: { format: video?.dataset.videoFormat, time: video?.currentTime,
       ready: video?.readyState, paused: video?.paused, duration: video?.duration,
       seeking: video?.seeking, error: video?.error?.code, opacity: video?.style.opacity, presentedTime },

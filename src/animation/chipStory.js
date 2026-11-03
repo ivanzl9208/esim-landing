@@ -200,7 +200,8 @@ export function createChipStoryRenderer(scene, media) {
   const render = (state, layout, reduceMotion) => {
     geometry = layout; reduced = reduceMotion;
     const { reveal: currentReveal, chip: currentChip, marquee: currentMarquee, features: currentVideo, playback: currentPlayback, definition: currentDefinition, definitionVisibility: currentDefinitionVisibility, background: currentBackground, story: currentStory, safety: currentSafety, returnGradient: currentReturnGradient, outro: currentOutro } = state;
-    const layoutKey = `${geometry.width}:${geometry.height}:${geometry.scale}:${reduced}`;
+    const motionHeight = geometry.motionHeight ?? geometry.height;
+    const layoutKey = `${geometry.width}:${geometry.height}:${motionHeight}:${geometry.scale}:${reduced}`;
     const prelude = currentReveal === 0 && currentOutro === 0;
     if (!measurements || measuredLayout !== layoutKey) {
       // These dimensions only change with the viewport or fonts. Reading them
@@ -230,8 +231,8 @@ export function createChipStoryRenderer(scene, media) {
       const layoutScale = geometry.scale;
       const shutterInset = (1 - currentReveal) * 50;
       const chipStartY = isMobile
-        ? geometry.height * 0.66
-        : geometry.height * 0.72;
+        ? motionHeight * 0.66
+        : motionHeight * 0.72;
       const chipEndY = isMobile
         ? 47 * layoutScale
         : 0;
@@ -253,7 +254,7 @@ export function createChipStoryRenderer(scene, media) {
       // Align desktop copy to that object's centre, excluding transparent padding.
       gradient.style.setProperty('--chip-story-center-y', `${(chipY + chipRenderedHeight * (7 / 640)).toFixed(2)}px`);
       const safetyStartOffset =
-        geometry.height / 2 +
+        motionHeight / 2 +
         displayedY +
         chipRenderedHeight / 2 +
         safetyGap -
@@ -261,7 +262,7 @@ export function createChipStoryRenderer(scene, media) {
       // Bring the copy in from below while the first zoom lifts the chip.
       // Its gap continues following the chip during the later safety track.
       const safetyEntranceOffset = reduced ? 0 :
-        Math.max(0, geometry.height - measurements.safetyTop - safetyStartOffset) *
+        Math.max(0, motionHeight - measurements.safetyTop - safetyStartOffset) *
         (1 - smoothstep(0, 1, zoomProgress));
       const safetyTravel =
         measurements.safetyTop +
@@ -306,6 +307,10 @@ export function createChipStoryRenderer(scene, media) {
       gradient.style.webkitClipPath = gradient.style.clipPath;
       backgroundTransition.style.opacity =
         grayStageOpacity.toFixed(4);
+      // Safari's collapsing toolbar resizes the sticky stage, independently
+      // of scroll progress. Keep chip and copy on one stable composition axis;
+      // the background and bottom CTA still fill/follow the live viewport.
+      mediaWrapper.style.top = `${motionHeight / 2}px`;
       mediaWrapper.style.transform =
         `translate3d(calc(-50% + ${storyX.toFixed(2)}px), calc(-50% + ${(displayedY + safetyChipExit).toFixed(2)}px), 0) ` +
         `scale(${displayedScale.toFixed(5)})`;
